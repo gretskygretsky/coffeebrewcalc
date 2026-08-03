@@ -19,6 +19,8 @@
     --pill-off: #E5E5EA;
     --blue: #007AFF;
     --seg-thumb: #FFFFFF;
+    --seg-thumb-text: #000000;
+    --pill-text: #000000;
     --shadow: 0 24px 60px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04);
     --orange: #FF9500;
     --teal: #59C4E8;
@@ -38,6 +40,8 @@
       --pill-off: #2C2C2E;
       --blue: #0A84FF;
       --seg-thumb: #636366;
+      --seg-thumb-text: #FFFFFF;
+      --pill-text: #FFFFFF;
       --shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
       --orange: #FF9F0A;
       --teal: #64D2FF;
@@ -105,7 +109,7 @@
     transition:color .2s ease;
     line-height:28px;
   }
-  .seg-btn.active{ color:var(--label); }
+  .seg-btn.active{ color:var(--seg-thumb-text); }
 
   .section-header{
     font-size:13px;
@@ -132,7 +136,7 @@
     border-radius:999px;
     border:none;
     background:var(--pill-off);
-    color:var(--label);
+    color:var(--pill-text);
     cursor:pointer;
     transition: all .18s ease;
   }
@@ -466,7 +470,7 @@ function compute(){
   function line(label,val,hero){
     const row = document.createElement('div'); row.className='stat-row';
     const l = document.createElement('span'); l.className='stat-label'; l.textContent=label;
-    const v = document.createElement('span'); v.className='stat-value'+(hero?' hero':''); v.style.color=accent; v.textContent=val;
+    const v = document.createElement('span'); v.className='stat-value'+(hero?' hero':''); v.style.color= hero ? accent : 'var(--label)'; v.textContent=val;
     row.appendChild(l); row.appendChild(v); readout.appendChild(row);
   }
 
@@ -616,14 +620,13 @@ function applyTelegramTheme(){
   if(!window.Telegram || !window.Telegram.WebApp) return;
   const tg = window.Telegram.WebApp;
   const tp = tg.themeParams || {};
-  const root = document.documentElement.style;
 
-  if(tp.bg_color) root.setProperty('--bg', tp.bg_color);
-  if(tp.secondary_bg_color) root.setProperty('--card', tp.secondary_bg_color);
-  if(tp.section_bg_color) root.setProperty('--card-2', tp.section_bg_color);
-  if(tp.text_color) root.setProperty('--label', tp.text_color);
-  if(tp.hint_color) root.setProperty('--label-2', tp.hint_color);
-  if(tp.link_color) root.setProperty('--blue', tp.link_color);
+  // Синхронизируем только фон страницы с "хромом" Telegram, чтобы не было
+  // рассинхрона на границе. Внутренние цвета элементов (переключатели, пилюли,
+  // карточки) сознательно НЕ берём из tp.* — они уже настроены и протестированы
+  // в наших собственных light/dark темах, а theme params Telegram могут прийти
+  // пустыми/неполными и перезаписать их плохими фолбэками.
+  if(tp.bg_color) document.documentElement.style.setProperty('--bg', tp.bg_color);
 
   try{ tg.setBackgroundColor(tp.bg_color || '#000000'); }catch(e){}
   try{ tg.setHeaderColor(tp.bg_color || '#000000'); }catch(e){}
