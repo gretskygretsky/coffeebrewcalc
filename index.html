@@ -616,20 +616,44 @@ window.addEventListener('resize', ()=>{
   moveThumb(inputSeg, iIdx, iBtns.length);
 });
 
-function applyTelegramTheme(){
-  if(!window.Telegram || !window.Telegram.WebApp) return;
-  const tg = window.Telegram.WebApp;
-  const tp = tg.themeParams || {};
+/* ---- Единый источник истины для темы: применяем весь набор цветов разом,
+   никогда не смешивая Telegram-цвета с системными по отдельным свойствам. ---- */
+const PALETTE = {
+  light: {
+    '--bg':'#F2F2F7', '--card':'#FFFFFF', '--card-2':'#F2F2F7', '--label':'#000000',
+    '--label-2':'rgba(60,60,67,0.6)', '--label-3':'rgba(60,60,67,0.3)', '--separator':'rgba(60,60,67,0.29)',
+    '--fill':'rgba(120,120,128,0.12)', '--pill-off':'#E5E5EA', '--blue':'#007AFF',
+    '--seg-thumb':'#FFFFFF', '--seg-thumb-text':'#000000', '--pill-text':'#000000',
+    '--orange':'#FF9500', '--teal':'#59C4E8', '--brown':'#A2845E'
+  },
+  dark: {
+    '--bg':'#000000', '--card':'#1C1C1E', '--card-2':'#2C2C2E', '--label':'#FFFFFF',
+    '--label-2':'rgba(235,235,245,0.6)', '--label-3':'rgba(235,235,245,0.3)', '--separator':'rgba(84,84,88,0.6)',
+    '--fill':'rgba(120,120,128,0.24)', '--pill-off':'#2C2C2E', '--blue':'#0A84FF',
+    '--seg-thumb':'#636366', '--seg-thumb-text':'#FFFFFF', '--pill-text':'#FFFFFF',
+    '--orange':'#FF9F0A', '--teal':'#64D2FF', '--brown':'#AC8E68'
+  }
+};
 
-  // Синхронизируем только фон страницы с "хромом" Telegram, чтобы не было
-  // рассинхрона на границе. Внутренние цвета элементов (переключатели, пилюли,
-  // карточки) сознательно НЕ берём из tp.* — они уже настроены и протестированы
-  // в наших собственных light/dark темах, а theme params Telegram могут прийти
-  // пустыми/неполными и перезаписать их плохими фолбэками.
-  if(tp.bg_color) document.documentElement.style.setProperty('--bg', tp.bg_color);
+function applyPalette(isDark){
+  const p = isDark ? PALETTE.dark : PALETTE.light;
+  const root = document.documentElement.style;
+  Object.keys(p).forEach(k=> root.setProperty(k, p[k]));
+  if(window.Telegram && window.Telegram.WebApp){
+    try{ window.Telegram.WebApp.setBackgroundColor(p['--bg']); }catch(e){}
+    try{ window.Telegram.WebApp.setHeaderColor(p['--bg']); }catch(e){}
+  }
+}
 
-  try{ tg.setBackgroundColor(tp.bg_color || '#000000'); }catch(e){}
-  try{ tg.setHeaderColor(tp.bg_color || '#000000'); }catch(e){}
+function syncTheme(){
+  let isDark;
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.colorScheme){
+    // Приоритет — явный сигнал темы от самого Telegram, а не отдельные цвета из themeParams.
+    isDark = window.Telegram.WebApp.colorScheme === 'dark';
+  } else {
+    isDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  applyPalette(isDark);
 }
 
 function initTelegram(){
@@ -637,9 +661,15 @@ function initTelegram(){
   const tg = window.Telegram.WebApp;
   tg.ready();
   tg.expand();
-  applyTelegramTheme();
-  tg.onEvent('themeChanged', applyTelegramTheme);
+  tg.onEvent('themeChanged', syncTheme);
   if(typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+}
+
+syncTheme();
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+    if(!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.colorScheme)) syncTheme();
+  });
 }
 
 /* ---- Живой таймер заваривания ---- */
