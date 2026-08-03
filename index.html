@@ -18,6 +18,7 @@
     --fill: rgba(120,120,128,0.12);
     --pill-off: #E5E5EA;
     --blue: #007AFF;
+    --seg-thumb: #FFFFFF;
     --shadow: 0 24px 60px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04);
     --orange: #FF9500;
     --teal: #59C4E8;
@@ -36,6 +37,7 @@
       --fill: rgba(120,120,128,0.24);
       --pill-off: #2C2C2E;
       --blue: #0A84FF;
+      --seg-thumb: #636366;
       --shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
       --orange: #FF9F0A;
       --teal: #64D2FF;
@@ -83,7 +85,7 @@
     position:absolute;
     top:2px; bottom:2px;
     left:2px;
-    background:var(--card);
+    background:var(--seg-thumb);
     border-radius:7px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.08);
     transition: transform .32s cubic-bezier(.34,1.3,.64,1), width .32s cubic-bezier(.34,1.3,.64,1);
@@ -136,6 +138,20 @@
   }
   .pill:active{ transform:scale(0.94); }
   .pill.active{ background:var(--accent, var(--orange)); color:#fff; }
+
+  .ratio-hint{
+    font-size:12.5px;
+    color:var(--label-2);
+    margin:7px 4px 0;
+    min-height:16px;
+  }
+  .brew-hint{
+    display:none;
+    font-size:12px;
+    color:var(--label-2);
+    text-align:center;
+    margin:8px 4px 0;
+  }
 
   .card{
     background:var(--card);
@@ -261,6 +277,41 @@
   .pour-amounts{ text-align:right; flex-shrink:0; }
   .pour-add{ font-size:15px; font-weight:600; color:var(--label); font-variant-numeric: tabular-nums; }
   .pour-total{ font-size:11px; color:var(--label-2); font-variant-numeric: tabular-nums; }
+  .pour-row.active{ background: var(--fill); }
+
+  .brew-btn{
+    display:none;
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    font-size:16px;
+    font-weight:600;
+    margin-top:16px;
+    cursor:pointer;
+    transition: transform .15s ease;
+  }
+  .brew-btn:active{ transform:scale(0.97); }
+  .brew-btn.start{ background:var(--accent, var(--orange)); color:#fff; }
+  .brew-btn.stop{ background:var(--fill); color:var(--label); }
+
+  .brew-live{
+    display:none;
+    margin-top:16px;
+    border-radius:16px;
+    padding:20px 16px;
+    text-align:center;
+    background:var(--card);
+    border:1.5px solid var(--accent, var(--orange));
+  }
+  .brew-stage-name{ font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--label-2); }
+  .brew-stage-action{ font-size:19px; font-weight:700; margin:4px 0 12px; color:var(--label); }
+  .brew-stage-timer{ font-size:46px; font-weight:700; font-variant-numeric: tabular-nums; letter-spacing:-0.02em; color:var(--accent, var(--orange)); }
+  .brew-stage-sub{ font-size:13px; color:var(--label-2); margin-top:6px; }
+  .brew-progress{ height:4px; background:var(--fill); border-radius:2px; margin-top:16px; overflow:hidden; }
+  .brew-progress-fill{ height:100%; width:0%; background:var(--accent, var(--orange)); transition:width .2s linear; }
+
+  button:disabled, input:disabled{ opacity:0.35; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -271,12 +322,13 @@
   <div class="segmented" id="modeSeg">
     <div class="thumb"></div>
     <button class="seg-btn active" data-mode="v60">V60</button>
-    <button class="seg-btn" data-mode="v60ice">V60 лёд</button>
-    <button class="seg-btn" data-mode="cold">Колд брю</button>
+    <button class="seg-btn" data-mode="v60ice">Iced V60</button>
+    <button class="seg-btn" data-mode="cold">Cold brew</button>
   </div>
 
   <p class="section-header">Пропорция</p>
   <div class="pills" id="ratioPills"></div>
+  <p class="ratio-hint" id="ratioHint"></p>
 
   <p class="section-header">Ввод</p>
   <div class="segmented" id="inputSeg" style="margin-bottom:0;">
@@ -308,6 +360,16 @@
   <p class="section-header pour-header" id="pourHeader" style="display:none;">График пролива</p>
   <div class="card pour-card" id="pourCard"></div>
 
+  <button class="brew-btn start" id="brewToggle">Начать заваривание</button>
+  <p class="brew-hint" id="brewHint">Перед стартом — 5 секунд на подготовку</p>
+  <div class="brew-live" id="brewLive">
+    <div class="brew-stage-name" id="brewStageName">Блум</div>
+    <div class="brew-stage-action" id="brewStageAction">—</div>
+    <div class="brew-stage-timer" id="brewStageTimer">0:00</div>
+    <div class="brew-stage-sub" id="brewStageSub">—</div>
+    <div class="brew-progress"><div class="brew-progress-fill" id="brewProgressFill"></div></div>
+  </div>
+
   <div class="tip" id="notes">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
     <span id="notesText"></span>
@@ -333,6 +395,12 @@ function moveThumb(segEl, index, count){
   thumb.style.transform = `translateX(${index * w}px)`;
 }
 
+const RATIO_HINTS = {
+  15: 'Крепче, плотнее тело, меньше кислотности',
+  16: 'Баланс — хорошая стартовая точка',
+  17: 'Легче, ярче кислотность, деликатнее'
+};
+
 function renderPills(){
   const wrap = document.getElementById('ratioPills');
   wrap.innerHTML = '';
@@ -345,6 +413,8 @@ function renderPills(){
     b.onclick = ()=>{ state.ratio = r; renderPills(); compute(); };
     wrap.appendChild(b);
   });
+  const hint = document.getElementById('ratioHint');
+  hint.textContent = (state.mode==='v60' || state.mode==='v60ice') ? (RATIO_HINTS[state.ratio] || '') : '';
 }
 
 const modeSeg = document.getElementById('modeSeg');
@@ -430,6 +500,9 @@ function renderPourSchedule(coffee, water, accent){
   if(state.mode !== 'v60'){
     card.style.display = 'none';
     header.style.display = 'none';
+    document.getElementById('brewToggle').style.display = 'none';
+    document.getElementById('brewHint').style.display = 'none';
+    if(typeof stopBrew === 'function') stopBrew(true);
     return;
   }
   card.style.display = 'block';
@@ -467,8 +540,8 @@ function renderPourSchedule(coffee, water, accent){
   rows.push({ time:t, action:'Стекание', add:null, total });
 
   card.innerHTML = '';
-  rows.forEach(r=>{
-    const row = document.createElement('div'); row.className='pour-row';
+  rows.forEach((r,i)=>{
+    const row = document.createElement('div'); row.className='pour-row'; row.dataset.index=i;
     const time = document.createElement('span'); time.className='pour-time'; time.style.color=accent; time.textContent = (r===rows[rows.length-1] ? '~' : '') + fmtTime(r.time);
     const dot = document.createElement('span'); dot.className='pour-dot'; dot.style.background=accent;
     const action = document.createElement('span'); action.className='pour-action'; action.textContent=r.action;
@@ -479,6 +552,10 @@ function renderPourSchedule(coffee, water, accent){
     row.appendChild(time); row.appendChild(dot); row.appendChild(action); row.appendChild(amounts);
     card.appendChild(row);
   });
+
+  state.schedule = rows;
+  document.getElementById('brewToggle').style.display = 'block';
+  document.getElementById('brewHint').style.display = 'block';
 }
 
 function drawVisual(water, accent){
@@ -561,6 +638,149 @@ function initTelegram(){
   tg.onEvent('themeChanged', applyTelegramTheme);
   if(typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
 }
+
+/* ---- Живой таймер заваривания ---- */
+let audioCtx = null;
+let brewPhase = 'idle'; // 'idle' | 'counting' | 'running'
+let brewing = false;
+let brewStartTs = 0;
+let brewRAF = null;
+let brewLastIdx = -1;
+let brewDoneFired = false;
+let countdownTimer = null;
+
+function beep(freq, dur){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur/1000);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur/1000 + 0.03);
+  }catch(e){}
+}
+function haptic(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback){
+    try{ window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){}
+  } else if(navigator.vibrate){
+    navigator.vibrate(200);
+  }
+}
+function stageAlert(){ beep(880,150); setTimeout(()=>beep(1046,150),170); haptic(); }
+function finishAlert(){ beep(660,120); setTimeout(()=>beep(880,120),140); setTimeout(()=>beep(1175,260),280); haptic(); }
+
+function lockControls(locked){
+  [modeSeg, inputSeg].forEach(seg=> seg.querySelectorAll('button').forEach(b=> b.disabled = locked));
+  document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
+  valueInput.disabled = locked;
+  document.getElementById('stepUp').disabled = locked;
+  document.getElementById('stepDown').disabled = locked;
+}
+
+function beginCountdown(){
+  if(state.mode !== 'v60' || !state.schedule || !state.schedule.length) return;
+  brewPhase = 'counting';
+  let count = 5;
+  const accent = accentVar(state.mode);
+  const btn = document.getElementById('brewToggle');
+  btn.textContent = 'Отменить';
+  btn.classList.remove('start'); btn.classList.add('stop');
+  document.getElementById('brewLive').style.display = 'block';
+  document.getElementById('brewStageName').textContent = 'Приготовьтесь';
+  document.getElementById('brewStageAction').textContent = 'Наливать воду по сигналу';
+  document.getElementById('brewStageTimer').style.color = accent;
+  document.getElementById('brewStageTimer').textContent = String(count);
+  document.getElementById('brewStageSub').textContent = 'Старт через ' + count + ' с';
+  document.getElementById('brewProgressFill').style.background = accent;
+  document.getElementById('brewProgressFill').style.width = '0%';
+  lockControls(true);
+  beep(660,90);
+  countdownTimer = setInterval(()=>{
+    count--;
+    if(count > 0){
+      document.getElementById('brewStageTimer').textContent = String(count);
+      document.getElementById('brewStageSub').textContent = 'Старт через ' + count + ' с';
+      beep(660,90);
+    } else {
+      clearInterval(countdownTimer);
+      document.getElementById('brewStageTimer').textContent = '0';
+      launchBrew();
+    }
+  }, 1000);
+}
+
+function launchBrew(){
+  brewPhase = 'running';
+  brewing = true;
+  brewStartTs = performance.now();
+  brewLastIdx = -1;
+  brewDoneFired = false;
+  document.getElementById('brewToggle').textContent = 'Остановить';
+  stageAlert();
+  tickBrew();
+}
+
+function stopBrew(hide){
+  brewPhase = 'idle';
+  brewing = false;
+  if(brewRAF) cancelAnimationFrame(brewRAF);
+  if(countdownTimer) clearInterval(countdownTimer);
+  const btn = document.getElementById('brewToggle');
+  btn.textContent = 'Начать заваривание';
+  btn.classList.remove('stop'); btn.classList.add('start');
+  if(hide) document.getElementById('brewLive').style.display = 'none';
+  lockControls(false);
+  document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
+}
+
+function tickBrew(){
+  if(!brewing) return;
+  const rows = state.schedule;
+  const elapsed = (performance.now() - brewStartTs) / 1000;
+  const accent = accentVar(state.mode);
+
+  let idx = 0;
+  for(let i=0;i<rows.length;i++){ if(elapsed >= rows[i].time) idx = i; }
+
+  if(idx > brewLastIdx){
+    for(let i=brewLastIdx+1; i<=idx; i++){ if(i>0) stageAlert(); }
+    brewLastIdx = idx;
+    document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.toggle('active', Number(el.dataset.index)===idx));
+  }
+
+  const cur = rows[idx];
+  const next = rows[idx+1];
+
+  document.getElementById('brewStageName').textContent = cur.action;
+  document.getElementById('brewStageAction').textContent = cur.add !== null ? ('Налито всего: ' + fmt(cur.total) + ' мл') : 'Дать стечь';
+  document.getElementById('brewStageTimer').textContent = fmtTime(Math.max(0, elapsed));
+  document.getElementById('brewStageTimer').style.color = accent;
+  document.getElementById('brewProgressFill').style.background = accent;
+
+  if(next){
+    const span = next.time - cur.time;
+    const into = elapsed - cur.time;
+    document.getElementById('brewStageSub').textContent = 'До «' + next.action + '»: ' + fmtTime(Math.max(0, next.time - elapsed));
+    document.getElementById('brewProgressFill').style.width = Math.max(0, Math.min(100, (into/span)*100)) + '%';
+  } else {
+    document.getElementById('brewStageSub').textContent = 'Заваривание завершено';
+    document.getElementById('brewProgressFill').style.width = '100%';
+    if(!brewDoneFired){ brewDoneFired = true; finishAlert(); }
+  }
+
+  brewRAF = requestAnimationFrame(tickBrew);
+}
+
+document.getElementById('brewToggle').onclick = ()=>{
+  if(brewPhase === 'idle') beginCountdown();
+  else stopBrew(true);
+};
 
 initTelegram();
 setMode('v60');
