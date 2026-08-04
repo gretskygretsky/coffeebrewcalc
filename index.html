@@ -195,6 +195,39 @@
   input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   .unit{ font-size:13px; color:var(--label-2); width:20px; }
 
+  input[type=range]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:var(--fill);
+    margin:6px 0 2px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:22px; height:22px;
+    border-radius:50%;
+    background:#FFFFFF;
+    box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    border:none;
+    cursor:pointer;
+    margin-top:-9px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px; height:22px;
+    border-radius:50%;
+    background:#FFFFFF;
+    box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    border:none;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-track{
+    height:4px;
+    border-radius:2px;
+    background:var(--fill);
+  }
+
   .stepper{
     display:flex;
     align-items:center;
@@ -279,8 +312,8 @@
   }
   .pour-action{ flex:1; font-size:15px; color:var(--label); }
   .pour-amounts{ text-align:right; flex-shrink:0; }
-  .pour-add{ font-size:15px; font-weight:600; color:var(--label); font-variant-numeric: tabular-nums; }
-  .pour-total{ font-size:11px; color:var(--label-2); font-variant-numeric: tabular-nums; }
+  .pour-add{ font-size:11px; color:var(--label-2); font-variant-numeric: tabular-nums; }
+  .pour-total{ font-size:15px; font-weight:600; color:var(--label); font-variant-numeric: tabular-nums; }
   .pour-row.active{ background: var(--fill); }
 
   .brew-btn{
@@ -330,28 +363,62 @@
     <button class="seg-btn" data-mode="cold">Cold brew</button>
   </div>
 
-  <p class="section-header">Пропорция</p>
-  <div class="pills" id="ratioPills"></div>
-  <p class="ratio-hint" id="ratioHint"></p>
+  <!-- Место под выбор рецепта (Hario / Rao / наш) — рендерится и показывается,
+       только когда рецептов больше одного, см. RECIPES и renderRecipeSeg() -->
+  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:22px;"></div>
 
-  <p class="section-header">Ввод</p>
-  <div class="segmented" id="inputSeg" style="margin-bottom:0;">
-    <div class="thumb"></div>
-    <button class="seg-btn active" data-input="coffee">Зёрна, г</button>
-    <button class="seg-btn" data-input="water">Вода, мл</button>
+  <div id="classicInput">
+    <p class="section-header">Пропорция</p>
+    <div class="pills" id="ratioPills"></div>
+    <p class="ratio-hint" id="ratioHint"></p>
+
+    <p class="section-header">Ввод</p>
+    <div class="segmented" id="inputSeg" style="margin-bottom:0;">
+      <div class="thumb"></div>
+      <button class="seg-btn active" data-input="coffee">Зёрна, г</button>
+      <button class="seg-btn" data-input="water">Вода, мл</button>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="row">
+        <span class="row-label">Значение</span>
+        <div class="stepper-field">
+          <div class="stepper">
+            <button id="stepDown">−</button>
+            <div class="divider"></div>
+            <button id="stepUp">+</button>
+          </div>
+          <input type="number" id="valueInput" value="26">
+          <span class="unit" id="unitLabel">г</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="card" style="margin-top:16px;">
-    <div class="row">
-      <span class="row-label">Значение</span>
-      <div class="stepper-field">
-        <div class="stepper">
-          <button id="stepDown">−</button>
-          <div class="divider"></div>
-          <button id="stepUp">+</button>
+  <div id="v60Input" style="display:none;">
+    <p class="section-header">Объём</p>
+    <div class="card">
+      <div class="row" style="flex-direction:column; align-items:stretch; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span class="row-label">Вода</span>
+          <span class="stat-value" id="sliderVolVal" style="font-size:20px;">300 мл</span>
         </div>
-        <input type="number" id="valueInput" value="26">
-        <span class="unit" id="unitLabel">г</span>
+        <input type="range" id="volSlider" min="100" max="450" step="1" value="300">
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--label-2);">
+          <span>150</span><span>400</span>
+        </div>
+      </div>
+      <div class="row">
+        <span class="row-label">Кофе · 1:16</span>
+        <div class="stepper-field">
+          <div class="stepper">
+            <button id="coffeeStepDown">−</button>
+            <div class="divider"></div>
+            <button id="coffeeStepUp">+</button>
+          </div>
+          <input type="number" id="coffeeInput" value="18.5" step="0.5">
+          <span class="unit">г</span>
+        </div>
       </div>
     </div>
   </div>
@@ -381,7 +448,7 @@
 </div>
 
 <script>
-const state = { mode:'v60', ratio:16, inputType:'coffee', value:26 };
+const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'formula' };
 
 const RATIOS = { v60:[15,16,17], v60ice:[15,16,17], cold:[4,5,8,10,12] };
 const COLD_LABELS = {4:'1:4 конц.',5:'1:5 конц.',8:'1:8 готово',10:'1:10 готово',12:'1:12 готово'};
@@ -389,6 +456,45 @@ const ACCENT = { v60:'--orange', v60ice:'--teal', cold:'--brown' };
 const DEFAULT_RATIO = { v60:16, v60ice:16, cold:5 };
 const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
 const EYEBROW = { v60:'Пуровер', v60ice:'Пуровер · лёд', cold:'Долгий настой' };
+
+/* ---- Рецепты V60: каждый знает свой ratio и умеет построить график проливов
+   из (coffee, water). renderPourSchedule() просто рендерит то, что вернёт
+   активный рецепт — сама логика проливов от UI не зависит. Добавление Hario /
+   Rao позже — это просто новые элементы массива, ничего больше трогать не надо. ---- */
+const RECIPES = [
+  {
+    id:'formula',
+    label:'Наш рецепт',
+    ratio:16,
+    schedule(coffee, water){
+      const BLOOM_TIME = 40, POUR_INTERVAL = 45, TARGET_POUR = 130;
+      const bloom = coffee * 2;
+      const main = Math.max(0, water - bloom);
+      const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
+      const rawPour = main / numPours;
+
+      const rawValues = [bloom, ...Array(numPours).fill(rawPour)];
+      const values = rawValues.map(v => Math.floor(v));
+      let sumExceptLast = 0;
+      for(let i=0;i<values.length-1;i++) sumExceptLast += values[i];
+      values[values.length-1] = water - sumExceptLast;
+
+      const rows = [];
+      let t = 0;
+      let total = values[0];
+      rows.push({ time:t, action:'Блум', add:values[0], total });
+      for(let i=1;i<=numPours;i++){
+        t += (i===1 ? BLOOM_TIME : POUR_INTERVAL);
+        total += values[i];
+        rows.push({ time:t, action:'Пролив ' + i, add:values[i], total });
+      }
+      t += POUR_INTERVAL;
+      rows.push({ time:t, action:'Стекание', add:null, total });
+      return rows;
+    }
+  }
+];
+function getRecipe(id){ return RECIPES.find(r=>r.id===id) || RECIPES[0]; }
 
 function accentVar(mode){ return getComputedStyle(document.documentElement).getPropertyValue(ACCENT[mode]).trim(); }
 
@@ -424,9 +530,34 @@ function renderPills(){
 const modeSeg = document.getElementById('modeSeg');
 const inputSeg = document.getElementById('inputSeg');
 
+function renderRecipeSeg(){
+  const wrap = document.getElementById('recipeSeg');
+  if(state.mode !== 'v60' || RECIPES.length < 2){
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = '<div class="thumb"></div>';
+  RECIPES.forEach(rec=>{
+    const b = document.createElement('button');
+    b.className = 'seg-btn' + (rec.id===state.recipe ? ' active' : '');
+    b.textContent = rec.label;
+    b.onclick = ()=>{
+      state.recipe = rec.id;
+      state.ratio = rec.ratio;
+      renderRecipeSeg();
+      compute();
+    };
+    wrap.appendChild(b);
+  });
+  const btns = [...wrap.querySelectorAll('.seg-btn')];
+  const idx = btns.findIndex(b=>b.classList.contains('active'));
+  if(idx>=0) moveThumb(wrap, idx, btns.length);
+}
+
 function setMode(mode, animate){
   state.mode = mode;
-  state.ratio = DEFAULT_RATIO[mode];
+  state.ratio = mode==='v60' ? getRecipe(state.recipe).ratio : DEFAULT_RATIO[mode];
   const btns = [...modeSeg.querySelectorAll('.seg-btn')];
   btns.forEach((b,i)=>{
     b.classList.toggle('active', b.dataset.mode===mode);
@@ -434,7 +565,9 @@ function setMode(mode, animate){
   });
   document.getElementById('eyebrow').textContent = EYEBROW[mode];
   document.getElementById('eyebrow').style.setProperty('--accent', accentVar(mode));
-  document.querySelectorAll('.stat-value, .pill').forEach(()=>{});
+  document.getElementById('classicInput').style.display = mode==='v60' ? 'none' : 'block';
+  document.getElementById('v60Input').style.display = mode==='v60' ? 'block' : 'none';
+  renderRecipeSeg();
   renderPills();
   compute();
 }
@@ -454,6 +587,65 @@ const valueInput = document.getElementById('valueInput');
 valueInput.oninput = ()=>{ state.value = parseFloat(valueInput.value)||0; compute(); };
 document.getElementById('stepUp').onclick = ()=>{ valueInput.value = (parseFloat(valueInput.value)||0)+1; state.value=parseFloat(valueInput.value); compute(); };
 document.getElementById('stepDown').onclick = ()=>{ valueInput.value = Math.max(0,(parseFloat(valueInput.value)||0)-1); state.value=parseFloat(valueInput.value); compute(); };
+
+/* ---- V60: слайдер объёма (с магнитными отметками) + поле граммов кофе,
+   оба редактируемы напрямую и держат state.value/inputType в синхроне ---- */
+const volSlider = document.getElementById('volSlider');
+const coffeeInputV60 = document.getElementById('coffeeInput');
+const sliderVolVal = document.getElementById('sliderVolVal');
+const SNAP_POINTS = [150,200,250,300,350,400];
+
+function nearestSnap(v){
+  let best=v, bd=999;
+  SNAP_POINTS.forEach(s=>{ const d=Math.abs(v-s); if(d<bd){ bd=d; best=s; } });
+  return {best,bd};
+}
+
+function updateSliderFill(){
+  const accent = accentVar('v60');
+  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
+  const pct = ((parseFloat(volSlider.value)-min)/(max-min))*100;
+  volSlider.style.background = `linear-gradient(to right, ${accent} ${pct}%, var(--fill) ${pct}%)`;
+}
+
+volSlider.oninput = ()=>{
+  let v = parseFloat(volSlider.value);
+  const { best, bd } = nearestSnap(v);
+  if(bd<=6){ v = best; volSlider.value = v; }
+  state.inputType = 'water';
+  state.value = v;
+  state.ratio = getRecipe(state.recipe).ratio;
+  updateSliderFill();
+  compute();
+};
+
+coffeeInputV60.oninput = ()=>{
+  state.inputType = 'coffee';
+  state.value = parseFloat(coffeeInputV60.value) || 0;
+  state.ratio = getRecipe(state.recipe).ratio;
+  compute();
+};
+
+document.getElementById('coffeeStepUp').onclick = ()=>{
+  coffeeInputV60.value = ((parseFloat(coffeeInputV60.value)||0)+0.5).toFixed(1);
+  coffeeInputV60.dispatchEvent(new Event('input'));
+};
+document.getElementById('coffeeStepDown').onclick = ()=>{
+  coffeeInputV60.value = Math.max(0,(parseFloat(coffeeInputV60.value)||0)-0.5).toFixed(1);
+  coffeeInputV60.dispatchEvent(new Event('input'));
+};
+
+function syncV60Controls(coffee, water){
+  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
+  if(state.inputType !== 'water'){
+    volSlider.value = Math.min(max, Math.max(min, Math.round(water)));
+    updateSliderFill();
+  }
+  sliderVolVal.textContent = fmt(water)+' мл';
+  if(state.inputType !== 'coffee'){
+    coffeeInputV60.value = (Math.round(coffee*2)/2).toFixed(1);
+  }
+}
 
 function fmt(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
 
@@ -490,6 +682,7 @@ function compute(){
   drawVisual(water, accent);
   renderNotes();
   renderPourSchedule(coffee, water, accent);
+  if(state.mode==='v60') syncV60Controls(coffee, water);
 }
 
 function fmtTime(sec){
@@ -512,36 +705,7 @@ function renderPourSchedule(coffee, water, accent){
   card.style.display = 'block';
   header.style.display = 'block';
 
-  const BLOOM_TIME = 40;
-  const POUR_INTERVAL = 45;
-  const DRAIN_TIME = 45;
-  const TARGET_POUR = 130; // целевой объём одного пролива, мл
-
-  const bloom = coffee * 2;
-  const main = Math.max(0, water - bloom);
-  const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
-  const rawPour = main / numPours;
-
-  // Собираем все объёмы (блум + проливы), округляем вниз все, кроме последнего —
-  // последний забирает остаток, чтобы сумма точно совпадала с общим объёмом воды.
-  const rawValues = [bloom, ...Array(numPours).fill(rawPour)];
-  const values = rawValues.map(v => Math.floor(v));
-  let sumExceptLast = 0;
-  for(let i=0;i<values.length-1;i++) sumExceptLast += values[i];
-  values[values.length-1] = water - sumExceptLast;
-
-  const rows = [];
-  let t = 0;
-  let total = values[0];
-  rows.push({ time:t, action:'Блум', add:values[0], total });
-
-  for(let i=1;i<=numPours;i++){
-    t += (i===1 ? BLOOM_TIME : POUR_INTERVAL);
-    total += values[i];
-    rows.push({ time:t, action:'Пролив ' + i, add:values[i], total });
-  }
-  t += POUR_INTERVAL;
-  rows.push({ time:t, action:'Стекание', add:null, total });
+  const rows = getRecipe(state.recipe).schedule(coffee, water);
 
   card.innerHTML = '';
   rows.forEach((r,i)=>{
@@ -550,9 +714,9 @@ function renderPourSchedule(coffee, water, accent){
     const dot = document.createElement('span'); dot.className='pour-dot'; dot.style.background=accent;
     const action = document.createElement('span'); action.className='pour-action'; action.textContent=r.action;
     const amounts = document.createElement('div'); amounts.className='pour-amounts';
+    const tot = document.createElement('div'); tot.className='pour-total'; tot.textContent = fmt(r.total)+' мл';
     const add = document.createElement('div'); add.className='pour-add'; add.textContent = r.add!==null ? '+'+fmt(r.add)+' мл' : '—';
-    const tot = document.createElement('div'); tot.className='pour-total'; tot.textContent = fmt(r.total)+' мл всего';
-    amounts.appendChild(add); amounts.appendChild(tot);
+    amounts.appendChild(tot); amounts.appendChild(add);
     row.appendChild(time); row.appendChild(dot); row.appendChild(action); row.appendChild(amounts);
     card.appendChild(row);
   });
@@ -611,9 +775,17 @@ window.addEventListener('resize', ()=>{
   const mBtns=[...modeSeg.querySelectorAll('.seg-btn')];
   const mIdx = mBtns.findIndex(b=>b.classList.contains('active'));
   moveThumb(modeSeg, mIdx, mBtns.length);
-  const iBtns=[...inputSeg.querySelectorAll('.seg-btn')];
-  const iIdx = iBtns.findIndex(b=>b.classList.contains('active'));
-  moveThumb(inputSeg, iIdx, iBtns.length);
+  if(document.getElementById('classicInput').style.display !== 'none'){
+    const iBtns=[...inputSeg.querySelectorAll('.seg-btn')];
+    const iIdx = iBtns.findIndex(b=>b.classList.contains('active'));
+    moveThumb(inputSeg, iIdx, iBtns.length);
+  }
+  const recipeWrap = document.getElementById('recipeSeg');
+  if(recipeWrap.style.display !== 'none'){
+    const rBtns=[...recipeWrap.querySelectorAll('.seg-btn')];
+    const rIdx = rBtns.findIndex(b=>b.classList.contains('active'));
+    if(rIdx>=0) moveThumb(recipeWrap, rIdx, rBtns.length);
+  }
 });
 
 /* ---- Единый источник истины для темы: применяем весь набор цветов разом,
@@ -711,9 +883,14 @@ function finishAlert(){ beep(660,120); setTimeout(()=>beep(880,120),140); setTim
 function lockControls(locked){
   [modeSeg, inputSeg].forEach(seg=> seg.querySelectorAll('button').forEach(b=> b.disabled = locked));
   document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
+  document.querySelectorAll('#recipeSeg button').forEach(b=> b.disabled = locked);
   valueInput.disabled = locked;
   document.getElementById('stepUp').disabled = locked;
   document.getElementById('stepDown').disabled = locked;
+  volSlider.disabled = locked;
+  coffeeInputV60.disabled = locked;
+  document.getElementById('coffeeStepUp').disabled = locked;
+  document.getElementById('coffeeStepDown').disabled = locked;
 }
 
 function beginCountdown(){
