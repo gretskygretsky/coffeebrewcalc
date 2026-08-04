@@ -334,6 +334,7 @@
 
   .brew-live{
     display:none;
+    position:relative;
     margin-top:16px;
     border-radius:16px;
     padding:20px 16px;
@@ -341,6 +342,21 @@
     background:var(--card);
     border:1.5px solid var(--accent, var(--orange));
   }
+  .mute-btn{
+    position:absolute;
+    top:12px; right:12px;
+    width:30px; height:30px;
+    border-radius:50%;
+    border:none;
+    background:var(--fill);
+    color:var(--label-2);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .mute-btn:active{ background:rgba(120,120,128,0.24); }
+  .mute-btn.muted{ color:var(--accent, var(--orange)); }
+  .mute-btn.muted .mute-wave{ display:none; }
+  .mute-btn:not(.muted) .mute-x{ display:none; }
   .brew-stage-name{ font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--label-2); }
   .brew-stage-action{ font-size:19px; font-weight:700; margin:4px 0 12px; color:var(--label); }
   .brew-stage-timer{ font-size:46px; font-weight:700; font-variant-numeric: tabular-nums; letter-spacing:-0.02em; color:var(--accent, var(--orange)); }
@@ -365,7 +381,8 @@
 
   <!-- Место под выбор рецепта (Hario / Rao / наш) — рендерится и показывается,
        только когда рецептов больше одного, см. RECIPES и renderRecipeSeg() -->
-  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:22px;"></div>
+  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:8px;"></div>
+  <p class="ratio-hint" id="recipeHint" style="display:none; margin:0 4px 14px;"></p>
 
   <div id="classicInput">
     <p class="section-header">Пропорция</p>
@@ -409,7 +426,7 @@
         </div>
       </div>
       <div class="row">
-        <span class="row-label">Кофе · 1:16</span>
+        <span class="row-label" id="coffeeRowLabel">Кофе · 1:16</span>
         <div class="stepper-field">
           <div class="stepper">
             <button id="coffeeStepDown">−</button>
@@ -434,12 +451,21 @@
   <button class="brew-btn start" id="brewToggle">Начать заваривание</button>
   <p class="brew-hint" id="brewHint">Перед стартом — 5 секунд на подготовку</p>
   <div class="brew-live" id="brewLive">
+    <button class="mute-btn" id="musicMuteBtn" aria-label="Выключить музыку" aria-pressed="false">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/>
+        <path class="mute-wave" d="M16 8a5 5 0 010 8"/>
+        <path class="mute-wave" d="M18.7 5.3a9 9 0 010 13.4"/>
+        <path class="mute-x" d="M16 9l5 6M21 9l-5 6"/>
+      </svg>
+    </button>
     <div class="brew-stage-name" id="brewStageName">Блум</div>
     <div class="brew-stage-action" id="brewStageAction">—</div>
     <div class="brew-stage-timer" id="brewStageTimer">0:00</div>
     <div class="brew-stage-sub" id="brewStageSub">—</div>
     <div class="brew-progress"><div class="brew-progress-fill" id="brewProgressFill"></div></div>
   </div>
+  <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
 
   <div class="tip" id="notes">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
@@ -464,7 +490,7 @@ const EYEBROW = { v60:'Пуровер', v60ice:'Пуровер · лёд', cold:
 const RECIPES = [
   {
     id:'formula',
-    label:'Наш рецепт',
+    label:'Классика',
     ratio:16,
     schedule(coffee, water){
       const BLOOM_TIME = 40, POUR_INTERVAL = 45, TARGET_POUR = 130;
@@ -492,9 +518,42 @@ const RECIPES = [
       rows.push({ time:t, action:'Стекание', add:null, total });
       return rows;
     }
+  },
+  {
+    // Официальный рецепт Hario из инструкции: 12г/120г (1:10), помол средне-мелкий,
+    // общее время ~3 мин. Точный объём блума в оригинале не указан — берём ×2,
+    // как общепринятый дефолт для пуроверов.
+    id:'hario',
+    label:'Hario',
+    ratio:10,
+    schedule(coffee, water){ return singlePourSchedule(coffee, water, { bloomMult:2, bloomWait:30, totalTime:180 }); }
+  },
+  {
+    // Scott Rao: 22г/360г (1:16.4), блум 66г (~3× дозы), ждать 45с, один долгий
+    // пролив, драдаун к 3:00.
+    id:'rao',
+    label:'Rao',
+    ratio:360/22,
+    schedule(coffee, water){ return singlePourSchedule(coffee, water, { bloomMult:3, bloomWait:45, totalTime:180 }); }
   }
 ];
 function getRecipe(id){ return RECIPES.find(r=>r.id===id) || RECIPES[0]; }
+
+// Общий шаблон для рецептов вида «блум → один слитный пролив до конца → стекание»
+function singlePourSchedule(coffee, water, opts){
+  const bloom = Math.min(water, Math.round(coffee * opts.bloomMult));
+  return [
+    { time:0, action:'Блум', add:bloom, total:bloom },
+    { time:opts.bloomWait, action:'Пролив', add:(water-bloom), total:water },
+    { time:opts.totalTime, action:'Стекание', add:null, total:water }
+  ];
+}
+
+const RECIPE_HINTS = {
+  formula: 'Блум ×2, проливы по ~130 мл, остаток — в последний',
+  hario: 'Из инструкции Hario: 1:10, один слитный пролив после блума',
+  rao: 'Scott Rao: блум 45 с (×3 дозы), один долгий пролив, спин в конце'
+};
 
 function accentVar(mode){ return getComputedStyle(document.documentElement).getPropertyValue(ACCENT[mode]).trim(); }
 
@@ -532,11 +591,15 @@ const inputSeg = document.getElementById('inputSeg');
 
 function renderRecipeSeg(){
   const wrap = document.getElementById('recipeSeg');
+  const hint = document.getElementById('recipeHint');
   if(state.mode !== 'v60' || RECIPES.length < 2){
     wrap.style.display = 'none';
+    hint.style.display = 'none';
     return;
   }
   wrap.style.display = 'flex';
+  hint.style.display = 'block';
+  hint.textContent = RECIPE_HINTS[state.recipe] || '';
   wrap.innerHTML = '<div class="thumb"></div>';
   RECIPES.forEach(rec=>{
     const b = document.createElement('button');
@@ -635,6 +698,11 @@ document.getElementById('coffeeStepDown').onclick = ()=>{
   coffeeInputV60.dispatchEvent(new Event('input'));
 };
 
+function fmtRatio(r){
+  const v = Math.round(r*10)/10;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
 function syncV60Controls(coffee, water){
   const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
   if(state.inputType !== 'water'){
@@ -645,6 +713,7 @@ function syncV60Controls(coffee, water){
   if(state.inputType !== 'coffee'){
     coffeeInputV60.value = (Math.round(coffee*2)/2).toFixed(1);
   }
+  document.getElementById('coffeeRowLabel').textContent = 'Кофе · 1:' + fmtRatio(state.ratio);
 }
 
 function fmt(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
@@ -880,6 +949,24 @@ function haptic(){
 function stageAlert(){ beep(880,150); setTimeout(()=>beep(1046,150),170); haptic(); }
 function finishAlert(){ beep(660,120); setTimeout(()=>beep(880,120),140); setTimeout(()=>beep(1175,260),280); haptic(); }
 
+/* ---- Фоновая музыка на время заваривания — отдельный мьют от бипов/вибро ---- */
+const brewMusic = document.getElementById('brewMusic');
+const musicMuteBtn = document.getElementById('musicMuteBtn');
+let musicMuted = localStorage.getItem('musicMuted') === '1';
+
+function applyMusicMuteState(){
+  brewMusic.muted = musicMuted;
+  musicMuteBtn.classList.toggle('muted', musicMuted);
+  musicMuteBtn.setAttribute('aria-pressed', String(musicMuted));
+  musicMuteBtn.setAttribute('aria-label', musicMuted ? 'Включить музыку' : 'Выключить музыку');
+}
+musicMuteBtn.onclick = ()=>{
+  musicMuted = !musicMuted;
+  localStorage.setItem('musicMuted', musicMuted ? '1' : '0');
+  applyMusicMuteState();
+};
+applyMusicMuteState();
+
 function lockControls(locked){
   [modeSeg, inputSeg].forEach(seg=> seg.querySelectorAll('button').forEach(b=> b.disabled = locked));
   document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
@@ -911,6 +998,11 @@ function beginCountdown(){
   document.getElementById('brewProgressFill').style.width = '0%';
   lockControls(true);
   beep(660,90);
+  try{
+    brewMusic.currentTime = 0;
+    brewMusic.muted = musicMuted;
+    brewMusic.play().catch(()=>{});
+  }catch(e){}
   countdownTimer = setInterval(()=>{
     count--;
     if(count > 0){
@@ -946,6 +1038,8 @@ function stopBrew(hide){
   btn.classList.remove('stop'); btn.classList.add('start');
   if(hide) document.getElementById('brewLive').style.display = 'none';
   lockControls(false);
+  brewMusic.pause();
+  try{ brewMusic.currentTime = 0; }catch(e){}
   document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
 }
 
