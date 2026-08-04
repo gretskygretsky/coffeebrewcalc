@@ -998,11 +998,6 @@ function beginCountdown(){
   document.getElementById('brewProgressFill').style.width = '0%';
   lockControls(true);
   beep(660,90);
-  try{
-    brewMusic.currentTime = 0;
-    brewMusic.muted = musicMuted;
-    brewMusic.play().catch(()=>{});
-  }catch(e){}
   countdownTimer = setInterval(()=>{
     count--;
     if(count > 0){
@@ -1025,6 +1020,11 @@ function launchBrew(){
   brewDoneFired = false;
   document.getElementById('brewToggle').textContent = 'Остановить';
   stageAlert();
+  try{
+    brewMusic.currentTime = 0;
+    brewMusic.muted = musicMuted;
+    brewMusic.play().catch(()=>{});
+  }catch(e){}
   tickBrew();
 }
 
