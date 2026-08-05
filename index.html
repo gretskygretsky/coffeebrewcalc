@@ -389,25 +389,44 @@
     <div class="pills" id="ratioPills"></div>
     <p class="ratio-hint" id="ratioHint"></p>
 
-    <p class="section-header">Ввод</p>
-    <div class="segmented" id="inputSeg" style="margin-bottom:0;">
-      <div class="thumb"></div>
-      <button class="seg-btn active" data-input="coffee">Зёрна, г</button>
-      <button class="seg-btn" data-input="water">Вода, мл</button>
-    </div>
-
-    <div class="card" style="margin-top:16px;">
+    <p class="section-header">Объём</p>
+    <div class="card">
+      <div style="display:flex; align-items:stretch;">
+        <div id="classicVisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;"></div>
+        <div style="flex:1; min-width:0;">
       <div class="row">
-        <span class="row-label">Значение</span>
+        <span class="row-label">Зёрна</span>
         <div class="stepper-field">
           <div class="stepper">
-            <button id="stepDown">−</button>
+            <button id="classicCoffeeStepDown">−</button>
             <div class="divider"></div>
-            <button id="stepUp">+</button>
+            <button id="classicCoffeeStepUp">+</button>
           </div>
-          <input type="number" id="valueInput" value="26">
-          <span class="unit" id="unitLabel">г</span>
+          <input type="number" id="classicCoffeeInput" value="26">
+          <span class="unit">г</span>
         </div>
+      </div>
+      <div class="row" id="classicWaterRow">
+        <span class="row-label" id="classicWaterLabel">Вода</span>
+        <div class="stepper-field">
+          <div class="stepper">
+            <button id="classicWaterStepDown">−</button>
+            <div class="divider"></div>
+            <button id="classicWaterStepUp">+</button>
+          </div>
+          <input type="number" id="classicWaterInput" value="416">
+          <span class="unit">мл</span>
+        </div>
+      </div>
+        </div>
+      </div>
+      <div class="row" id="classicDerivedRow1" style="display:none;">
+        <span class="row-label" id="classicDerivedLabel1">Горячая вода</span>
+        <span class="stat-value" id="classicDerivedValue1" style="font-size:17px;"></span>
+      </div>
+      <div class="row" id="classicDerivedRow2" style="display:none;">
+        <span class="row-label" id="classicDerivedLabel2">Лёд в чашке</span>
+        <span class="stat-value" id="classicDerivedValue2" style="font-size:17px;"></span>
       </div>
     </div>
   </div>
@@ -415,6 +434,11 @@
   <div id="v60Input" style="display:none;">
     <p class="section-header">Объём</p>
     <div class="card">
+      <div style="display:flex; align-items:stretch;">
+        <div id="v60VisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;">
+          <svg id="visual" viewBox="0 0 100 120" style="width:56px; height:67px;"></svg>
+        </div>
+        <div style="flex:1; min-width:0;">
       <div class="row" style="flex-direction:column; align-items:stretch; gap:8px;">
         <div style="display:flex; justify-content:space-between; align-items:baseline;">
           <span class="row-label">Вода</span>
@@ -437,13 +461,18 @@
           <span class="unit">г</span>
         </div>
       </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="summary">
-    <svg id="visual" class="visual" viewBox="0 0 100 120"></svg>
-    <div class="stats" id="readout"></div>
+  <p class="section-header" id="pourShapeHeader" style="display:none;">Форма проливов</p>
+  <div class="segmented" id="pourShapeSeg" style="display:none; margin-bottom:8px;">
+    <div class="thumb"></div>
+    <button class="seg-btn active" data-shape="descending">Каскад</button>
+    <button class="seg-btn" data-shape="equal">Одинаковое</button>
   </div>
+  <p class="ratio-hint" id="pourShapeHint" style="display:none; margin:0 4px 14px;"></p>
 
   <p class="section-header pour-header" id="pourHeader" style="display:none;">График пролива</p>
   <div class="card pour-card" id="pourCard"></div>
@@ -474,19 +503,19 @@
 </div>
 
 <script>
-const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'formula' };
+const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'formula', pourShape:'descending' };
 
 const RATIOS = { v60:[15,16,17], v60ice:[15,16,17], cold:[4,5,8,10,12] };
 const COLD_LABELS = {4:'1:4 конц.',5:'1:5 конц.',8:'1:8 готово',10:'1:10 готово',12:'1:12 готово'};
 const ACCENT = { v60:'--orange', v60ice:'--teal', cold:'--brown' };
 const DEFAULT_RATIO = { v60:16, v60ice:16, cold:5 };
 const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
+const MAX_COFFEE = { v60:30, v60ice:30 };
 const EYEBROW = { v60:'Пуровер', v60ice:'Пуровер · лёд', cold:'Долгий настой' };
 
-/* ---- Рецепты V60: каждый знает свой ratio и умеет построить график проливов
-   из (coffee, water). renderPourSchedule() просто рендерит то, что вернёт
-   активный рецепт — сама логика проливов от UI не зависит. Добавление Hario /
-   Rao позже — это просто новые элементы массива, ничего больше трогать не надо. ---- */
+/* ---- Рецепты V60: сейчас один рецепт (Классика), но массив спроектирован так,
+   что добавление новых — это просто новые элементы с своим ratio/schedule(),
+   без изменений в остальном коде. ---- */
 const RECIPES = [
   {
     id:'formula',
@@ -497,9 +526,9 @@ const RECIPES = [
       const bloom = coffee * 2;
       const main = Math.max(0, water - bloom);
       const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
-      const rawPour = main / numPours;
+      const rawPours = distributePours(main, numPours, state.pourShape);
 
-      const rawValues = [bloom, ...Array(numPours).fill(rawPour)];
+      const rawValues = [bloom, ...rawPours];
       const values = rawValues.map(v => Math.floor(v));
       let sumExceptLast = 0;
       for(let i=0;i<values.length-1;i++) sumExceptLast += values[i];
@@ -518,41 +547,32 @@ const RECIPES = [
       rows.push({ time:t, action:'Стекание', add:null, total });
       return rows;
     }
-  },
-  {
-    // Официальный рецепт Hario из инструкции: 12г/120г (1:10), помол средне-мелкий,
-    // общее время ~3 мин. Точный объём блума в оригинале не указан — берём ×2,
-    // как общепринятый дефолт для пуроверов.
-    id:'hario',
-    label:'Hario',
-    ratio:10,
-    schedule(coffee, water){ return singlePourSchedule(coffee, water, { bloomMult:2, bloomWait:30, totalTime:180 }); }
-  },
-  {
-    // Scott Rao: 22г/360г (1:16.4), блум 66г (~3× дозы), ждать 45с, один долгий
-    // пролив, драдаун к 3:00.
-    id:'rao',
-    label:'Rao',
-    ratio:360/22,
-    schedule(coffee, water){ return singlePourSchedule(coffee, water, { bloomMult:3, bloomWait:45, totalTime:180 }); }
   }
 ];
 function getRecipe(id){ return RECIPES.find(r=>r.id===id) || RECIPES[0]; }
 
-// Общий шаблон для рецептов вида «блум → один слитный пролив до конца → стекание»
-function singlePourSchedule(coffee, water, opts){
-  const bloom = Math.min(water, Math.round(coffee * opts.bloomMult));
-  return [
-    { time:0, action:'Блум', add:bloom, total:bloom },
-    { time:opts.bloomWait, action:'Пролив', add:(water-bloom), total:water },
-    { time:opts.totalTime, action:'Стекание', add:null, total:water }
-  ];
+// Распределяет "main" (воду после блума) по numPours проливам:
+// 'equal' — поровну; 'descending' — по убывающей арифметической прогрессии
+// весов (N, N-1, ..., 1), так что первый пролив самый большой, а дальше меньше.
+function distributePours(main, numPours, shape){
+  let weights;
+  if(shape === 'descending'){
+    weights = [];
+    for(let i=numPours;i>=1;i--) weights.push(i);
+  } else {
+    weights = Array(numPours).fill(1);
+  }
+  const sumW = weights.reduce((a,b)=>a+b,0);
+  return weights.map(w => main*w/sumW);
 }
 
 const RECIPE_HINTS = {
-  formula: 'Блум ×2, проливы по ~130 мл, остаток — в последний',
-  hario: 'Из инструкции Hario: 1:10, один слитный пролив после блума',
-  rao: 'Scott Rao: блум 45 с (×3 дозы), один долгий пролив, спин в конце'
+  formula: 'Блум ×2, проливы по ~130 мл, остаток — в последний'
+};
+
+const POUR_SHAPE_HINTS = {
+  equal: 'Все проливы после блума — одного объёма',
+  descending: 'Каскад: первый пролив — самый большой, дальше меньше — слой ещё рыхлый и легко принимает воду, к концу поток замедляется'
 };
 
 function accentVar(mode){ return getComputedStyle(document.documentElement).getPropertyValue(ACCENT[mode]).trim(); }
@@ -587,7 +607,6 @@ function renderPills(){
 }
 
 const modeSeg = document.getElementById('modeSeg');
-const inputSeg = document.getElementById('inputSeg');
 
 function renderRecipeSeg(){
   const wrap = document.getElementById('recipeSeg');
@@ -618,6 +637,17 @@ function renderRecipeSeg(){
   if(idx>=0) moveThumb(wrap, idx, btns.length);
 }
 
+const pourShapeSeg = document.getElementById('pourShapeSeg');
+pourShapeSeg.querySelectorAll('.seg-btn').forEach((b,i)=>{
+  b.onclick = ()=>{
+    state.pourShape = b.dataset.shape;
+    const btns=[...pourShapeSeg.querySelectorAll('.seg-btn')];
+    btns.forEach((x,j)=>{ x.classList.toggle('active', x===b); if(x===b) moveThumb(pourShapeSeg, j, btns.length); });
+    document.getElementById('pourShapeHint').textContent = POUR_SHAPE_HINTS[state.pourShape] || '';
+    compute();
+  };
+});
+
 function setMode(mode, animate){
   state.mode = mode;
   state.ratio = mode==='v60' ? getRecipe(state.recipe).ratio : DEFAULT_RATIO[mode];
@@ -630,34 +660,60 @@ function setMode(mode, animate){
   document.getElementById('eyebrow').style.setProperty('--accent', accentVar(mode));
   document.getElementById('classicInput').style.display = mode==='v60' ? 'none' : 'block';
   document.getElementById('v60Input').style.display = mode==='v60' ? 'block' : 'none';
+
+  const visualSvg = document.getElementById('visual');
+  const targetRow = mode==='v60' ? document.getElementById('v60VisualRow') : document.getElementById('classicVisualRow');
+  targetRow.appendChild(visualSvg);
+
   renderRecipeSeg();
   renderPills();
   compute();
 }
 
 modeSeg.querySelectorAll('.seg-btn').forEach(b=> b.onclick = ()=> setMode(b.dataset.mode));
-inputSeg.querySelectorAll('.seg-btn').forEach((b,i)=>{
-  b.onclick = ()=>{
-    state.inputType = b.dataset.input;
-    const btns=[...inputSeg.querySelectorAll('.seg-btn')];
-    btns.forEach((x,j)=>{ x.classList.toggle('active', x===b); if(x===b) moveThumb(inputSeg, j, btns.length); });
-    document.getElementById('unitLabel').textContent = state.inputType==='coffee' ? 'г' : 'мл';
-    compute();
-  };
-});
 
-const valueInput = document.getElementById('valueInput');
-valueInput.oninput = ()=>{ state.value = parseFloat(valueInput.value)||0; compute(); };
-valueInput.addEventListener('keydown', e=>{ if(e.key==='Enter') valueInput.blur(); });
-document.getElementById('stepUp').onclick = ()=>{ valueInput.value = (parseFloat(valueInput.value)||0)+1; state.value=parseFloat(valueInput.value); compute(); };
-document.getElementById('stepDown').onclick = ()=>{ valueInput.value = Math.max(0,(parseFloat(valueInput.value)||0)-1); state.value=parseFloat(valueInput.value); compute(); };
+/* ---- V60ice/Cold: Зёрна и Вода видны и редактируемы одновременно (как в V60),
+   без переключателя единиц — переключать больше нечего и нечему рассинхронизироваться ---- */
+const classicCoffeeInput = document.getElementById('classicCoffeeInput');
+const classicWaterInput = document.getElementById('classicWaterInput');
+
+classicCoffeeInput.oninput = ()=>{
+  state.inputType = 'coffee';
+  state.value = parseFloat(classicCoffeeInput.value) || 0;
+  compute();
+};
+classicCoffeeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') classicCoffeeInput.blur(); });
+document.getElementById('classicCoffeeStepUp').onclick = ()=>{
+  classicCoffeeInput.value = (parseFloat(classicCoffeeInput.value)||0)+1;
+  classicCoffeeInput.dispatchEvent(new Event('input'));
+};
+document.getElementById('classicCoffeeStepDown').onclick = ()=>{
+  classicCoffeeInput.value = Math.max(0,(parseFloat(classicCoffeeInput.value)||0)-1);
+  classicCoffeeInput.dispatchEvent(new Event('input'));
+};
+
+classicWaterInput.oninput = ()=>{
+  state.inputType = 'water';
+  state.value = parseFloat(classicWaterInput.value) || 0;
+  compute();
+};
+classicWaterInput.addEventListener('keydown', e=>{ if(e.key==='Enter') classicWaterInput.blur(); });
+document.getElementById('classicWaterStepUp').onclick = ()=>{
+  classicWaterInput.value = (parseFloat(classicWaterInput.value)||0)+10;
+  classicWaterInput.dispatchEvent(new Event('input'));
+};
+document.getElementById('classicWaterStepDown').onclick = ()=>{
+  classicWaterInput.value = Math.max(0,(parseFloat(classicWaterInput.value)||0)-10);
+  classicWaterInput.dispatchEvent(new Event('input'));
+};
 
 /* ---- V60: слайдер объёма (с магнитными отметками) + поле граммов кофе,
    оба редактируемы напрямую и держат state.value/inputType в синхроне ---- */
 const volSlider = document.getElementById('volSlider');
 const coffeeInputV60 = document.getElementById('coffeeInput');
 const sliderVolVal = document.getElementById('sliderVolVal');
-const SNAP_POINTS = [150,200,250,300,350,400];
+const SNAP_POINTS = [];
+for(let v=100; v<=450; v+=25) SNAP_POINTS.push(v);
 
 function nearestSnap(v){
   let best=v, bd=999;
@@ -726,34 +782,46 @@ function compute(){
   if(state.inputType==='coffee'){ coffee = state.value; water = coffee*r; }
   else { water = state.value; coffee = water/r; }
 
-  const readout = document.getElementById('readout');
   const accent = accentVar(state.mode);
-  readout.innerHTML='';
 
-  function line(label,val,hero){
-    const row = document.createElement('div'); row.className='stat-row';
-    const l = document.createElement('span'); l.className='stat-label'; l.textContent=label;
-    const v = document.createElement('span'); v.className='stat-value'+(hero?' hero':''); v.style.color= hero ? accent : 'var(--label)'; v.textContent=val;
-    row.appendChild(l); row.appendChild(v); readout.appendChild(row);
-  }
-
-  if(state.mode==='v60'){
-    line('Зёрна', fmt(coffee)+' г');
-    line('Вода', fmt(water)+' мл', true);
-  } else if(state.mode==='v60ice'){
-    const ice = water*0.2, hot = water-ice;
-    line('Зёрна', fmt(coffee)+' г');
-    line('Горячая вода', fmt(hot)+' мл');
-    line('Лёд в чашке', fmt(ice)+' г', true);
-  } else {
-    line('Зёрна', fmt(coffee)+' г');
-    line(r<=5 ? 'Вода (настой)' : 'Вода (готово)', fmt(water)+' мл', true);
-  }
-
-  drawVisual(water, accent);
+  drawVisual(coffee, water, accent);
   renderNotes();
   renderPourSchedule(coffee, water, accent);
   if(state.mode==='v60') syncV60Controls(coffee, water);
+  else syncClassicPair(coffee, water, r);
+}
+
+function syncClassicPair(coffee, water, r){
+  if(document.activeElement !== classicCoffeeInput){
+    classicCoffeeInput.value = (Math.round(coffee*10)/10).toString();
+  }
+  if(document.activeElement !== classicWaterInput){
+    classicWaterInput.value = (Math.round(water*10)/10).toString();
+  }
+
+  const row1 = document.getElementById('classicDerivedRow1');
+  const row2 = document.getElementById('classicDerivedRow2');
+  const waterLabel = document.getElementById('classicWaterLabel');
+  const waterRow = document.getElementById('classicWaterRow');
+
+  if(state.mode==='v60ice'){
+    waterLabel.textContent = 'Вода';
+    waterRow.style.borderBottom = '0.5px solid var(--separator)';
+    const ice = water*0.2, hot = water-ice;
+    row1.style.display = 'flex';
+    row2.style.display = 'flex';
+    document.getElementById('classicDerivedLabel1').textContent = 'Горячая вода';
+    document.getElementById('classicDerivedValue1').textContent = fmt(hot)+' мл';
+    document.getElementById('classicDerivedValue1').style.color = 'var(--label)';
+    document.getElementById('classicDerivedLabel2').textContent = 'Лёд в чашке';
+    document.getElementById('classicDerivedValue2').textContent = fmt(ice)+' г';
+    document.getElementById('classicDerivedValue2').style.color = accentVar('v60ice');
+  } else {
+    waterLabel.textContent = r<=5 ? 'Вода (настой)' : 'Вода (готово)';
+    waterRow.style.borderBottom = 'none';
+    row1.style.display = 'none';
+    row2.style.display = 'none';
+  }
 }
 
 function fmtTime(sec){
@@ -765,9 +833,15 @@ function fmtTime(sec){
 function renderPourSchedule(coffee, water, accent){
   const card = document.getElementById('pourCard');
   const header = document.getElementById('pourHeader');
+  const shapeSeg = document.getElementById('pourShapeSeg');
+  const shapeHeader = document.getElementById('pourShapeHeader');
+  const shapeHint = document.getElementById('pourShapeHint');
   if(state.mode !== 'v60'){
     card.style.display = 'none';
     header.style.display = 'none';
+    shapeSeg.style.display = 'none';
+    shapeHeader.style.display = 'none';
+    shapeHint.style.display = 'none';
     document.getElementById('brewToggle').style.display = 'none';
     document.getElementById('brewHint').style.display = 'none';
     if(typeof stopBrew === 'function') stopBrew(true);
@@ -775,6 +849,13 @@ function renderPourSchedule(coffee, water, accent){
   }
   card.style.display = 'block';
   header.style.display = 'block';
+  shapeSeg.style.display = 'flex';
+  shapeHeader.style.display = 'block';
+  shapeHint.style.display = 'block';
+  shapeHint.textContent = POUR_SHAPE_HINTS[state.pourShape] || '';
+  const shapeBtns = [...shapeSeg.querySelectorAll('.seg-btn')];
+  const shapeIdx = shapeBtns.findIndex(b=>b.dataset.shape===state.pourShape);
+  if(shapeIdx>=0) moveThumb(shapeSeg, shapeIdx, shapeBtns.length);
 
   const rows = getRecipe(state.recipe).schedule(coffee, water);
 
@@ -797,7 +878,7 @@ function renderPourSchedule(coffee, water, accent){
   document.getElementById('brewHint').style.display = 'block';
 }
 
-function drawVisual(water, accent){
+function drawVisual(coffee, water, accent){
   const svg = document.getElementById('visual');
   const max = MAX_SCALE[state.mode];
   const pct = Math.max(0.05, Math.min(1, water/max));
@@ -812,8 +893,15 @@ function drawVisual(water, accent){
       <rect x="${jarLeft}" y="${jarBottom-fillH}" width="${jarRight-jarLeft}" height="${fillH+10}" fill="${accent}" opacity="0.85" clip-path="url(#clip)"/>
     `;
   } else {
-    const coneTopY=10, coneBottomY=48, cupBottomY=104, cupTop=52, cupLeft=20, cupRight=80;
+    // Широкая воронка (V60) стекает в узкое горлышко сервера, который расширяется
+    // книзу — читается как графин/кружка, а не безликий прямоугольник.
+    const coneTopY=6, coneBottomY=44, coneTopL=6, coneTopR=94, neckL=38, neckR=62;
+    const cupTop=50, cupBottomY=110, baseL=14, baseR=86, corner=10;
     const cupH = cupBottomY-cupTop, fillH = cupH*pct;
+    const coneH = coneBottomY-coneTopY;
+    const coffeePct = Math.max(0, Math.min(1, coffee/(MAX_COFFEE[state.mode]||30)));
+    const coffeeFillH = coneH*coffeePct;
+
     let ice = '';
     if(state.mode==='v60ice'){
       ice = `
@@ -821,11 +909,18 @@ function drawVisual(water, accent){
         <rect x="52" y="${cupBottomY-fillH-10}" width="9" height="9" rx="3" fill="var(--card)" opacity="0.8"/>
       `;
     }
+
+    const conePath = `M${coneTopL},${coneTopY} H${coneTopR} L${neckR},${coneBottomY} H${neckL} Z`;
+    const serverPath = `M${neckL},${cupTop} L${baseL},${cupBottomY-corner} Q${baseL},${cupBottomY} ${baseL+corner},${cupBottomY} H${baseR-corner} Q${baseR},${cupBottomY} ${baseR},${cupBottomY-corner} L${neckR},${cupTop} Z`;
+
     svg.innerHTML = `
-      <path d="M35,${coneTopY} h30 l-10,${coneBottomY-coneTopY} h-10 z" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M${cupLeft},${cupTop} h${cupRight-cupLeft} v${cupH} h-${cupRight-cupLeft} z" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <clipPath id="clip2"><rect x="${cupLeft}" y="${cupTop}" width="${cupRight-cupLeft}" height="${cupH}"/></clipPath>
-      <rect x="${cupLeft}" y="${cupBottomY-fillH}" width="${cupRight-cupLeft}" height="${fillH}" fill="${accent}" opacity="0.85" clip-path="url(#clip2)"/>
+      <path d="${conePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+      <clipPath id="clipCone"><path d="${conePath}"/></clipPath>
+      <rect x="${coneTopL}" y="${coneBottomY-coffeeFillH}" width="${coneTopR-coneTopL}" height="${coffeeFillH+4}" fill="var(--brown)" opacity="0.9" clip-path="url(#clipCone)"/>
+
+      <path d="${serverPath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+      <clipPath id="clipServer"><path d="${serverPath}"/></clipPath>
+      <rect x="${baseL}" y="${cupBottomY-fillH}" width="${baseR-baseL}" height="${fillH}" fill="${accent}" opacity="0.85" clip-path="url(#clipServer)"/>
       ${ice}
     `;
   }
@@ -855,16 +950,17 @@ window.addEventListener('resize', ()=>{
   const mBtns=[...modeSeg.querySelectorAll('.seg-btn')];
   const mIdx = mBtns.findIndex(b=>b.classList.contains('active'));
   moveThumb(modeSeg, mIdx, mBtns.length);
-  if(document.getElementById('classicInput').style.display !== 'none'){
-    const iBtns=[...inputSeg.querySelectorAll('.seg-btn')];
-    const iIdx = iBtns.findIndex(b=>b.classList.contains('active'));
-    moveThumb(inputSeg, iIdx, iBtns.length);
-  }
   const recipeWrap = document.getElementById('recipeSeg');
   if(recipeWrap.style.display !== 'none'){
     const rBtns=[...recipeWrap.querySelectorAll('.seg-btn')];
     const rIdx = rBtns.findIndex(b=>b.classList.contains('active'));
     if(rIdx>=0) moveThumb(recipeWrap, rIdx, rBtns.length);
+  }
+  const shapeWrap = document.getElementById('pourShapeSeg');
+  if(shapeWrap.style.display !== 'none'){
+    const sBtns=[...shapeWrap.querySelectorAll('.seg-btn')];
+    const sIdx = sBtns.findIndex(b=>b.classList.contains('active'));
+    if(sIdx>=0) moveThumb(shapeWrap, sIdx, sBtns.length);
   }
 });
 
@@ -979,12 +1075,16 @@ musicMuteBtn.onclick = ()=>{
 applyMusicMuteState();
 
 function lockControls(locked){
-  [modeSeg, inputSeg].forEach(seg=> seg.querySelectorAll('button').forEach(b=> b.disabled = locked));
+  modeSeg.querySelectorAll('button').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#recipeSeg button').forEach(b=> b.disabled = locked);
-  valueInput.disabled = locked;
-  document.getElementById('stepUp').disabled = locked;
-  document.getElementById('stepDown').disabled = locked;
+  document.querySelectorAll('#pourShapeSeg button').forEach(b=> b.disabled = locked);
+  classicCoffeeInput.disabled = locked;
+  classicWaterInput.disabled = locked;
+  document.getElementById('classicCoffeeStepUp').disabled = locked;
+  document.getElementById('classicCoffeeStepDown').disabled = locked;
+  document.getElementById('classicWaterStepUp').disabled = locked;
+  document.getElementById('classicWaterStepDown').disabled = locked;
   volSlider.disabled = locked;
   coffeeInputV60.disabled = locked;
   document.getElementById('coffeeStepUp').disabled = locked;
