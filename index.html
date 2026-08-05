@@ -1091,6 +1091,31 @@ function lockControls(locked){
   document.getElementById('coffeeStepDown').disabled = locked;
 }
 
+/* ---- Не гасить экран во время заваривания. Лок автоматически снимается
+   системой при уходе в фон — переприобретаем при возврате, если брю ещё идёт. ---- */
+let wakeLock = null;
+
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+  }catch(e){ /* не поддерживается / отклонено — просто работаем без него */ }
+}
+
+function releaseWakeLock(){
+  if(wakeLock){
+    try{ wakeLock.release(); }catch(e){}
+    wakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && brewPhase !== 'idle' && !wakeLock){
+    requestWakeLock();
+  }
+});
+
 function beginCountdown(){
   if(state.mode !== 'v60' || !state.schedule || !state.schedule.length) return;
   brewPhase = 'counting';
@@ -1109,6 +1134,7 @@ function beginCountdown(){
   document.getElementById('brewProgressFill').style.width = '0%';
   lockControls(true);
   beep(660,90);
+  requestWakeLock();
   countdownTimer = setInterval(()=>{
     count--;
     if(count > 0){
@@ -1142,6 +1168,7 @@ function launchBrew(){
 function stopBrew(hide){
   brewPhase = 'idle';
   brewing = false;
+  releaseWakeLock();
   if(brewRAF) cancelAnimationFrame(brewRAF);
   if(countdownTimer) clearInterval(countdownTimer);
   const btn = document.getElementById('brewToggle');
