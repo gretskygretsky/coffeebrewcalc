@@ -648,6 +648,7 @@ inputSeg.querySelectorAll('.seg-btn').forEach((b,i)=>{
 
 const valueInput = document.getElementById('valueInput');
 valueInput.oninput = ()=>{ state.value = parseFloat(valueInput.value)||0; compute(); };
+valueInput.addEventListener('keydown', e=>{ if(e.key==='Enter') valueInput.blur(); });
 document.getElementById('stepUp').onclick = ()=>{ valueInput.value = (parseFloat(valueInput.value)||0)+1; state.value=parseFloat(valueInput.value); compute(); };
 document.getElementById('stepDown').onclick = ()=>{ valueInput.value = Math.max(0,(parseFloat(valueInput.value)||0)-1); state.value=parseFloat(valueInput.value); compute(); };
 
@@ -688,6 +689,7 @@ coffeeInputV60.oninput = ()=>{
   state.ratio = getRecipe(state.recipe).ratio;
   compute();
 };
+coffeeInputV60.addEventListener('keydown', e=>{ if(e.key==='Enter') coffeeInputV60.blur(); });
 
 document.getElementById('coffeeStepUp').onclick = ()=>{
   coffeeInputV60.value = ((parseFloat(coffeeInputV60.value)||0)+0.5).toFixed(1);
@@ -839,6 +841,15 @@ function renderNotes(){
     el.innerHTML = `<b>Помол:</b> крупный, как для френч-пресса. <b>Настаивание:</b> 12–24ч в холодильнике. 1:4–1:5 — концентрат для разбавления, 1:8–1:12 — готовый к питью.`;
   }
 }
+
+/* ---- iOS-клавиатура для type=number не имеет кнопки «Готово» — тап в любое
+   другое место страницы должен сам её закрывать ---- */
+document.addEventListener('click', e=>{
+  const active = document.activeElement;
+  if(active && active.tagName === 'INPUT' && active.type !== 'range' && e.target !== active){
+    active.blur();
+  }
+});
 
 window.addEventListener('resize', ()=>{
   const mBtns=[...modeSeg.querySelectorAll('.seg-btn')];
