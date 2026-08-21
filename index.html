@@ -50,12 +50,14 @@
       --brown: #AC8E68;
     }
   }
+  html, body{ overflow-x:hidden; }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   body{
     margin:0;
     background:var(--bg);
     color:var(--label);
     min-height:100vh;
+    width:100%;
     padding: max(28px, env(safe-area-inset-top)) 16px 40px;
     display:flex;
     justify-content:center;
@@ -355,28 +357,28 @@
   .ce-row{
     display:flex;
     align-items:center;
-    gap:8px;
-    padding:9px 14px;
+    gap:6px;
+    padding:9px 12px;
     border-bottom:0.5px solid var(--separator);
   }
   .ce-row:last-child{ border-bottom:none; }
   .ce-label{
-    font-size:14px;
+    font-size:13px;
     color:var(--label);
-    width:70px;
+    width:64px;
     flex-shrink:0;
     white-space:nowrap;
   }
   .ce-spacer{ flex:1; }
-  .ce-field{ display:flex; align-items:center; gap:4px; }
+  .ce-field{ display:flex; align-items:center; gap:3px; flex-shrink:0; }
   .ce-row input[type=number]{
-    width:54px;
+    width:46px;
     font-size:15px;
     padding:5px 2px;
   }
-  .ce-unit{ font-size:12px; color:var(--label-2); width:16px; }
+  .ce-unit{ font-size:12px; color:var(--label-2); width:14px; flex-shrink:0; }
   .ce-rest{
-    width:54px;
+    width:46px;
     text-align:center;
     font-size:15px;
     font-weight:600;
@@ -385,7 +387,7 @@
     padding:5px 2px;
   }
   .ce-del{
-    width:26px; height:26px;
+    width:24px; height:24px;
     flex-shrink:0;
     border:none;
     border-radius:50%;
@@ -412,13 +414,6 @@
     cursor:pointer;
   }
   .ce-add:active{ background:rgba(120,120,128,0.24); }
-  .ce-summary{
-    display:flex;
-    justify-content:space-between;
-    font-size:12.5px;
-    color:var(--label-2);
-    margin:8px 4px 0;
-  }
   .ce-warn{
     margin-top:10px;
     background:var(--fill);
@@ -630,8 +625,6 @@
 
   <!-- Место под выбор рецепта (Hario / Rao / наш) — рендерится и показывается,
        только когда рецептов больше одного, см. RECIPES и renderRecipeSeg() -->
-  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:8px;"></div>
-  <p class="ratio-hint" id="recipeHint" style="display:none; margin:0 4px 14px;"></p>
 
   <div id="classicInput">
     <p class="section-header">Пропорция</p>
@@ -732,22 +725,28 @@
     </div>
   </div>
 
-  <p class="section-header" id="pourShapeHeader" style="display:none;">Объём проливов</p>
-  <div class="segmented" id="pourShapeSeg" style="display:none; margin-bottom:8px;">
-    <div class="thumb"></div>
-    <button class="seg-btn active" data-shape="descending">Каскад</button>
-    <button class="seg-btn" data-shape="equal">Поровну</button>
-  </div>
-  <p class="ratio-hint" id="pourShapeHint" style="display:none; margin:0 4px 14px;"></p>
+  <p class="section-header" id="recipeHeader" style="display:none;">Схема пролива</p>
+  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:8px;"></div>
+  <p class="ratio-hint" id="recipeHint" style="display:none; margin:0 4px 14px;"></p>
 
   <div id="customEditorWrap" style="display:none;">
     <p class="section-header">Кастомный график</p>
     <div class="card" id="customEditor"></div>
     <button class="ce-add" id="ceAddPour">Добавить пролив</button>
-    <div class="ce-summary">
-      <span id="ceSummaryLeft"></span>
-      <span id="ceSummaryRight"></span>
+
+    <p class="section-header">Итого</p>
+    <div class="card" id="ceTotalsCard">
+      <div class="row">
+        <span class="row-label">Всего воды</span>
+        <span class="stat-value" id="ceTotalWater"></span>
+      </div>
+      <div class="row">
+        <span class="row-label">Время заваривания</span>
+        <span class="stat-value" id="ceTotalTime"></span>
+      </div>
     </div>
+    <p class="ratio-hint">Последний пролив — остаток, чтобы сумма всегда сходилась с расчётным объёмом</p>
+
     <div class="ce-warn" id="ceWarn" style="display:none;"></div>
   </div>
 
@@ -814,7 +813,7 @@
 </div>
 
 <script>
-const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'formula', pourShape:'descending', custom:null, roast:'medium', process:'washed' };
+const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'cascade', custom:null, roast:'medium', process:'washed' };
 
 const RATIOS = { v60:[15,16,17], v60ice:[15,16,17], cold:[4,5,8,10,12] };
 const COLD_LABELS = {4:'1:4 конц.',5:'1:5 конц.',8:'1:8 готово',10:'1:10 готово',12:'1:12 готово'};
@@ -824,40 +823,49 @@ const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
 const MAX_COFFEE = { v60:30, v60ice:30 };
 const EYEBROW = { v60:'Пуровер', v60ice:'Пуровер · лёд', cold:'Долгий настой' };
 
-/* ---- Рецепты V60: сейчас один рецепт (Классика), но массив спроектирован так,
-   что добавление новых — это просто новые элементы с своим ratio/schedule(),
-   без изменений в остальном коде. ---- */
+/* ---- Рецепты V60: три равноправных варианта — Каскад и Поровну раньше были
+   подуровнем внутри «Классики» (общая формула + переключатель формы), теперь
+   это два самостоятельных пункта на одном уровне с «Кастомом». Логика расчёта
+   у них общая (formulaSchedule), меняется только форма пролива. ---- */
+function formulaSchedule(coffee, water, shape){
+  const BLOOM_TIME = 40, POUR_INTERVAL = 45, TARGET_POUR = 130;
+  const bloom = coffee * 2;
+  const main = Math.max(0, water - bloom);
+  const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
+  const rawPours = distributePours(main, numPours, shape);
+
+  const rawValues = [bloom, ...rawPours];
+  const values = rawValues.map(v => Math.floor(v));
+  let sumExceptLast = 0;
+  for(let i=0;i<values.length-1;i++) sumExceptLast += values[i];
+  values[values.length-1] = water - sumExceptLast;
+
+  const rows = [];
+  let t = 0;
+  let total = values[0];
+  rows.push({ time:t, action:'Блум', add:values[0], total });
+  for(let i=1;i<=numPours;i++){
+    t += (i===1 ? BLOOM_TIME : POUR_INTERVAL);
+    total += values[i];
+    rows.push({ time:t, action:'Пролив ' + i, add:values[i], total });
+  }
+  t += POUR_INTERVAL;
+  rows.push({ time:t, action:'Готово', add:null, total });
+  return rows;
+}
+
 const RECIPES = [
   {
-    id:'formula',
-    label:'Классика',
+    id:'cascade',
+    label:'Каскад',
     ratio:16,
-    schedule(coffee, water){
-      const BLOOM_TIME = 40, POUR_INTERVAL = 45, TARGET_POUR = 130;
-      const bloom = coffee * 2;
-      const main = Math.max(0, water - bloom);
-      const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
-      const rawPours = distributePours(main, numPours, state.pourShape);
-
-      const rawValues = [bloom, ...rawPours];
-      const values = rawValues.map(v => Math.floor(v));
-      let sumExceptLast = 0;
-      for(let i=0;i<values.length-1;i++) sumExceptLast += values[i];
-      values[values.length-1] = water - sumExceptLast;
-
-      const rows = [];
-      let t = 0;
-      let total = values[0];
-      rows.push({ time:t, action:'Блум', add:values[0], total });
-      for(let i=1;i<=numPours;i++){
-        t += (i===1 ? BLOOM_TIME : POUR_INTERVAL);
-        total += values[i];
-        rows.push({ time:t, action:'Пролив ' + i, add:values[i], total });
-      }
-      t += POUR_INTERVAL;
-      rows.push({ time:t, action:'Готово', add:null, total });
-      return rows;
-    }
+    schedule(coffee, water){ return formulaSchedule(coffee, water, 'descending'); }
+  },
+  {
+    id:'equal',
+    label:'Поровну',
+    ratio:16,
+    schedule(coffee, water){ return formulaSchedule(coffee, water, 'equal'); }
   },
   {
     id:'custom',
@@ -1010,13 +1018,9 @@ function customWarnings(coffee, water, vals){
 }
 
 const RECIPE_HINTS = {
-  formula: 'Блум ×2, проливы по ~130 мл, остаток — в последний',
+  cascade: 'Блум ×2, дальше проливы по убывающей: первый — самый большой, слой ещё рыхлый и легко принимает воду, к концу поток замедляется',
+  equal: 'Блум ×2, дальше все проливы — одного объёма: ровный, предсказуемый ритм',
   custom: 'Объёмы и паузы задаёте сами, последний пролив — остаток'
-};
-
-const POUR_SHAPE_HINTS = {
-  equal: 'Все проливы после блума — одного объёма',
-  descending: 'Каскад: первый пролив — самый большой, дальше меньше — слой ещё рыхлый и легко принимает воду, к концу поток замедляется'
 };
 
 function accentVar(mode){ return getComputedStyle(document.documentElement).getPropertyValue(ACCENT[mode]).trim(); }
@@ -1184,22 +1188,18 @@ function renderPills(){
 
 const modeSeg = document.getElementById('modeSeg');
 
-function renderRecipeSeg(){
+// Кнопки и .thumb строятся один раз — если пересобирать их на каждый клик
+// (как было раньше), новый .thumb рождается сразу в целевой позиции и
+// анимации сдвига попросту неоткуда взяться. Дальше только двигаем thumb
+// и переключаем .active — точно так же, как у modeSeg.
+function buildRecipeSeg(){
   const wrap = document.getElementById('recipeSeg');
-  const hint = document.getElementById('recipeHint');
-  if(state.mode !== 'v60' || RECIPES.length < 2){
-    wrap.style.display = 'none';
-    hint.style.display = 'none';
-    return;
-  }
-  wrap.style.display = 'flex';
-  hint.style.display = 'block';
-  hint.textContent = RECIPE_HINTS[state.recipe] || '';
   wrap.innerHTML = '<div class="thumb"></div>';
   RECIPES.forEach(rec=>{
     const b = document.createElement('button');
-    b.className = 'seg-btn' + (rec.id===state.recipe ? ' active' : '');
+    b.className = 'seg-btn';
     b.textContent = rec.label;
+    b.dataset.recipe = rec.id;
     b.onclick = ()=>{
       state.recipe = rec.id;
       if(rec.ratio != null) state.ratio = rec.ratio;
@@ -1209,21 +1209,28 @@ function renderRecipeSeg(){
     };
     wrap.appendChild(b);
   });
+}
+
+function renderRecipeSeg(){
+  const wrap = document.getElementById('recipeSeg');
+  const hint = document.getElementById('recipeHint');
+  const header = document.getElementById('recipeHeader');
+  if(state.mode !== 'v60' || RECIPES.length < 2){
+    wrap.style.display = 'none';
+    hint.style.display = 'none';
+    header.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  hint.style.display = 'block';
+  header.style.display = 'block';
+  hint.textContent = RECIPE_HINTS[state.recipe] || '';
+
   const btns = [...wrap.querySelectorAll('.seg-btn')];
+  btns.forEach(b=> b.classList.toggle('active', b.dataset.recipe === state.recipe));
   const idx = btns.findIndex(b=>b.classList.contains('active'));
   if(idx>=0) moveThumb(wrap, idx, btns.length);
 }
-
-const pourShapeSeg = document.getElementById('pourShapeSeg');
-pourShapeSeg.querySelectorAll('.seg-btn').forEach((b,i)=>{
-  b.onclick = ()=>{
-    state.pourShape = b.dataset.shape;
-    const btns=[...pourShapeSeg.querySelectorAll('.seg-btn')];
-    btns.forEach((x,j)=>{ x.classList.toggle('active', x===b); if(x===b) moveThumb(pourShapeSeg, j, btns.length); });
-    document.getElementById('pourShapeHint').textContent = POUR_SHAPE_HINTS[state.pourShape] || '';
-    compute();
-  };
-});
 
 function setMode(mode, animate){
   state.mode = mode;
@@ -1417,38 +1424,23 @@ function fmtTime(sec){
 
 function renderPourSchedule(coffee, water, accent){
   const card = document.getElementById('pourCard');
-  const header = document.getElementById('pourHeader');
-  const shapeSeg = document.getElementById('pourShapeSeg');
-  const shapeHeader = document.getElementById('pourShapeHeader');
-  const shapeHint = document.getElementById('pourShapeHint');
   if(state.mode !== 'v60'){
     card.style.display = 'none';
-    header.style.display = 'none';
+    document.getElementById('pourHeader').style.display = 'none';
     document.getElementById('pourToggleCard').style.display = 'none';
-    shapeSeg.style.display = 'none';
-    shapeHeader.style.display = 'none';
-    shapeHint.style.display = 'none';
     document.getElementById('actionRow').style.display = 'none';
     document.getElementById('brewHint').style.display = 'none';
     if(typeof stopBrew === 'function') stopBrew(true);
     return;
   }
-  card.style.display = 'block';
-  header.style.display = 'block';
-  // В «Кастоме» объём проливов задаёт сам пользователь — переключатель теряет смысл
-  const showShape = state.recipe !== 'custom';
-  shapeSeg.style.display = showShape ? 'flex' : 'none';
-  shapeHeader.style.display = showShape ? 'block' : 'none';
-  shapeHint.style.display = showShape ? 'block' : 'none';
-  if(showShape){
-    shapeHint.textContent = POUR_SHAPE_HINTS[state.pourShape] || '';
-    const shapeBtns = [...shapeSeg.querySelectorAll('.seg-btn')];
-    const shapeIdx = shapeBtns.findIndex(b=>b.dataset.shape===state.pourShape);
-    if(shapeIdx>=0) moveThumb(shapeSeg, shapeIdx, shapeBtns.length);
-  }
 
   const rows = getRecipe(state.recipe).schedule(coffee, water);
+  state.schedule = rows;
 
+  // Таблицу строим всегда, даже для «Кастома» — в покое она скрыта (шаги уже
+  // видны в редакторе), но во время брю мы её показываем взамен заблокированного
+  // редактора, и подсветка активного шага (tickBrew) должна на неё опираться.
+  // Видимость целиком решает updateScheduleUI(), не это построение.
   card.innerHTML = '';
   rows.forEach((r,i)=>{
     const row = document.createElement('div'); row.className='pour-row'; row.dataset.index=i;
@@ -1463,10 +1455,9 @@ function renderPourSchedule(coffee, water, accent){
     card.appendChild(row);
   });
 
-  state.schedule = rows;
   document.getElementById('actionRow').style.display = 'flex';
   document.getElementById('brewHint').style.display = 'block';
-  updatePourToggleUI();
+  updateScheduleUI();
 }
 
 /* Перерисовываем таблицу целиком только когда изменилось число шагов —
@@ -1593,8 +1584,9 @@ function renderCustomEditor(coffee, water, accent){
   const totalMl = vals.reduce((a,b)=> a + b, 0);
   let totalSec = 0;
   steps.forEach(s=> totalSec += s.wait);
-  document.getElementById('ceSummaryLeft').textContent = 'Последний пролив — остаток';
-  document.getElementById('ceSummaryRight').textContent = fmt(totalMl) + ' мл · ' + fmtTime(totalSec);
+  document.getElementById('ceTotalsCard').style.setProperty('--accent', accent);
+  document.getElementById('ceTotalWater').textContent = fmt(totalMl) + ' мл';
+  document.getElementById('ceTotalTime').textContent = fmtTime(totalSec);
 
   const warnEl = document.getElementById('ceWarn');
   const warns = customWarnings(coffee, water, vals);
@@ -1700,12 +1692,6 @@ window.addEventListener('resize', ()=>{
     const rBtns=[...recipeWrap.querySelectorAll('.seg-btn')];
     const rIdx = rBtns.findIndex(b=>b.classList.contains('active'));
     if(rIdx>=0) moveThumb(recipeWrap, rIdx, rBtns.length);
-  }
-  const shapeWrap = document.getElementById('pourShapeSeg');
-  if(shapeWrap.style.display !== 'none'){
-    const sBtns=[...shapeWrap.querySelectorAll('.seg-btn')];
-    const sIdx = sBtns.findIndex(b=>b.classList.contains('active'));
-    if(sIdx>=0) moveThumb(shapeWrap, sIdx, sBtns.length);
   }
 });
 
@@ -1822,7 +1808,6 @@ function lockControls(locked){
   modeSeg.querySelectorAll('button').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#recipeSeg button').forEach(b=> b.disabled = locked);
-  document.querySelectorAll('#pourShapeSeg button').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#roastPills .pill').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#processPills .pill').forEach(b=> b.disabled = locked);
   document.getElementById('tempToggle').disabled = locked;
@@ -1925,16 +1910,42 @@ function ruStepsWord(n){
   return 'шагов';
 }
 
-function updatePourToggleUI(){
+function updateScheduleUI(){
   const toggleCard = document.getElementById('pourToggleCard');
   const header = document.getElementById('pourHeader');
   const card = document.getElementById('pourCard');
   const btn = document.getElementById('pourToggleBtn');
   const countEl = document.getElementById('pourToggleCount');
+  const customWrap = document.getElementById('customEditorWrap');
 
-  if(state.mode !== 'v60'){ toggleCard.style.display = 'none'; return; }
+  if(state.mode !== 'v60'){
+    toggleCard.style.display = 'none';
+    toggleCard.classList.remove('open');
+    header.style.display = 'none';
+    card.style.display = 'none';
+    return;
+  }
 
+  const isCustom = state.recipe === 'custom';
   const brewingNow = brewPhase !== 'idle';
+
+  // «Кастом» в покое: редактор со своими полями заменяет таблицу — показывать
+  // оба одновременно значит дублировать одни и те же шаги.
+  // «Кастом» во время брю: редактор всё равно заблокирован для правки, так что
+  // вместо него показываем ту же таблицу, что у Каскада/Поровну — она даёт
+  // подсветку активного шага, которой в редакторе нет. Итоги («Итого») прячутся
+  // вместе с редактором: тот же объём и время видны в последней строке таблицы.
+  if(isCustom) customWrap.style.display = brewingNow ? 'none' : 'block';
+
+  if(isCustom && !brewingNow){
+    pourCollapsed = true;
+    toggleCard.style.display = 'none';
+    toggleCard.classList.remove('open');
+    header.style.display = 'none';
+    card.style.display = 'none';
+    return;
+  }
+
   if(!brewingNow){
     pourCollapsed = true; // сброс — при следующем старте таблица снова схлопнется
     toggleCard.style.display = 'none';
@@ -1956,7 +1967,7 @@ function updatePourToggleUI(){
 
 document.getElementById('pourToggleBtn').onclick = ()=>{
   pourCollapsed = !pourCollapsed;
-  updatePourToggleUI();
+  updateScheduleUI();
 };
 
 // «Приготовьтесь» — единственное длинное название этапа среди возможных
@@ -1978,7 +1989,7 @@ function beginCountdown(){
   buildBrewDots();
   paintDots(-1, false);
   showBrewCard(true);
-  updatePourToggleUI();
+  updateScheduleUI();
   lockControls(true);
   requestWakeLock();
   // Один кадр на layout после display:none→block, потом ведём карточку
@@ -2043,7 +2054,7 @@ function stopBrew(hide){
   brewMusic.pause();
   try{ brewMusic.currentTime = 0; }catch(e){}
   document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
-  updatePourToggleUI();
+  updateScheduleUI();
 }
 
 function tickBrew(){
@@ -2093,6 +2104,7 @@ document.getElementById('brewToggle').onclick = ()=>{
 initTelegram();
 loadBeanPrefs();
 buildTempPills();
+buildRecipeSeg();
 setMode('v60');
 </script>
 </body>
