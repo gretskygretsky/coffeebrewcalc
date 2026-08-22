@@ -26,6 +26,7 @@
     --orange: #FF9500;
     --teal: #59C4E8;
     --brown: #A2845E;
+    --red: #FF3B30;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark){
@@ -48,6 +49,7 @@
       --orange: #FF9F0A;
       --teal: #64D2FF;
       --brown: #AC8E68;
+      --red: #FF453A;
     }
   }
   html, body{ overflow-x:hidden; }
@@ -584,6 +586,111 @@
   .bl-hidden{ visibility:hidden; }
 
   button:disabled, input:disabled{ opacity:0.35; pointer-events:none; }
+
+  /* ---- Верхняя навигация между разделами: точки + всплывающая подпись ---- */
+  .nav-indicator{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center;
+    margin-bottom:14px;
+  }
+  .nav-caption{
+    position:relative; height:15px; margin-bottom:8px;
+    opacity:0; transform:translateY(2px);
+    transition:opacity .22s ease, transform .22s ease;
+    pointer-events:none;
+  }
+  .nav-caption.show{ opacity:1; transform:translateY(0); }
+  .nav-cap{
+    position:absolute; left:50%; top:0; transform:translateX(-50%);
+    font-size:12px; font-weight:500; letter-spacing:.1px;
+    color:var(--label-2); white-space:nowrap;
+  }
+  .nav-dots{ display:flex; gap:8px; }
+  .nav-dot-zone{ padding:12px; margin:-12px; cursor:pointer; }
+  .nav-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--track); position:relative;
+  }
+  .nav-fill{ position:absolute; inset:0; border-radius:50%; background:var(--blue); opacity:0; }
+  @keyframes navDotPulse{
+    0%{ transform:scale(1); }
+    45%{ transform:scale(1.6); }
+    100%{ transform:scale(1); }
+  }
+  .nav-dot.pulse{ animation:navDotPulse .26s ease; }
+  @media (prefers-reduced-motion: reduce){
+    .nav-dot.pulse{ animation:none; }
+  }
+  .nav-indicator.locked .nav-dot-zone{ pointer-events:none; opacity:.45; }
+
+  .pages-viewport{ overflow:hidden; }
+  .pages{ display:flex; will-change:transform; }
+  .page{ flex-shrink:0; min-width:0; }
+
+  /* ---- Шторка: и предложение сохранить, и правка записи — один компонент ---- */
+  .sheet-scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,0.35);
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:40;
+  }
+  .sheet-scrim.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:fixed; left:50%; bottom:0; width:100%; max-width:420px;
+    background:var(--card); border-radius:16px 16px 0 0;
+    padding:10px 16px max(16px, env(safe-area-inset-bottom));
+    transform:translate(-50%, 100%);
+    transition:transform .32s cubic-bezier(.25,.8,.25,1);
+    z-index:41;
+  }
+  .sheet.show{ transform:translate(-50%, 0); }
+  .sheet-handle{ width:32px; height:4px; background:var(--track); border-radius:2px; margin:0 auto 12px; }
+  .sheet-title{ font-size:15px; font-weight:700; text-align:center; }
+  .sheet-subtitle{ font-size:12.5px; color:var(--label-2); text-align:center; margin-top:2px; margin-bottom:14px; }
+  .sheet-fields{ background:var(--fill); border-radius:12px; padding:0 14px; margin-bottom:14px; }
+  .sheet-field{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:0.5px solid var(--separator); font-size:14px; }
+  .sheet-field:last-child{ border-bottom:none; }
+  .sheet-field input{
+    width:64px; text-align:right; border:none; background:none; font-size:14px;
+    font-weight:600; color:var(--accent, var(--orange)); font-family:inherit;
+  }
+  .sheet-btn{ text-align:center; font-size:15px; font-weight:600; border-radius:12px; padding:13px 0; margin-bottom:8px; background:var(--accent, var(--orange)); color:#fff; }
+  .sheet-btn.ghost{ background:none; color:var(--label-2); font-weight:500; padding:6px 0; margin-bottom:0; }
+
+  /* ---- Алерт удаления — единственный паттерн, без вариантов ---- */
+  .alert-scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,0.35);
+    opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:50;
+  }
+  .alert-scrim.show{ opacity:1; pointer-events:auto; }
+  .alert-box{
+    position:fixed; top:50%; left:50%; width:260px; max-width:80vw;
+    background:var(--card); border-radius:14px; padding:18px 16px 16px; text-align:center;
+    transform:translate(-50%,-50%) scale(0.92); opacity:0; pointer-events:none;
+    transition:transform .2s ease, opacity .2s ease; z-index:51;
+  }
+  .alert-box.show{ transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
+  .alert-title{ font-size:15px; font-weight:700; margin-bottom:4px; }
+  .alert-text{ font-size:12.5px; color:var(--label-2); margin-bottom:16px; line-height:1.4; }
+  .alert-actions{ display:flex; gap:8px; }
+  .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:10px; padding:11px 0; background:var(--fill); color:var(--label); }
+  .alert-btn.danger{ background:var(--red); color:#fff; }
+
+  /* ---- Строки журнала: свайп открывает только удаление ---- */
+  .j-row{ position:relative; overflow:hidden; }
+  .j-row-action{
+    position:absolute; top:0; right:0; bottom:0; width:84px;
+    background:var(--red); color:#fff; font-size:12.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:12px 0 0 12px;
+  }
+  .j-row-content{
+    position:relative; background:var(--card);
+    display:flex; justify-content:space-between; align-items:center;
+    padding:13px 4px; border-bottom:0.5px solid var(--separator);
+    font-size:14px;
+  }
+  .j-row:last-child .j-row-content{ border-bottom:none; }
+  .j-row-meta{ color:var(--label-2); font-size:13px; }
+  .j-dot{ width:6px; height:6px; border-radius:50%; background:var(--orange); display:inline-block; margin-right:6px; }
 </style>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
@@ -613,6 +720,30 @@
 </head>
 <body>
 <div class="screen">
+  <div class="nav-indicator" id="navIndicator">
+    <div class="nav-caption" id="navCaption">
+      <span class="nav-cap" data-i="0">Зёрна</span>
+      <span class="nav-cap" data-i="1">Калькулятор</span>
+      <span class="nav-cap" data-i="2">Журнал</span>
+    </div>
+    <div class="nav-dots">
+      <div class="nav-dot-zone" data-i="0"><div class="nav-dot"><div class="nav-fill"></div></div></div>
+      <div class="nav-dot-zone" data-i="1"><div class="nav-dot"><div class="nav-fill"></div></div></div>
+      <div class="nav-dot-zone" data-i="2"><div class="nav-dot"><div class="nav-fill"></div></div></div>
+    </div>
+  </div>
+  <div class="pages-viewport">
+    <div class="pages" id="navPages">
+      <div class="page" id="pageBeans">
+        <p class="eyebrow" style="color:var(--blue);">Зёрна</p>
+        <h1>Мои зёрна</h1>
+        <div class="tip">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <span>Пока пусто. Здесь появится список твоих пачек — обжарка, дата вскрытия и остаток.</span>
+        </div>
+      </div>
+
+      <div class="page" id="pageCalc">
   <p class="eyebrow" id="eyebrow">Кофе</p>
   <h1>Пропорции</h1>
 
@@ -809,6 +940,42 @@
   <div class="tip" id="notes">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
     <span id="notesText"></span>
+  </div>
+      </div>
+
+      <div class="page" id="pageJournal">
+        <p class="eyebrow" style="color:var(--blue);">Журнал</p>
+        <h1>История</h1>
+        <div class="card" id="journalListCard" style="margin-bottom:8px; display:none;">
+          <div id="journalList"></div>
+        </div>
+        <div class="tip" id="journalEmpty">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <span>Пока пусто. Здесь появятся твои записи — дата, пропорция и проливы каждой чашки.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="sheet-scrim" id="sheetScrim"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheetTitle"></div>
+  <div class="sheet-subtitle" id="sheetSubtitle"></div>
+  <div class="sheet-fields" id="sheetFields" style="display:none;"></div>
+  <div class="sheet-btn" id="sheetPrimaryBtn"></div>
+  <div class="sheet-btn ghost" id="sheetGhostBtn"></div>
+</div>
+
+<div class="alert-scrim" id="alertScrim"></div>
+<div class="alert-box" id="alertBox">
+  <div class="alert-title">Удалить запись?</div>
+  <div class="alert-text">Это действие нельзя отменить.</div>
+  <div class="alert-actions">
+    <div class="alert-btn" id="alertCancelBtn">Отмена</div>
+    <div class="alert-btn danger" id="alertDeleteBtn">Удалить</div>
   </div>
 </div>
 
@@ -1381,6 +1548,9 @@ function compute(){
   renderPourSchedule(coffee, water, accent);
   if(state.mode==='v60') syncV60Controls(coffee, water);
   else syncClassicPair(coffee, water, r);
+
+  state.coffee = coffee;
+  state.water = water;
 }
 
 function syncClassicPair(coffee, water, r){
@@ -1756,6 +1926,7 @@ let audioCtx = null;
 let brewPhase = 'idle'; // 'idle' | 'counting' | 'running'
 let brewing = false;
 let brewStartTs = 0;
+let brewWallClockStart = 0;
 let brewRAF = null;
 let brewLastIdx = -1;
 let brewDoneFired = false;
@@ -1824,6 +1995,8 @@ function lockControls(locked){
   coffeeInputV60.disabled = locked;
   document.getElementById('coffeeStepUp').disabled = locked;
   document.getElementById('coffeeStepDown').disabled = locked;
+  navLocked = locked;
+  document.getElementById('navIndicator').classList.toggle('locked', locked);
 }
 
 /* ---- Не гасить экран во время заваривания. Лок автоматически снимается
@@ -2028,6 +2201,7 @@ function launchBrew(){
   brewPhase = 'running';
   brewing = true;
   brewStartTs = performance.now();
+  brewWallClockStart = Date.now();
   brewLastIdx = -1;
   brewDoneFired = false;
   document.getElementById('brewToggle').textContent = 'Остановить';
@@ -2042,6 +2216,7 @@ function launchBrew(){
 }
 
 function stopBrew(hide){
+  const wasRunning = brewPhase === 'running';
   brewPhase = 'idle';
   brewing = false;
   releaseWakeLock();
@@ -2055,6 +2230,7 @@ function stopBrew(hide){
   try{ brewMusic.currentTime = 0; }catch(e){}
   document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
   updateScheduleUI();
+  if(wasRunning) offerJournalSave();
 }
 
 function tickBrew(){
@@ -2101,11 +2277,500 @@ document.getElementById('brewToggle').onclick = ()=>{
   else stopBrew(true);
 };
 
+/* ---- Дневник: хранилище ----
+   Источник выбирается один раз за сессию — CloudStorage внутри Telegram,
+   localStorage вне его — и не смешивается, тем же принципом, что и тема. */
+const tgApp = window.Telegram && window.Telegram.WebApp;
+const useCloud = !!(tgApp && tgApp.initData && tgApp.CloudStorage);
+
+function storeGet(key){
+  return new Promise(resolve=>{
+    if(useCloud){
+      tgApp.CloudStorage.getItem(key, (err, value)=> resolve(err || !value ? null : value));
+    } else {
+      resolve(localStorage.getItem(key));
+    }
+  });
+}
+function storeSet(key, value){
+  return new Promise(resolve=>{
+    if(useCloud){
+      tgApp.CloudStorage.setItem(key, value, ()=> resolve());
+    } else {
+      try{ localStorage.setItem(key, value); }catch(e){}
+      resolve();
+    }
+  });
+}
+function storeRemove(key){
+  return new Promise(resolve=>{
+    if(useCloud){
+      tgApp.CloudStorage.removeItem(key, ()=> resolve());
+    } else {
+      localStorage.removeItem(key);
+      resolve();
+    }
+  });
+}
+function storeGetMultiple(keys){
+  return new Promise(resolve=>{
+    if(!keys.length){ resolve({}); return; }
+    if(useCloud){
+      tgApp.CloudStorage.getItems(keys, (err, values)=> resolve(err ? {} : (values || {})));
+    } else {
+      const out = {};
+      keys.forEach(k=>{ const v = localStorage.getItem(k); if(v) out[k] = v; });
+      resolve(out);
+    }
+  });
+}
+
+/* ---- Дневник: модель данных ----
+   journal_index -> [id, id, ...]; journal_entry_<id> -> {id,mode,ratio,coffee,water,pours}
+   id = Date.now() в момент старта заваривания — он же дата записи, отдельного поля не нужно. */
+const JOURNAL_INDEX_KEY = 'journal_index';
+let journalEntries = [];
+
+async function journalReadIndex(){
+  const raw = await storeGet(JOURNAL_INDEX_KEY);
+  if(!raw) return [];
+  try{ const ids = JSON.parse(raw); return Array.isArray(ids) ? ids : []; }catch(e){ return []; }
+}
+
+async function journalLoad(){
+  const ids = await journalReadIndex();
+  if(!ids.length){ journalEntries = []; renderJournal(); return; }
+  const keys = ids.map(id=> 'journal_entry_' + id);
+  const values = await storeGetMultiple(keys);
+  journalEntries = ids
+    .map(id=>{
+      const raw = values['journal_entry_' + id];
+      if(!raw) return null;
+      try{ return JSON.parse(raw); }catch(e){ return null; }
+    })
+    .filter(Boolean)
+    .sort((a,b)=> b.id - a.id);
+  renderJournal();
+}
+
+async function journalSaveEntry(entry){
+  await storeSet('journal_entry_' + entry.id, JSON.stringify(entry));
+  const ids = await journalReadIndex();
+  if(!ids.includes(entry.id)){
+    ids.push(entry.id);
+    await storeSet(JOURNAL_INDEX_KEY, JSON.stringify(ids));
+  }
+  journalEntries = journalEntries.filter(e=> e.id !== entry.id);
+  journalEntries.push(entry);
+  journalEntries.sort((a,b)=> b.id - a.id);
+}
+
+async function journalUpdateEntry(entry){
+  await storeSet('journal_entry_' + entry.id, JSON.stringify(entry));
+  const i = journalEntries.findIndex(e=> e.id === entry.id);
+  if(i >= 0) journalEntries[i] = entry;
+}
+
+async function journalDeleteEntry(id){
+  await storeRemove('journal_entry_' + id);
+  const ids = (await journalReadIndex()).filter(x=> x !== id);
+  await storeSet(JOURNAL_INDEX_KEY, JSON.stringify(ids));
+  journalEntries = journalEntries.filter(e=> e.id !== id);
+}
+
+/* ---- Дневник: форматирование ---- */
+const MONTHS_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+function formatEntryDate(id){
+  const d = new Date(id);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return d.getDate() + ' ' + MONTHS_RU[d.getMonth()] + ', ' + hh + ':' + mm;
+}
+function pluralRu(n, one, few, many){
+  const mod10 = n % 10, mod100 = n % 100;
+  if(mod100 > 10 && mod100 < 20) return many;
+  if(mod10 > 1 && mod10 < 5) return few;
+  if(mod10 === 1) return one;
+  return many;
+}
+
+/* ---- Дневник: список ---- */
+let jSwipeOpenRow = null;
+
+function renderJournal(){
+  const listCard = document.getElementById('journalListCard');
+  const list = document.getElementById('journalList');
+  const empty = document.getElementById('journalEmpty');
+  jSwipeOpenRow = null;
+  if(!journalEntries.length){
+    list.innerHTML = '';
+    listCard.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+  listCard.style.display = 'block';
+  empty.style.display = 'none';
+  list.innerHTML = journalEntries.map(e=>
+    '<div class="j-row" data-id="' + e.id + '">' +
+      '<div class="j-row-action">Удалить</div>' +
+      '<div class="j-row-content">' +
+        '<span><span class="j-dot"></span>' + formatEntryDate(e.id) + '</span>' +
+        '<span class="j-row-meta">' + fmt(e.coffee) + ' г · ' + fmt(e.water) + ' мл</span>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function closeJournalRow(row){
+  if(!row) return;
+  const content = row.querySelector('.j-row-content');
+  content.style.transition = 'transform .22s ease';
+  content.style.transform = 'translateX(0)';
+  row.classList.remove('open');
+}
+
+const J_ACTION_WIDTH = 84;
+let jSwipeRow = null, jSwipeStartX = 0, jSwipeStartY = 0, jSwipeDragging = false, jSwipeDecided = false;
+let jSwipeBaseOpen = false, jSwipeLastDx = 0, jSwipeTargetIsAction = false;
+
+const journalList = document.getElementById('journalList');
+
+journalList.addEventListener('touchstart', (e)=>{
+  const row = e.target.closest('.j-row');
+  if(!row) return;
+  jSwipeRow = row;
+  jSwipeBaseOpen = row.classList.contains('open');
+  jSwipeTargetIsAction = !!e.target.closest('.j-row-action');
+  const t = e.touches[0];
+  jSwipeStartX = t.clientX; jSwipeStartY = t.clientY;
+  jSwipeDragging = false; jSwipeDecided = false; jSwipeLastDx = 0;
+}, { passive:true });
+
+journalList.addEventListener('touchmove', (e)=>{
+  if(!jSwipeRow) return;
+  const t = e.touches[0];
+  const dx = t.clientX - jSwipeStartX;
+  const dy = t.clientY - jSwipeStartY;
+  if(!jSwipeDecided){
+    if(Math.abs(dx) > 8 || Math.abs(dy) > 8){
+      jSwipeDecided = true;
+      jSwipeDragging = Math.abs(dx) > Math.abs(dy);
+    }
+  }
+  if(!jSwipeDragging) return;
+  e.preventDefault();
+  jSwipeLastDx = dx;
+  let pos = (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + dx;
+  pos = Math.max(-J_ACTION_WIDTH, Math.min(0, pos));
+  const content = jSwipeRow.querySelector('.j-row-content');
+  content.style.transition = 'none';
+  content.style.transform = 'translateX(' + pos + 'px)';
+}, { passive:false });
+
+journalList.addEventListener('touchend', ()=>{
+  if(!jSwipeRow) return;
+  const row = jSwipeRow;
+  if(jSwipeDragging){
+    const finalPos = Math.max(-J_ACTION_WIDTH, Math.min(0, (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + jSwipeLastDx));
+    const willOpen = finalPos < -J_ACTION_WIDTH / 2;
+    const content = row.querySelector('.j-row-content');
+    content.style.transition = 'transform .22s ease';
+    content.style.transform = willOpen ? 'translateX(-' + J_ACTION_WIDTH + 'px)' : 'translateX(0)';
+    row.classList.toggle('open', willOpen);
+    if(willOpen){
+      if(jSwipeOpenRow && jSwipeOpenRow !== row) closeJournalRow(jSwipeOpenRow);
+      jSwipeOpenRow = row;
+      navHapticTick();
+    } else if(jSwipeOpenRow === row){
+      jSwipeOpenRow = null;
+    }
+  } else if(!jSwipeDecided || !jSwipeTargetIsAction){
+    // не было горизонтального драга — это тап
+    if(row.classList.contains('open')){
+      if(jSwipeTargetIsAction){
+        openDeleteAlert(Number(row.dataset.id));
+      } else {
+        closeJournalRow(row);
+        if(jSwipeOpenRow === row) jSwipeOpenRow = null;
+      }
+    } else {
+      openEditSheet(Number(row.dataset.id));
+    }
+  } else {
+    openDeleteAlert(Number(row.dataset.id));
+  }
+  jSwipeRow = null; jSwipeDragging = false; jSwipeDecided = false;
+});
+
+document.addEventListener('touchstart', (e)=>{
+  if(jSwipeOpenRow && !e.target.closest('.j-row')){
+    closeJournalRow(jSwipeOpenRow);
+    jSwipeOpenRow = null;
+  }
+}, { passive:true });
+
+/* ---- Дневник: шторка (сохранение и правка — один компонент) ---- */
+let sheetMode = null, sheetEntry = null;
+const sheetScrimEl = document.getElementById('sheetScrim');
+const sheetEl = document.getElementById('sheet');
+const sheetTitleEl = document.getElementById('sheetTitle');
+const sheetSubtitleEl = document.getElementById('sheetSubtitle');
+const sheetFieldsEl = document.getElementById('sheetFields');
+const sheetPrimaryBtn = document.getElementById('sheetPrimaryBtn');
+const sheetGhostBtn = document.getElementById('sheetGhostBtn');
+
+function showSheet(){
+  sheetScrimEl.classList.add('show');
+  sheetEl.classList.add('show');
+}
+function closeSheet(){
+  sheetScrimEl.classList.remove('show');
+  sheetEl.classList.remove('show');
+  sheetMode = null; sheetEntry = null;
+}
+
+function offerJournalSave(){
+  if(!state.schedule || !state.schedule.length) return;
+  const pours = state.schedule.filter(r=> r.add != null).map(r=> Math.round(r.add));
+  if(!pours.length) return;
+  const entry = {
+    id: brewWallClockStart || Date.now(),
+    mode: state.mode,
+    ratio: state.ratio,
+    coffee: Math.round((state.coffee || 0) * 10) / 10,
+    water: pours.reduce((a,b)=> a+b, 0),
+    pours: pours
+  };
+  sheetMode = 'save';
+  sheetEntry = entry;
+  sheetTitleEl.textContent = 'Сохранить в дневник?';
+  sheetSubtitleEl.textContent = fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл · ' +
+    entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
+  sheetFieldsEl.style.display = 'none';
+  sheetFieldsEl.innerHTML = '';
+  sheetPrimaryBtn.textContent = 'Записать';
+  sheetGhostBtn.textContent = 'Пропустить';
+  showSheet();
+}
+
+function openEditSheet(id){
+  const entry = journalEntries.find(e=> e.id === id);
+  if(!entry) return;
+  sheetMode = 'edit';
+  sheetEntry = JSON.parse(JSON.stringify(entry));
+  sheetTitleEl.textContent = formatEntryDate(entry.id);
+  sheetSubtitleEl.textContent = 'V60 · 1:' + entry.ratio;
+  sheetFieldsEl.style.display = 'block';
+  sheetFieldsEl.innerHTML = '';
+  entry.pours.forEach((val, i)=>{
+    const row = document.createElement('div');
+    row.className = 'sheet-field';
+    const label = document.createElement('span');
+    label.textContent = i === 0 ? 'Блум' : ('Пролив ' + i);
+    const input = document.createElement('input');
+    input.type = 'number'; input.inputMode = 'decimal'; input.min = '0'; input.step = '1';
+    input.value = val;
+    input.addEventListener('input', ()=>{
+      sheetEntry.pours[i] = parseFloat(input.value) || 0;
+    });
+    row.appendChild(label); row.appendChild(input);
+    sheetFieldsEl.appendChild(row);
+  });
+  sheetPrimaryBtn.textContent = 'Сохранить';
+  sheetGhostBtn.textContent = 'Отмена';
+  showSheet();
+}
+
+sheetScrimEl.addEventListener('click', closeSheet);
+sheetGhostBtn.addEventListener('click', closeSheet);
+sheetPrimaryBtn.addEventListener('click', async ()=>{
+  if(sheetMode === 'save'){
+    await journalSaveEntry(sheetEntry);
+  } else if(sheetMode === 'edit'){
+    sheetEntry.water = sheetEntry.pours.reduce((a,b)=> a+b, 0);
+    await journalUpdateEntry(sheetEntry);
+  }
+  closeSheet();
+  renderJournal();
+});
+
+/* ---- Дневник: подтверждение удаления ---- */
+let alertDeleteId = null;
+const alertScrimEl = document.getElementById('alertScrim');
+const alertBoxEl = document.getElementById('alertBox');
+
+function openDeleteAlert(id){
+  alertDeleteId = id;
+  alertScrimEl.classList.add('show');
+  alertBoxEl.classList.add('show');
+}
+function closeDeleteAlert(){
+  alertScrimEl.classList.remove('show');
+  alertBoxEl.classList.remove('show');
+  alertDeleteId = null;
+}
+alertScrimEl.addEventListener('click', closeDeleteAlert);
+document.getElementById('alertCancelBtn').addEventListener('click', closeDeleteAlert);
+document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
+  const id = alertDeleteId;
+  closeDeleteAlert();
+  jSwipeOpenRow = null;
+  await journalDeleteEntry(id);
+  renderJournal();
+});
+
 initTelegram();
 loadBeanPrefs();
 buildTempPills();
 buildRecipeSeg();
 setMode('v60');
+journalLoad();
+
+/* ---- Навигация свайпом между разделами: Зёрна / Калькулятор / Журнал ----
+   Точки вместо табов, подпись всплывает только во время жеста,
+   переключение "залипает" после протяжки за NAV_COMMIT_RATIO ширины
+   экрана — короткий флик откатывается назад. Число страниц не хардкодится —
+   считается по факту .page-элементов, так что новый раздел добавляется
+   просто вставкой ещё одной страницы в разметку. */
+const navPages = document.getElementById('navPages');
+const navViewport = document.querySelector('.pages-viewport');
+const navCaption = document.getElementById('navCaption');
+const navPageEls = [...navPages.querySelectorAll('.page')];
+const NAV_COUNT = navPageEls.length;
+const NAV_STEP = 100 / NAV_COUNT; // % ширины .pages на один шаг
+navPages.style.width = (NAV_COUNT * 100) + '%';
+navPageEls.forEach(p=> p.style.width = NAV_STEP + '%');
+
+const navDotZones = [...document.querySelectorAll('.nav-dot-zone')];
+const navItems = navDotZones.map(z=>({
+  zone: z,
+  dot: z.querySelector('.nav-dot'),
+  fill: z.querySelector('.nav-fill'),
+  cap: navCaption.querySelector('.nav-cap[data-i="' + z.dataset.i + '"]')
+}));
+
+let navIndex = 1; // старт по центру — на Калькуляторе
+let navContainerWidth = navViewport.clientWidth;
+let navStartX = 0, navStartY = 0, navDragging = false, navDecided = false, navDeltaX = 0;
+let navCommitted = false;
+let navCommitTarget = null;
+let navExcluded = false;
+let navHideTimer = null;
+let navLocked = false;
+const NAV_COMMIT_RATIO = 0.4;
+
+window.addEventListener('resize', ()=>{ navContainerWidth = navViewport.clientWidth; });
+
+function navSetTransform(percent, animate){
+  navPages.style.transition = animate ? 'transform .32s cubic-bezier(.25,.8,.25,1)' : 'none';
+  navPages.style.transform = 'translateX(' + percent + '%)';
+}
+/* position — непрерывная координата в "страницах" (0..NAV_COUNT-1).
+   Активность точки/подписи i — треугольная функция от расстояния до position,
+   поэтому при N=2 это в точности старый кроссфейд, а при N=3+ соседние
+   страницы не начинают предательски мигать, пока их не коснулись. */
+function navUpdateIndicator(position, animate){
+  const t = animate ? 'opacity .28s ease' : 'none';
+  navItems.forEach((it, i)=>{
+    const activation = Math.max(0, 1 - Math.abs(position - i));
+    it.fill.style.transition = t;
+    it.fill.style.opacity = activation;
+    it.cap.style.transition = t;
+    it.cap.style.opacity = activation;
+  });
+}
+function navHapticTick(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback){
+    try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){}
+  } else if(navigator.vibrate){
+    navigator.vibrate(10);
+  }
+}
+function navPulseDot(i){
+  const el = navItems[i].dot;
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+}
+function navShowCaption(){
+  navCaption.classList.add('show');
+  clearTimeout(navHideTimer);
+}
+function navScheduleHide(delay){
+  clearTimeout(navHideTimer);
+  navHideTimer = setTimeout(()=> navCaption.classList.remove('show'), delay || 900);
+}
+function navGoTo(i, animate){
+  navIndex = Math.max(0, Math.min(NAV_COUNT - 1, i));
+  navSetTransform(-navIndex * NAV_STEP, animate);
+  navUpdateIndicator(navIndex, animate);
+}
+
+navDotZones.forEach(z=>{
+  z.addEventListener('click', ()=>{
+    if(navLocked) return;
+    navGoTo(Number(z.dataset.i), true);
+    navShowCaption();
+    navScheduleHide();
+  });
+});
+
+navViewport.addEventListener('touchstart', (e)=>{
+  navExcluded = navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row');
+  if(navExcluded) return;
+  const t = e.touches[0];
+  navStartX = t.clientX; navStartY = t.clientY;
+  navDragging = false; navDecided = false; navDeltaX = 0; navCommitted = false; navCommitTarget = null;
+}, { passive:true });
+
+navViewport.addEventListener('touchmove', (e)=>{
+  if(navExcluded) return;
+  const t = e.touches[0];
+  const dx = t.clientX - navStartX;
+  const dy = t.clientY - navStartY;
+
+  if(!navDecided){
+    if(Math.abs(dx) > 8 || Math.abs(dy) > 8){
+      navDecided = true;
+      navDragging = Math.abs(dx) > Math.abs(dy);
+    }
+  }
+  if(!navDragging) return;
+
+  e.preventDefault();
+  navShowCaption();
+  let ddx = dx;
+  if(navIndex === 0 && ddx > 0) ddx *= 0.35;
+  if(navIndex === NAV_COUNT - 1 && ddx < 0) ddx *= 0.35;
+  navDeltaX = ddx;
+  const deltaPercent = (ddx / navContainerWidth) * NAV_STEP;
+  const base = -navIndex * NAV_STEP;
+  navSetTransform(base + deltaPercent, false);
+  const position = Math.max(0, Math.min(NAV_COUNT - 1, navIndex - deltaPercent / NAV_STEP));
+  navUpdateIndicator(position, false);
+
+  let justCrossed = false;
+  if(!navCommitted){
+    if(navIndex < NAV_COUNT - 1 && navDeltaX < -navContainerWidth * NAV_COMMIT_RATIO){ justCrossed = true; navCommitTarget = navIndex + 1; }
+    if(navIndex > 0 && navDeltaX > navContainerWidth * NAV_COMMIT_RATIO){ justCrossed = true; navCommitTarget = navIndex - 1; }
+  }
+  if(justCrossed){
+    navCommitted = true; // залипает: дальше в этом жесте уже не откатится
+    navHapticTick();
+    navPulseDot(navCommitTarget);
+  }
+}, { passive:false });
+
+navViewport.addEventListener('touchend', ()=>{
+  if(navExcluded || !navDragging){ navExcluded = false; return; }
+  if(navCommitted && navCommitTarget !== null) navGoTo(navCommitTarget, true);
+  else navGoTo(navIndex, true);
+  navDragging = false; navDecided = false; navDeltaX = 0; navCommitted = false; navCommitTarget = null;
+  navScheduleHide();
+});
+
+navGoTo(1, false); // сразу центрируемся на Калькуляторе, без анимации
+setTimeout(()=>{ navShowCaption(); navScheduleHide(1500); }, 600);
 </script>
 </body>
 </html>
