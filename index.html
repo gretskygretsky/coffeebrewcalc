@@ -637,7 +637,9 @@
     height:100%; width:33.3333%; flex-shrink:0; min-width:0;
     overflow-y:auto; -webkit-overflow-scrolling:touch;
     padding:0 8px 40px;
+    scrollbar-width:none;
   }
+  .page::-webkit-scrollbar{ display:none; }
 
   /* ---- Шторка: и предложение сохранить, и правка записи — один компонент ---- */
   .sheet-scrim{
@@ -658,8 +660,12 @@
   .sheet-title{ font-size:15px; font-weight:700; text-align:center; }
   .sheet-subtitle{ font-size:12.5px; color:var(--label-2); text-align:center; margin-top:2px; margin-bottom:14px; }
   .sheet-fields{ background:var(--fill); border-radius:12px; padding:0 14px; margin-bottom:14px; }
-  .sheet-field{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:0.5px solid var(--separator); font-size:14px; }
+  .sheet-field{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:0.5px solid var(--separator); font-size:14px; gap:6px; }
   .sheet-field:last-child{ border-bottom:none; }
+  .sheet-field-label{ flex:1; min-width:0; }
+  .sheet-field input.sheet-field-time{
+    width:34px; text-align:right; font-size:14px; font-weight:500; color:var(--label-2); flex-shrink:0;
+  }
   .sheet-field input{
     width:64px; text-align:right; border:none; background:none; font-size:16px;
     font-weight:600; color:var(--accent, var(--orange)); font-family:inherit;
@@ -686,7 +692,9 @@
   .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:10px; padding:11px 0; background:var(--fill); color:var(--label); }
   .alert-btn.danger{ background:var(--red); color:#fff; }
 
-  /* ---- Строки журнала: свайп открывает только удаление ---- */
+  /* ---- Строки журнала: свайп открывает только удаление ----
+     Высоту строки задаёт то, что есть у записи всегда (граммы + зерно/мл),
+     а не опциональные вещи — поэтому она не «скачет» от записи к записи. */
   .j-row{ position:relative; overflow:hidden; }
   .j-row-action{
     position:absolute; top:0; right:0; bottom:0; width:84px;
@@ -696,13 +704,48 @@
   }
   .j-row-content{
     position:relative; background:var(--card);
-    display:flex; justify-content:space-between; align-items:center;
-    padding:13px 4px; border-bottom:0.5px solid var(--separator);
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:11px 4px; border-bottom:0.5px solid var(--separator);
     font-size:14px;
   }
   .j-row:last-child .j-row-content{ border-bottom:none; }
-  .j-row-meta{ color:var(--label-2); font-size:13px; }
-  .j-dot{ width:6px; height:6px; border-radius:50%; background:var(--orange); display:inline-block; margin-right:6px; }
+
+  .j-left{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .j-star{ font-size:15px; line-height:1; flex-shrink:0; }
+  .j-datetime{ display:flex; flex-direction:column; min-width:0; }
+  .j-date{ font-size:14px; font-weight:600; color:var(--label); line-height:1.25; }
+  .j-time{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; line-height:1.25; margin-top:1px; }
+
+  .j-amounts-text{ display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; }
+  .j-amount-top{ font-size:14px; font-weight:600; color:var(--label); font-variant-numeric:tabular-nums; line-height:1.25; }
+  .j-amount-bottom{
+    font-size:12px; color:var(--label-2); line-height:1.25; margin-top:1px;
+    max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+
+  /* ---- Шторка: вкладка «Оценка» — рейтинг, вкус, помол, заметка ---- */
+  .stars{ display:flex; justify-content:center; gap:10px; padding:6px 0 10px; }
+  .star{ width:28px; height:28px; cursor:pointer; color:var(--label-3); transition:transform .12s ease; }
+  .star:active{ transform:scale(.85); }
+  .star.on{ color:var(--accent, var(--orange)); }
+  .taste-block{ padding:2px 2px 10px; }
+  .taste-label{ text-align:center; font-size:14px; font-weight:600; }
+  .taste-ends{ display:flex; justify-content:space-between; font-size:11px; color:var(--label-2); margin-top:2px; }
+  input.bean-input{
+    display:block; width:100%; border:none; background:var(--fill);
+    border-radius:12px; padding:11px 12px; font-size:16px; font-family:inherit;
+    color:var(--label); margin:12px 0 10px;
+  }
+  input.bean-input::placeholder{ color:var(--label-3); }
+  .note-wrap{ position:relative; margin:2px 0 14px; }
+  textarea.note{
+    width:100%; min-height:60px; resize:none; border:none; background:var(--fill);
+    border-radius:12px; padding:10px 44px 10px 12px; font-size:16px; font-family:inherit;
+    color:var(--label); line-height:1.35;
+  }
+  textarea.note::placeholder{ color:var(--label-3); }
+  .note-count{ position:absolute; right:10px; bottom:8px; font-size:11px; color:var(--label-3); font-variant-numeric:tabular-nums; }
+  .note-count.warn{ color:var(--red); }
 </style>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
@@ -976,7 +1019,49 @@
   <div class="sheet-handle"></div>
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-subtitle" id="sheetSubtitle"></div>
-  <div class="sheet-fields" id="sheetFields" style="display:none;"></div>
+
+  <div class="segmented" id="sheetTabSeg" style="display:none; margin-bottom:12px;">
+    <div class="thumb"></div>
+    <button class="seg-btn active" data-tab="rate">Оценка</button>
+    <button class="seg-btn" data-tab="recipe">Рецепт</button>
+  </div>
+
+  <div id="sheetTabRate" style="display:none;">
+    <div class="stars" id="sheetStars">
+      <svg class="star" data-i="1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+    </div>
+    <div class="taste-block">
+      <div class="taste-label" id="sheetTasteLabel">Сбалансировано</div>
+      <input type="range" id="sheetTasteRange" min="-2" max="2" step="1" value="0">
+      <div class="taste-ends"><span>Кисло</span><span>Горько</span></div>
+    </div>
+    <div class="row" style="border-bottom:none;">
+      <span class="row-label">Помол</span>
+      <div class="stepper-field">
+        <div class="stepper">
+          <button id="sheetGrindDown">−</button>
+          <div class="divider"></div>
+          <button id="sheetGrindUp">+</button>
+        </div>
+        <input type="number" id="sheetGrindInput" value="0">
+        <span class="unit" id="sheetGrindUnit" style="width:auto; white-space:nowrap;">кликов</span>
+      </div>
+    </div>
+    <input type="text" class="bean-input" id="sheetBeanInput" maxlength="60" placeholder="Название зерна">
+    <div class="note-wrap">
+      <textarea class="note" id="sheetNoteInput" maxlength="140" placeholder="Ощущения от чашки…"></textarea>
+      <div class="note-count" id="sheetNoteCount">140</div>
+    </div>
+  </div>
+
+  <div id="sheetTabRecipe" style="display:none;">
+    <div class="sheet-fields" id="sheetFields" style="display:none;"></div>
+  </div>
+
   <div class="sheet-btn" id="sheetPrimaryBtn"></div>
   <div class="sheet-btn ghost" id="sheetGhostBtn"></div>
 </div>
@@ -1005,9 +1090,13 @@ const EYEBROW = { v60:'Калькулятор', v60ice:'Калькулятор �
 /* ---- Рецепты V60: три равноправных варианта — Каскад и Поровну раньше были
    подуровнем внутри «Классики» (общая формула + переключатель формы), теперь
    это два самостоятельных пункта на одном уровне с «Кастомом». Логика расчёта
-   у них общая (formulaSchedule), меняется только форма пролива. ---- */
+   у них общая (formulaSchedule), меняется только форма пролива. ----
+   BLOOM_TIME/POUR_INTERVAL вынесены наружу: те же числа нужны для оценки
+   времени в старых записях журнала, сохранённых до того как время проливов
+   стало частью записи (см. legacyPourTime). */
+const BLOOM_TIME = 40, POUR_INTERVAL = 45;
 function formulaSchedule(coffee, water, shape){
-  const BLOOM_TIME = 40, POUR_INTERVAL = 45, TARGET_POUR = 130;
+  const TARGET_POUR = 130;
   const bloom = coffee * 2;
   const main = Math.max(0, water - bloom);
   const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
@@ -2404,6 +2493,33 @@ function formatEntryDate(id){
   const mm = String(d.getMinutes()).padStart(2,'0');
   return d.getDate() + ' ' + MONTHS_RU[d.getMonth()] + ', ' + hh + ':' + mm;
 }
+// Для строки списка дата и время показаны раздельно (дата над временем) —
+// formatEntryDate() выше остаётся как есть для заголовка шторки при правке записи.
+function sameDay(a, b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function journalDayLabel(id){
+  const d = new Date(id);
+  const now = new Date();
+  if(sameDay(d, now)) return 'Сегодня';
+  const yesterday = new Date(now.getTime() - 86400000);
+  if(sameDay(d, yesterday)) return 'Вчера';
+  return d.getDate() + ' ' + MONTHS_RU[d.getMonth()];
+}
+function journalTimeLabel(id){
+  const d = new Date(id);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+const TASTE_LABELS = ['Слишком кисло', 'Кисло', 'Сбалансировано', 'Горько', 'Слишком горько'];
+
+// Записи, сохранённые до того как время пролива стало частью записи журнала,
+// хранят проливы простыми числами (граммы) без времени. Оцениваем время по
+// тем же интервалам, что и formulaSchedule() — точно для Каскада/Поровну,
+// приближённо для старого Кастома (там шаги могли идти с другим интервалом).
+function legacyPourTime(i){
+  if(i === 0) return 0;
+  if(i === 1) return BLOOM_TIME;
+  return BLOOM_TIME + (i - 1) * POUR_INTERVAL;
+}
+
 function pluralRu(n, one, few, many){
   const mod10 = n % 10, mod100 = n % 100;
   if(mod100 > 10 && mod100 < 20) return many;
@@ -2428,15 +2544,33 @@ function renderJournal(){
   }
   listCard.style.display = 'block';
   empty.style.display = 'none';
-  list.innerHTML = journalEntries.map(e=>
+  list.innerHTML = journalEntries.map(journalRowHTML).join('');
+}
+
+function journalRowHTML(e){
+  const accent = 'var(' + ACCENT[e.mode] + ')';
+  const rated = (e.rating || 0) > 0;
+  const star = rated
+    ? '<span class="j-star" style="color:' + accent + ';">★</span>'
+    : '<span class="j-star" style="color:' + accent + '; opacity:.35;">☆</span>';
+  const bottomRight = e.bean ? e.bean : (fmt(e.water) + ' мл');
+  return '' +
     '<div class="j-row" data-id="' + e.id + '">' +
       '<div class="j-row-action">Удалить</div>' +
       '<div class="j-row-content">' +
-        '<span><span class="j-dot"></span>' + formatEntryDate(e.id) + '</span>' +
-        '<span class="j-row-meta">' + fmt(e.coffee) + ' г · ' + fmt(e.water) + ' мл</span>' +
+        '<span class="j-left">' +
+          star +
+          '<span class="j-datetime">' +
+            '<span class="j-date">' + journalDayLabel(e.id) + '</span>' +
+            '<span class="j-time">' + journalTimeLabel(e.id) + '</span>' +
+          '</span>' +
+        '</span>' +
+        '<span class="j-amounts-text">' +
+          '<span class="j-amount-top">' + fmt(e.coffee) + ' г</span>' +
+          '<span class="j-amount-bottom" title="' + bottomRight + '">' + bottomRight + '</span>' +
+        '</span>' +
       '</div>' +
-    '</div>'
-  ).join('');
+    '</div>';
 }
 
 function closeJournalRow(row){
@@ -2537,6 +2671,75 @@ const sheetFieldsEl = document.getElementById('sheetFields');
 const sheetPrimaryBtn = document.getElementById('sheetPrimaryBtn');
 const sheetGhostBtn = document.getElementById('sheetGhostBtn');
 
+const sheetTabSeg = document.getElementById('sheetTabSeg');
+const sheetTabRate = document.getElementById('sheetTabRate');
+const sheetTabRecipe = document.getElementById('sheetTabRecipe');
+const sheetStars = [...document.querySelectorAll('#sheetStars .star')];
+const sheetTasteRange = document.getElementById('sheetTasteRange');
+const sheetTasteLabel = document.getElementById('sheetTasteLabel');
+const sheetGrindInput = document.getElementById('sheetGrindInput');
+const sheetGrindUnit = document.getElementById('sheetGrindUnit');
+const sheetGrindUp = document.getElementById('sheetGrindUp');
+const sheetGrindDown = document.getElementById('sheetGrindDown');
+const sheetNoteInput = document.getElementById('sheetNoteInput');
+const sheetBeanInput = document.getElementById('sheetBeanInput');
+const sheetNoteCount = document.getElementById('sheetNoteCount');
+const NOTE_MAX = 140;
+
+/* Вкладки шторки: строим один раз статично в HTML (их всего 2, без пересборки DOM —
+   тот же урок, что и с .thumb в сегментированных контролах калькулятора). */
+function setSheetTab(tab){
+  const btns = [...sheetTabSeg.querySelectorAll('.seg-btn')];
+  btns.forEach((b,i)=>{
+    b.classList.toggle('active', b.dataset.tab === tab);
+    if(b.dataset.tab === tab) moveThumb(sheetTabSeg, i, btns.length);
+  });
+  sheetTabRate.style.display = tab === 'rate' ? 'block' : 'none';
+  sheetTabRecipe.style.display = tab === 'recipe' ? 'block' : 'none';
+}
+sheetTabSeg.querySelectorAll('.seg-btn').forEach(b=> b.addEventListener('click', ()=>{
+  setSheetTab(b.dataset.tab);
+  navHapticTick();
+}));
+
+function setSheetRating(n){
+  sheetEntry.rating = n;
+  sheetStars.forEach(st=>{
+    const on = Number(st.dataset.i) <= n;
+    st.classList.toggle('on', on);
+    st.setAttribute('fill', on ? 'currentColor' : 'none');
+  });
+}
+sheetStars.forEach(st=> st.addEventListener('click', ()=>{
+  setSheetRating(Number(st.dataset.i));
+  navHapticTick();
+}));
+
+sheetTasteRange.addEventListener('input', ()=>{
+  sheetEntry.taste = Number(sheetTasteRange.value);
+  sheetTasteLabel.textContent = TASTE_LABELS[sheetEntry.taste + 2];
+});
+
+function setSheetGrind(n){
+  sheetEntry.grind = Math.max(0, n);
+  sheetGrindInput.value = sheetEntry.grind;
+  sheetGrindUnit.textContent = pluralRu(sheetEntry.grind, 'клик', 'клика', 'кликов');
+}
+sheetGrindUp.addEventListener('click', ()=> setSheetGrind((sheetEntry.grind || 0) + 1));
+sheetGrindDown.addEventListener('click', ()=> setSheetGrind((sheetEntry.grind || 0) - 1));
+sheetGrindInput.addEventListener('input', ()=> setSheetGrind(parseInt(sheetGrindInput.value) || 0));
+
+sheetBeanInput.addEventListener('input', ()=>{
+  sheetEntry.bean = sheetBeanInput.value;
+});
+
+sheetNoteInput.addEventListener('input', ()=>{
+  sheetEntry.note = sheetNoteInput.value;
+  const left = NOTE_MAX - sheetEntry.note.length;
+  sheetNoteCount.textContent = left;
+  sheetNoteCount.classList.toggle('warn', left <= 10);
+});
+
 function showSheet(){
   sheetScrimEl.classList.add('show');
   sheetEl.classList.add('show');
@@ -2550,7 +2753,9 @@ function closeSheet(){
 function offerJournalSave(){
   if(journalOfferedThisBrew) return;
   if(!state.schedule || !state.schedule.length) return;
-  const pours = state.schedule.filter(r=> r.add != null).map(r=> Math.round(r.add));
+  const pours = state.schedule
+    .filter(r=> r.add != null)
+    .map(r=> ({ time: Math.round(r.time), add: Math.round(r.add) }));
   if(!pours.length) return;
   journalOfferedThisBrew = true;
   const entry = {
@@ -2558,14 +2763,23 @@ function offerJournalSave(){
     mode: state.mode,
     ratio: state.ratio,
     coffee: Math.round((state.coffee || 0) * 10) / 10,
-    water: pours.reduce((a,b)=> a+b, 0),
-    pours: pours
+    water: pours.reduce((a,b)=> a+b.add, 0),
+    pours: pours,
+    rating: 0,
+    taste: 0,
+    grind: 0,
+    bean: '',
+    note: ''
   };
   sheetMode = 'save';
   sheetEntry = entry;
   sheetTitleEl.textContent = 'Сохранить в дневник?';
   sheetSubtitleEl.textContent = fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл · ' +
     entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
+  // Кофе ещё не остыло — рано оценивать вкус. Вкладка «Оценка» появится позже, по тапу на запись.
+  sheetTabSeg.style.display = 'none';
+  sheetTabRate.style.display = 'none';
+  sheetTabRecipe.style.display = 'none';
   sheetFieldsEl.style.display = 'none';
   sheetFieldsEl.innerHTML = '';
   sheetPrimaryBtn.textContent = 'Записать';
@@ -2580,20 +2794,60 @@ function openEditSheet(id){
   sheetEntry = JSON.parse(JSON.stringify(entry));
   sheetTitleEl.textContent = formatEntryDate(entry.id);
   sheetSubtitleEl.textContent = 'V60 · 1:' + entry.ratio;
+
+  // Записи, сохранённые до появления оценки, не имеют этих полей — подставляем дефолты.
+  sheetEntry.rating = sheetEntry.rating || 0;
+  sheetEntry.taste = sheetEntry.taste || 0;
+  sheetEntry.grind = sheetEntry.grind || 0;
+  sheetEntry.bean = sheetEntry.bean || '';
+  sheetEntry.note = sheetEntry.note || '';
+
+  sheetTabSeg.style.display = 'flex';
+  setSheetTab('rate');
+  setSheetRating(sheetEntry.rating);
+  sheetTasteRange.value = sheetEntry.taste;
+  sheetTasteLabel.textContent = TASTE_LABELS[sheetEntry.taste + 2];
+  sheetGrindInput.value = sheetEntry.grind;
+  sheetGrindUnit.textContent = pluralRu(sheetEntry.grind, 'клик', 'клика', 'кликов');
+  sheetBeanInput.value = sheetEntry.bean;
+  sheetNoteInput.value = sheetEntry.note;
+  sheetNoteCount.textContent = NOTE_MAX - sheetEntry.note.length;
+  sheetNoteCount.classList.toggle('warn', NOTE_MAX - sheetEntry.note.length <= 10);
+
   sheetFieldsEl.style.display = 'block';
   sheetFieldsEl.innerHTML = '';
-  entry.pours.forEach((val, i)=>{
+  entry.pours.forEach((p, i)=>{
+    // Старый формат — просто число (граммы). Новый — {time, add}. Приводим
+    // к новому на лету: как только запись пересохранят, она мигрирует сама.
+    const isLegacy = typeof p === 'number';
+    const time = isLegacy ? legacyPourTime(i) : (p.time || 0);
+    const add = isLegacy ? p : (p.add || 0);
+    sheetEntry.pours[i] = { time, add };
+
     const row = document.createElement('div');
     row.className = 'sheet-field';
     const label = document.createElement('span');
+    label.className = 'sheet-field-label';
     label.textContent = i === 0 ? 'Блум' : ('Пролив ' + i);
-    const input = document.createElement('input');
-    input.type = 'number'; input.inputMode = 'decimal'; input.min = '0'; input.step = '1';
-    input.value = val;
-    input.addEventListener('input', ()=>{
-      sheetEntry.pours[i] = parseFloat(input.value) || 0;
+
+    const timeInput = document.createElement('input');
+    timeInput.type = 'number'; timeInput.className = 'sheet-field-time';
+    timeInput.inputMode = 'numeric'; timeInput.min = '0'; timeInput.step = '1';
+    timeInput.value = time;
+    timeInput.addEventListener('input', ()=>{
+      sheetEntry.pours[i].time = parseInt(timeInput.value, 10) || 0;
     });
-    row.appendChild(label); row.appendChild(input);
+    const timeUnit = document.createElement('span');
+    timeUnit.className = 'unit'; timeUnit.textContent = 'с';
+
+    const gramsInput = document.createElement('input');
+    gramsInput.type = 'number'; gramsInput.inputMode = 'decimal'; gramsInput.min = '0'; gramsInput.step = '1';
+    gramsInput.value = add;
+    gramsInput.addEventListener('input', ()=>{
+      sheetEntry.pours[i].add = parseFloat(gramsInput.value) || 0;
+    });
+
+    row.appendChild(label); row.appendChild(timeInput); row.appendChild(timeUnit); row.appendChild(gramsInput);
     sheetFieldsEl.appendChild(row);
   });
   sheetPrimaryBtn.textContent = 'Сохранить';
@@ -2601,17 +2855,28 @@ function openEditSheet(id){
   showSheet();
 }
 
-sheetScrimEl.addEventListener('click', closeSheet);
-sheetGhostBtn.addEventListener('click', closeSheet);
+function closeSheetAndMaybeStop(){
+  const wasSaveMode = sheetMode === 'save';
+  closeSheet();
+  if(wasSaveMode && brewing) stopBrew(true);
+}
+
+sheetScrimEl.addEventListener('click', ()=>{
+  if(sheetMode === 'save') return; // сохранить/пропустить — только явными кнопками, не тапом мимо
+  closeSheetAndMaybeStop();
+});
+sheetGhostBtn.addEventListener('click', closeSheetAndMaybeStop);
 sheetPrimaryBtn.addEventListener('click', async ()=>{
+  const wasSaveMode = sheetMode === 'save';
   if(sheetMode === 'save'){
     await journalSaveEntry(sheetEntry);
   } else if(sheetMode === 'edit'){
-    sheetEntry.water = sheetEntry.pours.reduce((a,b)=> a+b, 0);
+    sheetEntry.water = sheetEntry.pours.reduce((a,b)=> a+b.add, 0);
     await journalUpdateEntry(sheetEntry);
   }
   closeSheet();
   renderJournal();
+  if(wasSaveMode && brewing) stopBrew(true);
 });
 
 /* ---- Дневник: подтверждение удаления ---- */
