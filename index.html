@@ -52,19 +52,22 @@
       --red: #FF453A;
     }
   }
-  html, body{ overflow-x:hidden; }
+  html, body{ overflow-x:hidden; height:100%; }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   body{
     margin:0;
     background:var(--bg);
     color:var(--label);
-    min-height:100vh;
+    height:100vh;
+    height:100dvh;
     width:100%;
-    padding: max(28px, env(safe-area-inset-top)) 16px 40px;
+    padding: max(20px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
     display:flex;
-    justify-content:center;
+    flex-direction:column;
+    align-items:center;
+    overflow:hidden;
   }
-  .screen{ width:100%; max-width:420px; }
+  .screen{ width:100%; max-width:420px; height:100%; display:flex; flex-direction:column; min-height:0; }
 
   .eyebrow{
     font-size:13px;
@@ -374,8 +377,8 @@
   .ce-spacer{ flex:1; }
   .ce-field{ display:flex; align-items:center; gap:3px; flex-shrink:0; }
   .ce-row input[type=number]{
-    width:46px;
-    font-size:15px;
+    width:50px;
+    font-size:16px;
     padding:5px 2px;
   }
   .ce-unit{ font-size:12px; color:var(--label-2); width:14px; flex-shrink:0; }
@@ -592,6 +595,7 @@
     position:relative;
     display:flex; flex-direction:column; align-items:center;
     margin-bottom:14px;
+    flex-shrink:0;
   }
   .nav-caption{
     position:relative; height:15px; margin-bottom:8px;
@@ -623,9 +627,17 @@
   }
   .nav-indicator.locked .nav-dot-zone{ pointer-events:none; opacity:.45; }
 
-  .pages-viewport{ overflow:hidden; }
-  .pages{ display:flex; will-change:transform; }
-  .page{ flex-shrink:0; min-width:0; }
+  /* Ширины страниц — статика, не JS: сегмент-контролы меряют clientWidth
+     синхронно при первой отрисовке, и если ширина ещё не устаканилась —
+     считают неправильно (самолечится только после первого переключения).
+     При добавлении/удалении страницы поменять оба числа ниже (300% / 3). */
+  .pages-viewport{ flex:1; min-height:0; overflow:hidden; }
+  .pages{ display:flex; height:100%; width:300%; will-change:transform; }
+  .page{
+    height:100%; width:33.3333%; flex-shrink:0; min-width:0;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:0 8px 40px;
+  }
 
   /* ---- Шторка: и предложение сохранить, и правка записи — один компонент ---- */
   .sheet-scrim{
@@ -649,7 +661,7 @@
   .sheet-field{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:0.5px solid var(--separator); font-size:14px; }
   .sheet-field:last-child{ border-bottom:none; }
   .sheet-field input{
-    width:64px; text-align:right; border:none; background:none; font-size:14px;
+    width:64px; text-align:right; border:none; background:none; font-size:16px;
     font-weight:600; color:var(--accent, var(--orange)); font-family:inherit;
   }
   .sheet-btn{ text-align:center; font-size:15px; font-weight:600; border-radius:12px; padding:13px 0; margin-bottom:8px; background:var(--accent, var(--orange)); color:#fff; }
@@ -744,7 +756,7 @@
       </div>
 
       <div class="page" id="pageCalc">
-  <p class="eyebrow" id="eyebrow">Кофе</p>
+  <p class="eyebrow" id="eyebrow">Калькулятор</p>
   <h1>Пропорции</h1>
 
   <div class="segmented" id="modeSeg">
@@ -988,7 +1000,7 @@ const ACCENT = { v60:'--orange', v60ice:'--teal', cold:'--brown' };
 const DEFAULT_RATIO = { v60:16, v60ice:16, cold:5 };
 const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
 const MAX_COFFEE = { v60:30, v60ice:30 };
-const EYEBROW = { v60:'Пуровер', v60ice:'Пуровер · лёд', cold:'Долгий настой' };
+const EYEBROW = { v60:'Калькулятор', v60ice:'Калькулятор · лёд', cold:'Долгий настой' };
 
 /* ---- Рецепты V60: три равноправных варианта — Каскад и Поровну раньше были
    подуровнем внутри «Классики» (общая формула + переключатель формы), теперь
@@ -1930,6 +1942,7 @@ let brewWallClockStart = 0;
 let brewRAF = null;
 let brewLastIdx = -1;
 let brewDoneFired = false;
+let journalOfferedThisBrew = false;
 
 function beep(freq, dur){
   try{
@@ -2204,6 +2217,7 @@ function launchBrew(){
   brewWallClockStart = Date.now();
   brewLastIdx = -1;
   brewDoneFired = false;
+  journalOfferedThisBrew = false;
   document.getElementById('brewToggle').textContent = 'Остановить';
   blElapsed.classList.remove('bl-hidden');
   stageAlert();
@@ -2263,7 +2277,11 @@ function tickBrew(){
   if(done){
     blTimeNum.textContent = fmtTime(cur.time);
     setArc(1);
-    if(!brewDoneFired){ brewDoneFired = true; finishAlert(); }
+    if(!brewDoneFired){
+      brewDoneFired = true;
+      finishAlert();
+      setTimeout(offerJournalSave, 700);
+    }
   } else {
     blTimeNum.textContent = fmtTime(Math.max(0, next.time - elapsed));
     setArc((elapsed - cur.time) / (next.time - cur.time));
@@ -2530,9 +2548,11 @@ function closeSheet(){
 }
 
 function offerJournalSave(){
+  if(journalOfferedThisBrew) return;
   if(!state.schedule || !state.schedule.length) return;
   const pours = state.schedule.filter(r=> r.add != null).map(r=> Math.round(r.add));
   if(!pours.length) return;
+  journalOfferedThisBrew = true;
   const entry = {
     id: brewWallClockStart || Date.now(),
     mode: state.mode,
@@ -2631,15 +2651,14 @@ journalLoad();
    переключение "залипает" после протяжки за NAV_COMMIT_RATIO ширины
    экрана — короткий флик откатывается назад. Число страниц не хардкодится —
    считается по факту .page-элементов, так что новый раздел добавляется
-   просто вставкой ещё одной страницы в разметку. */
+   просто вставкой ещё одной страницы в разметку (плюс не забыть поправить
+   статические ширины в CSS .pages/.page — см. комментарий там). */
 const navPages = document.getElementById('navPages');
 const navViewport = document.querySelector('.pages-viewport');
 const navCaption = document.getElementById('navCaption');
 const navPageEls = [...navPages.querySelectorAll('.page')];
 const NAV_COUNT = navPageEls.length;
-const NAV_STEP = 100 / NAV_COUNT; // % ширины .pages на один шаг
-navPages.style.width = (NAV_COUNT * 100) + '%';
-navPageEls.forEach(p=> p.style.width = NAV_STEP + '%');
+const NAV_STEP = 100 / NAV_COUNT; // % ширины .pages на один шаг — должно совпадать с CSS
 
 const navDotZones = [...document.querySelectorAll('.nav-dot-zone')];
 const navItems = navDotZones.map(z=>({
