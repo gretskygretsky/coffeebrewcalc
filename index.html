@@ -1,0 +1,3687 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>Калькулятор пропорций</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --card-2: #F2F2F7;
+    --label: #000000;
+    --label-2: rgba(60,60,67,0.6);
+    --label-3: rgba(60,60,67,0.3);
+    --separator: rgba(60,60,67,0.29);
+    --fill: rgba(120,120,128,0.12);
+    --track: rgba(120,120,128,0.18);
+    --pill-off: #E5E5EA;
+    --blue: #007AFF;
+    --seg-thumb: #FFFFFF;
+    --seg-thumb-text: #000000;
+    --pill-text: #000000;
+    --shadow: 0 24px 60px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04);
+    --orange: #FF9500;
+    --teal: #59C4E8;
+    --brown: #A2845E;
+    --red: #FF3B30;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #000000;
+      --card: #1C1C1E;
+      --card-2: #2C2C2E;
+      --label: #FFFFFF;
+      --label-2: rgba(235,235,245,0.6);
+      --label-3: rgba(235,235,245,0.3);
+      --separator: rgba(84,84,88,0.6);
+      --fill: rgba(120,120,128,0.24);
+      --track: rgba(120,120,128,0.32);
+      --pill-off: #2C2C2E;
+      --blue: #0A84FF;
+      --seg-thumb: #636366;
+      --seg-thumb-text: #FFFFFF;
+      --pill-text: #FFFFFF;
+      --shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+      --orange: #FF9F0A;
+      --teal: #64D2FF;
+      --brown: #AC8E68;
+      --red: #FF453A;
+    }
+  }
+  html, body{ overflow-x:hidden; height:100%; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--label);
+    height:100vh;
+    height:100dvh;
+    width:100%;
+    padding: max(20px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    overflow:hidden;
+  }
+  .screen{ width:100%; max-width:420px; height:100%; display:flex; flex-direction:column; min-height:0; }
+
+  .eyebrow{
+    font-size:13px;
+    font-weight:600;
+    color: var(--accent, var(--orange));
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    margin:0 0 2px 4px;
+  }
+  h1{
+    font-size:34px;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    margin:0 0 20px 4px;
+  }
+
+  /* iOS segmented control */
+  .segmented{
+    position:relative;
+    display:flex;
+    background:var(--fill);
+    border-radius:9px;
+    padding:2px;
+    margin-bottom:22px;
+    height:32px;
+  }
+  .segmented .thumb{
+    position:absolute;
+    top:2px; bottom:2px;
+    left:2px;
+    background:var(--seg-thumb);
+    border-radius:7px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.08);
+    transition: transform .32s cubic-bezier(.34,1.3,.64,1), width .32s cubic-bezier(.34,1.3,.64,1);
+    z-index:0;
+  }
+  .seg-btn{
+    position:relative;
+    z-index:1;
+    flex:1;
+    border:none;
+    background:transparent;
+    font-size:13px;
+    font-weight:590;
+    color:var(--label-2);
+    padding:0 6px;
+    cursor:pointer;
+    transition:color .2s ease;
+    line-height:28px;
+  }
+  .seg-btn.active{ color:var(--seg-thumb-text); }
+
+  .section-header{
+    font-size:13px;
+    font-weight:600;
+    color:var(--label-2);
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    margin:22px 4px 8px;
+  }
+
+  .pills{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:2px;
+    scrollbar-width:none;
+  }
+  .pills::-webkit-scrollbar{ display:none; }
+  .pill{
+    flex-shrink:0;
+    font-size:14px;
+    font-weight:590;
+    padding:8px 14px;
+    border-radius:999px;
+    border:none;
+    background:var(--pill-off);
+    color:var(--pill-text);
+    cursor:pointer;
+    transition: all .18s ease;
+  }
+  .pill:active{ transform:scale(0.94); }
+  .pill.active{ background:var(--accent, var(--orange)); color:#fff; }
+
+  .ratio-hint{
+    font-size:12.5px;
+    color:var(--label-2);
+    margin:7px 4px 0;
+    min-height:16px;
+  }
+  .brew-hint{
+    display:none;
+    font-size:12px;
+    color:var(--label-2);
+    text-align:center;
+    margin:8px 4px 0;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    min-height:44px;
+    border-bottom:0.5px solid var(--separator);
+  }
+  .row:last-child{ border-bottom:none; }
+  .row-label{ font-size:15px; color:var(--label); }
+
+  .stepper-field{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  input[type=number]{
+    -moz-appearance:textfield;
+    width:64px;
+    text-align:center;
+    font-size:17px;
+    font-weight:600;
+    font-variant-numeric: tabular-nums;
+    background:var(--fill);
+    border:none;
+    border-radius:8px;
+    padding:6px 4px;
+    color:var(--label);
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .unit{ font-size:13px; color:var(--label-2); width:20px; }
+
+  input[type=range]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:4px;
+    border-radius:2px;
+    background:var(--fill);
+    margin:6px 0 2px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:22px; height:22px;
+    border-radius:50%;
+    background:#FFFFFF;
+    box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    border:none;
+    cursor:pointer;
+    margin-top:-9px;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px; height:22px;
+    border-radius:50%;
+    background:#FFFFFF;
+    box-shadow:0 1px 4px rgba(0,0,0,0.25);
+    border:none;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-track{
+    height:4px;
+    border-radius:2px;
+    background:var(--fill);
+  }
+
+  .stepper{
+    display:flex;
+    align-items:center;
+    background:var(--fill);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .stepper button{
+    width:30px; height:30px;
+    border:none;
+    background:transparent;
+    color:var(--accent, var(--blue));
+    font-size:18px;
+    font-weight:500;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .stepper button:active{ background:rgba(120,120,128,0.16); }
+  .stepper .divider{ width:0.5px; height:18px; background:var(--separator); }
+
+  .summary{
+    margin-top:16px;
+    display:flex;
+    gap:16px;
+    align-items:center;
+    background:var(--card);
+    border-radius:14px;
+    padding:18px 16px;
+  }
+  .visual{ width:64px; height:80px; flex-shrink:0; }
+  .stats{ flex:1; }
+  .stat-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:5px 0;
+  }
+  .stat-label{ font-size:13px; color:var(--label-2); }
+  .stat-value{
+    font-size:20px;
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing:-0.01em;
+    color:var(--accent, var(--orange));
+  }
+  .stat-value.hero{ font-size:26px; }
+
+  .tip{
+    margin-top:16px;
+    display:flex;
+    gap:10px;
+    background:var(--fill);
+    border-radius:14px;
+    padding:14px 16px;
+    font-size:13px;
+    line-height:1.5;
+    color:var(--label-2);
+  }
+  .tip svg{ flex-shrink:0; margin-top:1px; }
+  .tip b{ color:var(--label); font-weight:600; }
+
+  .pour-card{ margin-top:16px; display:none; }
+  .pour-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 16px;
+    border-bottom:0.5px solid var(--separator);
+  }
+  .pour-row:last-child{ border-bottom:none; }
+  .pour-time{
+    font-size:13px;
+    font-weight:600;
+    font-variant-numeric: tabular-nums;
+    color:var(--accent, var(--orange));
+    width:40px;
+    flex-shrink:0;
+  }
+  .pour-dot{
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--accent, var(--orange));
+    flex-shrink:0;
+  }
+  .pour-action{ flex:1; font-size:15px; color:var(--label); }
+  .pour-amounts{ text-align:right; flex-shrink:0; }
+  .pour-add{ font-size:11px; color:var(--label-2); font-variant-numeric: tabular-nums; }
+  .pour-total{ font-size:15px; font-weight:600; color:var(--label); font-variant-numeric: tabular-nums; }
+  .pour-row.active{ background: var(--fill); }
+
+  /* ---- Свёрнутая карточка графика пролива на время заваривания ----
+     Появляется вместо обычного заголовка, пока идёт брю; таблица под ней
+     скрывается display:none и не мешает читать таймер. По тапу — снова
+     развёрнута; при остановке возвращается автоматически. */
+  .pour-toggle-card{ margin-top:16px; }
+  .pour-toggle-btn{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    min-height:44px;
+    padding:12px 16px;
+    border:none;
+    background:transparent;
+    font-family:inherit;
+    text-align:left;
+    cursor:pointer;
+  }
+  .pour-toggle-btn:active{ background:var(--fill); }
+  .pour-toggle-right{ display:flex; align-items:center; gap:7px; }
+  .pour-toggle-count{
+    font-size:14px;
+    font-weight:600;
+    color:var(--label-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .pour-toggle-chevron{
+    color:var(--label-3);
+    flex-shrink:0;
+    transition: transform .25s ease;
+  }
+  .pour-toggle-card.open .pour-toggle-chevron{ transform:rotate(180deg); }
+
+  /* ---- Редактор своего графика пролива ---- */
+  .ce-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:9px 12px;
+    border-bottom:0.5px solid var(--separator);
+  }
+  .ce-row:last-child{ border-bottom:none; }
+  .ce-label{
+    font-size:13px;
+    color:var(--label);
+    width:64px;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .ce-spacer{ flex:1; }
+  .ce-field{ display:flex; align-items:center; gap:3px; flex-shrink:0; }
+  .ce-row input[type=number]{
+    width:50px;
+    font-size:16px;
+    padding:5px 2px;
+  }
+  .ce-unit{ font-size:12px; color:var(--label-2); width:14px; flex-shrink:0; }
+  .ce-rest{
+    width:46px;
+    text-align:center;
+    font-size:15px;
+    font-weight:600;
+    font-variant-numeric: tabular-nums;
+    color:var(--label-2);
+    padding:5px 2px;
+  }
+  .ce-del{
+    width:24px; height:24px;
+    flex-shrink:0;
+    border:none;
+    border-radius:50%;
+    background:var(--fill);
+    color:var(--label-2);
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ce-del:active{ background:rgba(120,120,128,0.24); }
+  .ce-del.hidden{ visibility:hidden; }
+  .ce-add{
+    display:block;
+    width:100%;
+    margin-top:8px;
+    padding:11px;
+    border:none;
+    border-radius:12px;
+    background:var(--fill);
+    color:var(--accent, var(--orange));
+    font-size:15px;
+    font-weight:590;
+    cursor:pointer;
+  }
+  .ce-add:active{ background:rgba(120,120,128,0.24); }
+  .ce-warn{
+    margin-top:10px;
+    background:var(--fill);
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:12.5px;
+    line-height:1.45;
+    color:var(--label-2);
+  }
+  .ce-warn div{ padding:1px 0; }
+  .ce-warn b{ color:var(--accent, var(--orange)); font-weight:600; }
+
+  /* ---- Температура воды: свёрнутая строка + раскрывающийся выбор ---- */
+  .temp-card{ margin-top:16px; }
+  .temp-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    min-height:44px;
+    padding:12px 16px;
+    border:none;
+    border-bottom:0.5px solid transparent;
+    background:transparent;
+    font-family:inherit;
+    text-align:left;
+    cursor:pointer;
+  }
+  .temp-card.open .temp-toggle{ border-bottom-color:var(--separator); }
+  .temp-toggle:active{ background:var(--fill); }
+  .temp-right{ display:flex; align-items:center; gap:7px; }
+  .temp-value{
+    font-size:17px;
+    font-weight:600;
+    font-variant-numeric: tabular-nums;
+    color:var(--accent, var(--orange));
+  }
+  .temp-chevron{
+    color:var(--label-3);
+    flex-shrink:0;
+    transition: transform .25s ease;
+  }
+  .temp-card.open .temp-chevron{ transform:rotate(180deg); }
+  .temp-detail{ display:none; padding:2px 16px 14px; }
+  .temp-card.open .temp-detail{ display:block; }
+  .temp-group-label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--label-2);
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    margin:12px 0 7px;
+  }
+  .temp-detail .pills{ margin:0 -16px; padding:0 16px 2px; }
+  .temp-detail .pill{ font-size:13px; padding:7px 12px; }
+  .temp-why{
+    font-size:12.5px;
+    line-height:1.5;
+    color:var(--label-2);
+    margin:12px 0 0;
+  }
+  .temp-why + .temp-why{ margin-top:8px; }
+  .temp-why.muted{ color:var(--label-3); }
+
+  /* ---- Кнопка старта + кнопка музыки в одном ряду ---- */
+  .action-row{ display:none; gap:8px; margin-top:16px; }
+  .brew-btn{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    font-size:16px;
+    font-weight:600;
+    font-family:inherit;
+    cursor:pointer;
+    transition: transform .15s ease;
+  }
+  .brew-btn:active{ transform:scale(0.97); }
+  .brew-btn.start{ background:var(--accent, var(--orange)); color:#fff; }
+  .brew-btn.stop{ background:var(--fill); color:var(--label); }
+  .music-square{
+    display:none;
+    flex:0 0 52px;
+    align-items:center; justify-content:center;
+    border:none;
+    border-radius:14px;
+    background:var(--fill);
+    color:var(--label-2);
+    cursor:pointer;
+  }
+  .music-square:active{ background:rgba(120,120,128,0.24); }
+  .music-square.muted{ color:var(--accent, var(--orange)); }
+  .music-square.muted .mute-wave{ display:none; }
+  .music-square:not(.muted) .mute-x{ display:none; }
+
+  /* ---- Карточка живого заваривания ---- */
+  .brew-live{
+    display:none;
+    margin-top:16px;
+    border-radius:16px;
+    padding:14px 12px 20px;
+    background:var(--card);
+    border:1.5px solid var(--accent, var(--orange));
+  }
+  .tnum{ font-variant-numeric: tabular-nums; }
+
+  /* Грид minmax(0,1fr)/auto/minmax(0,1fr): точки стоят строго по центру.
+     Без minmax(0,…) колонка не сжимается меньше своего содержимого —
+     именно из-за этого «Приготовьтесь» раньше распирало карточку вместо
+     того, чтобы обрезаться по эллипсису. */
+  .bl-top{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+    align-items:center;
+    gap:8px;
+    padding:0 4px 20px;
+  }
+  .bl-stage{
+    justify-self:start;
+    font-size:16px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.07em;
+    color:var(--accent, var(--orange));
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  }
+  /* На «Приготовьтесь» — единственном длинном названии этапа — снижаем
+     кегль и трекинг, чтобы слово помещалось целиком, а не обрезалось. */
+  .bl-stage.bl-stage--tight{ font-size:13px; letter-spacing:.03em; }
+  .bl-dots{ justify-self:center; display:flex; align-items:center; gap:5px; }
+  .bl-elapsed{ justify-self:end; font-size:14px; color:var(--label-2); white-space:nowrap; }
+  .bl-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--track);
+    transition: background .2s ease, transform .2s ease;
+  }
+  .bl-dot.on{ background:var(--label-3); }
+  .bl-dot.cur{ background:var(--accent, var(--orange)); transform:scale(1.4); }
+
+  .bl-cols{ display:flex; align-items:flex-start; }
+  .bl-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; min-width:0; }
+  .bl-cap{
+    font-size:13.5px; color:var(--label-2); text-align:center; line-height:1.25;
+    height:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  }
+  .bl-circle{
+    position:relative;
+    width:clamp(112px,37vw,136px);
+    aspect-ratio:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .bl-circle.disc{ border-radius:50%; background:var(--fill); }
+  .bl-ring{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+  .bl-ring .arc{ transition: stroke-dashoffset .15s linear; }
+
+  /* В центрировании участвует только крупная цифра — подписи над и под ней
+     вынесены из потока, поэтому объём и таймер стоят на одной высоте. */
+  .c-num{
+    position:relative; display:inline-block;
+    font-size:clamp(34px,11vw,40px);
+    font-weight:700; letter-spacing:-0.025em; line-height:1;
+  }
+  .c-num.acc{ color:var(--accent, var(--orange)); }
+  .c-above, .c-below{
+    position:absolute; left:50%; transform:translateX(-50%);
+    text-align:center; white-space:nowrap; letter-spacing:0;
+  }
+  .c-above{ bottom:100%; margin-bottom:5px; font-size:12.5px; font-weight:500; color:var(--label-3); line-height:1.2; }
+  .c-below{ top:100%; margin-top:4px; font-size:14px; font-weight:600; color:var(--label-2); line-height:1.2; }
+  .bl-hidden{ visibility:hidden; }
+
+  button:disabled, input:disabled{ opacity:0.35; pointer-events:none; }
+
+  /* ---- Верхняя навигация между разделами: точки + всплывающая подпись ---- */
+  .nav-indicator{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center;
+    margin-bottom:14px;
+    flex-shrink:0;
+  }
+  .nav-caption{
+    position:relative; height:15px; margin-bottom:8px;
+    opacity:0; transform:translateY(2px);
+    transition:opacity .22s ease, transform .22s ease;
+    pointer-events:none;
+  }
+  .nav-caption.show{ opacity:1; transform:translateY(0); }
+  .nav-cap{
+    position:absolute; left:50%; top:0; transform:translateX(-50%);
+    font-size:12px; font-weight:500; letter-spacing:.1px;
+    color:var(--label-2); white-space:nowrap;
+  }
+  .nav-dots{ display:flex; gap:8px; }
+  .nav-dot-zone{ padding:12px; margin:-12px; cursor:pointer; }
+  .nav-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--track); position:relative;
+  }
+  .nav-fill{ position:absolute; inset:0; border-radius:50%; background:var(--blue); opacity:0; }
+  @keyframes navDotPulse{
+    0%{ transform:scale(1); }
+    45%{ transform:scale(1.6); }
+    100%{ transform:scale(1); }
+  }
+  .nav-dot.pulse{ animation:navDotPulse .26s ease; }
+  @media (prefers-reduced-motion: reduce){
+    .nav-dot.pulse{ animation:none; }
+  }
+  .nav-indicator.locked .nav-dot-zone{ pointer-events:none; opacity:.45; }
+
+  /* Ширины страниц — статика, не JS: сегмент-контролы меряют clientWidth
+     синхронно при первой отрисовке, и если ширина ещё не устаканилась —
+     считают неправильно (самолечится только после первого переключения).
+     При добавлении/удалении страницы поменять оба числа ниже (300% / 3). */
+  .pages-viewport{ flex:1; min-height:0; overflow:hidden; }
+  .pages{ display:flex; height:100%; width:300%; will-change:transform; }
+  .page{
+    height:100%; width:33.3333%; flex-shrink:0; min-width:0;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:0 8px 40px;
+    scrollbar-width:none;
+  }
+  .page::-webkit-scrollbar{ display:none; }
+
+  /* ---- Шторка: и предложение сохранить, и правка записи — один компонент ---- */
+  .sheet-scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,0.35);
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:40;
+  }
+  .sheet-scrim.show{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:fixed; left:50%; bottom:0; width:100%; max-width:420px;
+    background:var(--card); border-radius:16px 16px 0 0;
+    padding:10px 16px max(16px, env(safe-area-inset-bottom));
+    transform:translate(-50%, 100%);
+    transition:transform .32s cubic-bezier(.25,.8,.25,1);
+    z-index:41;
+  }
+  .sheet.show{ transform:translate(-50%, 0); }
+  .sheet-handle{ width:32px; height:4px; background:var(--track); border-radius:2px; margin:0 auto 12px; }
+  .sheet-title{ font-size:15px; font-weight:700; text-align:center; }
+  .sheet-subtitle{ font-size:12.5px; color:var(--label-2); text-align:center; margin-top:2px; margin-bottom:14px; }
+  .sheet-fields{ background:var(--fill); border-radius:12px; padding:0 14px; margin-bottom:14px; }
+  .sheet-field{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:0.5px solid var(--separator); font-size:14px; gap:6px; }
+  .sheet-field:last-child{ border-bottom:none; }
+  .sheet-field-label{ flex:1; min-width:0; }
+  .sheet-field input.sheet-field-time{
+    width:34px; text-align:right; font-size:14px; font-weight:500; color:var(--label-2); flex-shrink:0;
+  }
+  .sheet-field input{
+    width:64px; text-align:right; border:none; background:none; font-size:16px;
+    font-weight:600; color:var(--accent, var(--orange)); font-family:inherit;
+  }
+  .sheet-btn{ text-align:center; font-size:15px; font-weight:600; border-radius:12px; padding:13px 0; margin-bottom:8px; background:var(--accent, var(--orange)); color:#fff; }
+  .sheet-btn.ghost{ background:none; color:var(--label-2); font-weight:500; padding:6px 0; margin-bottom:0; }
+
+  /* ---- Алерт удаления — единственный паттерн, без вариантов ---- */
+  .alert-scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,0.35);
+    opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:50;
+  }
+  .alert-scrim.show{ opacity:1; pointer-events:auto; }
+  .alert-box{
+    position:fixed; top:50%; left:50%; width:260px; max-width:80vw;
+    background:var(--card); border-radius:14px; padding:18px 16px 16px; text-align:center;
+    transform:translate(-50%,-50%) scale(0.92); opacity:0; pointer-events:none;
+    transition:transform .2s ease, opacity .2s ease; z-index:51;
+  }
+  .alert-box.show{ transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
+  .alert-title{ font-size:15px; font-weight:700; margin-bottom:4px; }
+  .alert-text{ font-size:12.5px; color:var(--label-2); margin-bottom:16px; line-height:1.4; }
+  .alert-actions{ display:flex; gap:8px; }
+  .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:10px; padding:11px 0; background:var(--fill); color:var(--label); }
+  .alert-btn.danger{ background:var(--red); color:#fff; }
+
+  /* ---- Строки журнала: свайп открывает только удаление ----
+     Высоту строки задаёт то, что есть у записи всегда (граммы + зерно/мл),
+     а не опциональные вещи — поэтому она не «скачет» от записи к записи. */
+  .j-row{ position:relative; overflow:hidden; }
+  .j-row-action{
+    position:absolute; top:0; right:0; bottom:0; width:84px;
+    background:var(--red); color:#fff; font-size:12.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:12px 0 0 12px;
+  }
+  .j-row-content{
+    position:relative; background:var(--card);
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:11px 4px; border-bottom:0.5px solid var(--separator);
+    font-size:14px;
+  }
+  .j-row:last-child .j-row-content{ border-bottom:none; }
+
+  .j-left{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .j-star{ font-size:15px; line-height:1; flex-shrink:0; }
+  .j-datetime{ display:flex; flex-direction:column; min-width:0; }
+  .j-date{ font-size:14px; font-weight:600; color:var(--label); line-height:1.25; }
+  .j-time{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; line-height:1.25; margin-top:1px; }
+
+  .j-amounts-text{ display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; }
+  .j-amount-top{ font-size:14px; font-weight:600; color:var(--label); font-variant-numeric:tabular-nums; line-height:1.25; }
+  .j-amount-bottom{
+    font-size:12px; color:var(--label-2); line-height:1.25; margin-top:1px;
+    max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+
+  /* ---- Шторка: вкладка «Оценка» — рейтинг, вкус, помол, заметка ---- */
+  .stars{ display:flex; justify-content:center; gap:10px; padding:6px 0 10px; }
+  .star{ width:28px; height:28px; cursor:pointer; color:var(--label-3); transition:transform .12s ease; }
+  .star:active{ transform:scale(.85); }
+  .star.on{ color:var(--accent, var(--orange)); }
+  .taste-block{ padding:2px 2px 10px; }
+  .taste-label{ text-align:center; font-size:14px; font-weight:600; }
+  .taste-ends{ display:flex; justify-content:space-between; font-size:11px; color:var(--label-2); margin-top:2px; }
+  input.bean-input{
+    display:block; width:100%; border:none; background:var(--fill);
+    border-radius:12px; padding:11px 12px; font-size:16px; font-family:inherit;
+    color:var(--label); margin:12px 0 10px;
+  }
+  input.bean-input::placeholder{ color:var(--label-3); }
+  .note-wrap{ position:relative; margin:2px 0 14px; }
+  textarea.note{
+    width:100%; min-height:60px; resize:none; border:none; background:var(--fill);
+    border-radius:12px; padding:10px 44px 10px 12px; font-size:16px; font-family:inherit;
+    color:var(--label); line-height:1.35;
+  }
+  textarea.note::placeholder{ color:var(--label-3); }
+  .note-count{ position:absolute; right:10px; bottom:8px; font-size:11px; color:var(--label-3); font-variant-numeric:tabular-nums; }
+  .note-count.warn{ color:var(--red); }
+
+  /* ---- Зёрна: каждая пачка — своя плитка (не общий список, как в Журнале) —
+     на карточке больше данных, чем в одну строку: тумблер активной пачки,
+     мешочек с уровнем остатка, полоска прогресса. Свайп-удаление — тот же приём. ---- */
+  .b-row{ position:relative; overflow:hidden; border-radius:14px; margin-bottom:10px; }
+  .b-row:last-child{ margin-bottom:0; }
+  .b-row-action{
+    position:absolute; top:0; right:0; bottom:0; width:84px;
+    background:var(--red); color:#fff; font-size:12.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .b-row-content{
+    position:relative; background:var(--card); border-radius:14px;
+    display:flex; align-items:flex-start; gap:11px; padding:14px;
+  }
+  .b-active-check{
+    flex-shrink:0; width:24px; height:24px; margin-top:2px; padding:0;
+    border-radius:50%; border:1.5px solid var(--label-3); background:none;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .b-active-check.active{ border-color:var(--blue); background:var(--blue); }
+  .b-bag{ flex-shrink:0; margin-top:-4px; line-height:0; }
+  .b-info{ flex:1; min-width:0; }
+  .b-top{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .b-name{ font-size:15px; font-weight:600; color:var(--label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .b-fresh{ font-size:12px; color:var(--label-2); flex-shrink:0; font-variant-numeric: tabular-nums; }
+  .b-fresh.warm{ color:var(--orange); font-weight:600; }
+  /* Аватар обжарщика — заглушка первой буквой, пока нет реальных логотипов;
+     когда список обжарщиков с логотипами будет готов, .b-roaster-avatar
+     станет <img>, а .b-roaster останется той же строкой. */
+  .b-roaster{ display:flex; align-items:center; gap:6px; margin-top:3px; font-size:12.5px; color:var(--label-2); }
+  .b-roaster-avatar{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0;
+    background:var(--fill); color:var(--label-2);
+    font-size:9px; font-weight:700; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .b-meta{ font-size:12.5px; color:var(--label-2); margin-top:2px; }
+  .b-temp{ color:var(--label); font-weight:600; }
+  .b-temp-info{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; margin-left:1px; padding:0; vertical-align:-3px;
+    border:none; background:none; color:var(--label-3); cursor:pointer;
+  }
+  .b-temp-info.open{ color:var(--blue); }
+  .b-temp-note{
+    margin-top:8px; padding:9px 11px; border-radius:10px;
+    background:var(--fill); font-size:12px; line-height:1.45; color:var(--label-2);
+  }
+  .b-temp-note p{ margin:0; }
+  .b-temp-note p + p{ margin-top:6px; }
+  .b-bar{ height:4px; border-radius:2px; background:var(--track); margin-top:9px; overflow:hidden; }
+  .b-bar-fill{ height:100%; background:var(--brown); border-radius:2px; }
+  .b-weight{ font-size:12px; color:var(--label-2); margin-top:5px; font-variant-numeric: tabular-nums; }
+  .b-weight.low{ color:var(--orange); font-weight:600; }
+  .b-opened{ font-size:11.5px; color:var(--label-3); margin-top:2px; }
+
+  /* ---- Шторка добавления/правки пачки и выбора активной: пилюли обжарки/обработки
+     — как в Калькуляторе; список выбора пачки — те же .sheet-field строки. ---- */
+  .sheet-pills{ margin-bottom:2px; }
+  .sheet-pills .temp-group-label{ margin:0 2px 7px; }
+  .sheet-pills .temp-group-label:first-child{ margin-top:0; }
+  .sheet-pills .pills{ margin-bottom:14px; }
+  .sheet-field.pick{ cursor:pointer; }
+  .sheet-field.pick .sheet-field-meta{ color:var(--label-2); font-size:13px; font-weight:400; }
+
+  /* ---- Калькулятор: строка выбора активной пачки — отдельная карточка ---- */
+  .bean-pick-row{
+    display:flex; width:100%; align-items:center; justify-content:space-between;
+    padding:12px 16px; min-height:44px; border:none; background:none;
+    font-family:inherit; text-align:left; cursor:pointer;
+  }
+  .bean-pick-row:active{ background:var(--fill); }
+  .bean-pick-right{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .bean-pick-value{
+    color:var(--label-2); font-size:15px; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; max-width:170px;
+  }
+</style>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111490970', 'ym');
+    ym(111490970, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111490970" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<script>
+  // Метка платформы открытия: Telegram Mini App vs обычный браузер.
+  // window.Telegram.WebApp уже определён к этому моменту, т.к. telegram-web-app.js
+  // подключён обычным блокирующим <script> раньше в <head>.
+  (function(){
+    var tg = window.Telegram && window.Telegram.WebApp;
+    var platform = (tg && tg.initData) ? 'telegram' : 'web';
+    if (typeof ym === 'function') {
+      ym(111490970, 'params', {platform: platform});
+      ym(111490970, 'reachGoal', platform === 'telegram' ? 'opened_in_telegram' : 'opened_in_browser');
+    }
+  })();
+</script>
+</head>
+<body>
+<div class="screen">
+  <div class="nav-indicator" id="navIndicator">
+    <div class="nav-caption" id="navCaption">
+      <span class="nav-cap" data-i="0">Зёрна</span>
+      <span class="nav-cap" data-i="1">Калькулятор</span>
+      <span class="nav-cap" data-i="2">Журнал</span>
+    </div>
+    <div class="nav-dots">
+      <div class="nav-dot-zone" data-i="0"><div class="nav-dot"><div class="nav-fill"></div></div></div>
+      <div class="nav-dot-zone" data-i="1"><div class="nav-dot"><div class="nav-fill"></div></div></div>
+      <div class="nav-dot-zone" data-i="2"><div class="nav-dot"><div class="nav-fill"></div></div></div>
+    </div>
+  </div>
+  <div class="pages-viewport">
+    <div class="pages" id="navPages">
+      <div class="page" id="pageBeans">
+        <p class="eyebrow" style="color:var(--blue);">Зёрна</p>
+        <h1>Мои зёрна</h1>
+
+        <div id="beansListWrap" style="display:none;">
+          <div id="beansList"></div>
+        </div>
+
+        <div class="tip" id="beansEmpty">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <span>Пока пусто. Добавь пачку — обжарка, дата и остаток будут под рукой на каждой заварке.</span>
+        </div>
+
+        <button class="ce-add" id="beanAddBtn" style="color:var(--blue); margin-top:14px;">Добавить пачку</button>
+      </div>
+
+      <div class="page" id="pageCalc">
+  <p class="eyebrow" id="eyebrow">Калькулятор</p>
+  <h1>Пропорции</h1>
+
+  <div class="segmented" id="modeSeg">
+    <div class="thumb"></div>
+    <button class="seg-btn active" data-mode="v60">V60</button>
+    <button class="seg-btn" data-mode="v60ice">Iced V60</button>
+    <button class="seg-btn" data-mode="cold">Cold brew</button>
+  </div>
+
+  <!-- Место под выбор рецепта (Hario / Rao / наш) — рендерится и показывается,
+       только когда рецептов больше одного, см. RECIPES и renderRecipeSeg() -->
+
+  <div id="classicInput">
+    <p class="section-header">Пропорция</p>
+    <div class="pills" id="ratioPills"></div>
+    <p class="ratio-hint" id="ratioHint"></p>
+
+    <p class="section-header">Объём</p>
+    <div class="card">
+      <div style="display:flex; align-items:stretch;">
+        <div id="classicVisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;"></div>
+        <div style="flex:1; min-width:0;">
+      <div class="row">
+        <span class="row-label">Зёрна</span>
+        <div class="stepper-field">
+          <div class="stepper">
+            <button id="classicCoffeeStepDown">−</button>
+            <div class="divider"></div>
+            <button id="classicCoffeeStepUp">+</button>
+          </div>
+          <input type="number" id="classicCoffeeInput" value="26">
+          <span class="unit">г</span>
+        </div>
+      </div>
+      <div class="row" id="classicWaterRow">
+        <span class="row-label" id="classicWaterLabel">Вода</span>
+        <div class="stepper-field">
+          <div class="stepper">
+            <button id="classicWaterStepDown">−</button>
+            <div class="divider"></div>
+            <button id="classicWaterStepUp">+</button>
+          </div>
+          <input type="number" id="classicWaterInput" value="416">
+          <span class="unit">мл</span>
+        </div>
+      </div>
+        </div>
+      </div>
+      <div class="row" id="classicDerivedRow1" style="display:none;">
+        <span class="row-label" id="classicDerivedLabel1">Горячая вода</span>
+        <span class="stat-value" id="classicDerivedValue1" style="font-size:17px;"></span>
+      </div>
+      <div class="row" id="classicDerivedRow2" style="display:none;">
+        <span class="row-label" id="classicDerivedLabel2">Лёд в чашке</span>
+        <span class="stat-value" id="classicDerivedValue2" style="font-size:17px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="v60Input" style="display:none;">
+    <p class="section-header">Объём</p>
+    <div class="card">
+      <div style="display:flex; align-items:stretch;">
+        <div id="v60VisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;">
+          <svg id="visual" viewBox="0 0 100 120" style="width:56px; height:67px;"></svg>
+        </div>
+        <div style="flex:1; min-width:0;">
+      <div class="row" style="flex-direction:column; align-items:stretch; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span class="row-label">Вода</span>
+          <span class="stat-value" id="sliderVolVal" style="font-size:20px;">300 мл</span>
+        </div>
+        <input type="range" id="volSlider" min="100" max="450" step="1" value="300">
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--label-2);">
+          <span>150</span><span>400</span>
+        </div>
+      </div>
+      <div class="row">
+        <span class="row-label" id="coffeeRowLabel">Кофе · 1:16</span>
+        <div class="stepper-field">
+          <div class="stepper">
+            <button id="coffeeStepDown">−</button>
+            <div class="divider"></div>
+            <button id="coffeeStepUp">+</button>
+          </div>
+          <input type="number" id="coffeeInput" value="18.5" step="0.5">
+          <span class="unit">г</span>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <button class="bean-pick-row" id="beanPickRow" type="button">
+      <span class="row-label">Пачка</span>
+      <span class="bean-pick-right">
+        <span class="bean-pick-value" id="beanPickValue">Не выбрана</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </span>
+    </button>
+  </div>
+
+  <div class="card temp-card" id="tempCard" style="display:none;">
+    <button class="temp-toggle" id="tempToggle" aria-expanded="false" aria-controls="tempDetail">
+      <span class="row-label">Температура воды</span>
+      <span class="temp-right">
+        <span class="temp-value" id="tempValue">93 °C</span>
+        <svg class="temp-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </button>
+    <div class="temp-detail" id="tempDetail">
+      <p class="temp-group-label">Обжарка</p>
+      <div class="pills" id="roastPills"></div>
+      <p class="temp-group-label">Обработка</p>
+      <div class="pills" id="processPills"></div>
+      <div id="tempWhy"></div>
+    </div>
+  </div>
+
+  <p class="section-header" id="recipeHeader" style="display:none;">Схема пролива</p>
+  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:8px;"></div>
+  <p class="ratio-hint" id="recipeHint" style="display:none; margin:0 4px 14px;"></p>
+
+  <div id="customEditorWrap" style="display:none;">
+    <p class="section-header">Кастомный график</p>
+    <div class="card" id="customEditor"></div>
+    <button class="ce-add" id="ceAddPour">Добавить пролив</button>
+
+    <p class="section-header">Итого</p>
+    <div class="card" id="ceTotalsCard">
+      <div class="row">
+        <span class="row-label">Всего воды</span>
+        <span class="stat-value" id="ceTotalWater"></span>
+      </div>
+      <div class="row">
+        <span class="row-label">Время заваривания</span>
+        <span class="stat-value" id="ceTotalTime"></span>
+      </div>
+    </div>
+    <p class="ratio-hint">Последний пролив — остаток, чтобы сумма всегда сходилась с расчётным объёмом</p>
+
+    <div class="ce-warn" id="ceWarn" style="display:none;"></div>
+  </div>
+
+  <p class="section-header pour-header" id="pourHeader" style="display:none;">График пролива</p>
+  <div class="card pour-toggle-card" id="pourToggleCard" style="display:none;">
+    <button class="pour-toggle-btn" id="pourToggleBtn" aria-expanded="false" aria-controls="pourCard">
+      <span class="row-label">График пролива</span>
+      <span class="pour-toggle-right">
+        <span class="pour-toggle-count" id="pourToggleCount"></span>
+        <svg class="pour-toggle-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </button>
+  </div>
+  <div class="card pour-card" id="pourCard"></div>
+
+  <div class="action-row" id="actionRow">
+    <button class="brew-btn start" id="brewToggle">Начать заваривание</button>
+    <button class="music-square" id="musicMuteBtn" aria-label="Выключить музыку" aria-pressed="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/>
+        <path class="mute-wave" d="M16 8a5 5 0 010 8"/>
+        <path class="mute-wave" d="M18.7 5.3a9 9 0 010 13.4"/>
+        <path class="mute-x" d="M16 9l5 6M21 9l-5 6"/>
+      </svg>
+    </button>
+  </div>
+  <p class="brew-hint" id="brewHint">Перед стартом — 5 секунд на подготовку</p>
+
+  <div class="brew-live" id="brewLive">
+    <div class="bl-top">
+      <span class="bl-stage" id="brewStageName">Приготовьтесь</span>
+      <span class="bl-dots" id="brewDots"></span>
+      <span class="bl-elapsed tnum" id="brewElapsed">0:00</span>
+    </div>
+    <div class="bl-cols">
+      <div class="bl-col">
+        <div class="bl-cap" id="brewCapL">налить до</div>
+        <div class="bl-circle disc">
+          <div class="c-num tnum">
+            <div class="c-above tnum" id="brewVolAdd"></div>
+            <span id="brewVolNum">0</span>
+            <div class="c-below">мл</div>
+          </div>
+        </div>
+      </div>
+      <div class="bl-col">
+        <div class="bl-cap" id="brewCapR">старт через</div>
+        <div class="bl-circle">
+          <svg class="bl-ring" viewBox="0 0 136 136">
+            <circle cx="68" cy="68" r="60" fill="none" stroke="var(--track)" stroke-width="9"/>
+            <circle class="arc" id="brewArc" cx="68" cy="68" r="60" fill="none" stroke="var(--accent, var(--orange))" stroke-width="9" stroke-linecap="round"/>
+          </svg>
+          <div class="c-num acc tnum" id="brewTimeNum">5</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
+
+  <div class="tip" id="notes">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+    <span id="notesText"></span>
+  </div>
+      </div>
+
+      <div class="page" id="pageJournal">
+        <p class="eyebrow" style="color:var(--blue);">Журнал</p>
+        <h1>История</h1>
+        <div class="card" id="journalListCard" style="margin-bottom:8px; display:none;">
+          <div id="journalList"></div>
+        </div>
+        <div class="tip" id="journalEmpty">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <span>Пока пусто. Здесь появятся твои записи — дата, пропорция и проливы каждой чашки.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="sheet-scrim" id="sheetScrim"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheetTitle"></div>
+  <div class="sheet-subtitle" id="sheetSubtitle"></div>
+  <div class="sheet-pills" id="sheetPills" style="display:none;"></div>
+
+  <div class="segmented" id="sheetTabSeg" style="display:none; margin-bottom:12px;">
+    <div class="thumb"></div>
+    <button class="seg-btn active" data-tab="rate">Оценка</button>
+    <button class="seg-btn" data-tab="recipe">Рецепт</button>
+  </div>
+
+  <div id="sheetTabRate" style="display:none;">
+    <div class="stars" id="sheetStars">
+      <svg class="star" data-i="1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg class="star" data-i="5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+    </div>
+    <div class="taste-block">
+      <div class="taste-label" id="sheetTasteLabel">Сбалансировано</div>
+      <input type="range" id="sheetTasteRange" min="-2" max="2" step="1" value="0">
+      <div class="taste-ends"><span>Кисло</span><span>Горько</span></div>
+    </div>
+    <div class="row" style="border-bottom:none;">
+      <span class="row-label">Помол</span>
+      <div class="stepper-field">
+        <div class="stepper">
+          <button id="sheetGrindDown">−</button>
+          <div class="divider"></div>
+          <button id="sheetGrindUp">+</button>
+        </div>
+        <input type="number" id="sheetGrindInput" value="0">
+        <span class="unit" id="sheetGrindUnit" style="width:auto; white-space:nowrap;">кликов</span>
+      </div>
+    </div>
+    <input type="text" class="bean-input" id="sheetBeanInput" maxlength="60" placeholder="Название зерна">
+    <div class="note-wrap">
+      <textarea class="note" id="sheetNoteInput" maxlength="140" placeholder="Ощущения от чашки…"></textarea>
+      <div class="note-count" id="sheetNoteCount">140</div>
+    </div>
+  </div>
+
+  <div id="sheetTabRecipe" style="display:none;">
+    <div class="sheet-fields" id="sheetFields" style="display:none;"></div>
+  </div>
+
+  <div class="sheet-btn" id="sheetPrimaryBtn"></div>
+  <div class="sheet-btn ghost" id="sheetGhostBtn"></div>
+</div>
+
+<div class="alert-scrim" id="alertScrim"></div>
+<div class="alert-box" id="alertBox">
+  <div class="alert-title" id="alertTitle">Удалить запись?</div>
+  <div class="alert-text">Это действие нельзя отменить.</div>
+  <div class="alert-actions">
+    <div class="alert-btn" id="alertCancelBtn">Отмена</div>
+    <div class="alert-btn danger" id="alertDeleteBtn">Удалить</div>
+  </div>
+</div>
+
+<script>
+const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'cascade', custom:null, roast:'medium', process:'washed' };
+
+const RATIOS = { v60:[15,16,17], v60ice:[15,16,17], cold:[4,5,8,10,12] };
+const COLD_LABELS = {4:'1:4 конц.',5:'1:5 конц.',8:'1:8 готово',10:'1:10 готово',12:'1:12 готово'};
+const ACCENT = { v60:'--orange', v60ice:'--teal', cold:'--brown' };
+const DEFAULT_RATIO = { v60:16, v60ice:16, cold:5 };
+const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
+const MAX_COFFEE = { v60:30, v60ice:30 };
+const EYEBROW = { v60:'Калькулятор', v60ice:'Калькулятор · лёд', cold:'Долгий настой' };
+
+/* ---- Рецепты V60: три равноправных варианта — Каскад и Поровну раньше были
+   подуровнем внутри «Классики» (общая формула + переключатель формы), теперь
+   это два самостоятельных пункта на одном уровне с «Кастомом». Логика расчёта
+   у них общая (formulaSchedule), меняется только форма пролива. ----
+   BLOOM_TIME/POUR_INTERVAL вынесены наружу: те же числа нужны для оценки
+   времени в старых записях журнала, сохранённых до того как время проливов
+   стало частью записи (см. legacyPourTime). */
+const BLOOM_TIME = 40, POUR_INTERVAL = 45;
+function formulaSchedule(coffee, water, shape){
+  const TARGET_POUR = 130;
+  const bloom = coffee * 2;
+  const main = Math.max(0, water - bloom);
+  const numPours = Math.max(1, Math.min(4, Math.round(main / TARGET_POUR) || 1));
+  const rawPours = distributePours(main, numPours, shape);
+
+  const rawValues = [bloom, ...rawPours];
+  const values = rawValues.map(v => Math.floor(v));
+  let sumExceptLast = 0;
+  for(let i=0;i<values.length-1;i++) sumExceptLast += values[i];
+  values[values.length-1] = water - sumExceptLast;
+
+  const rows = [];
+  let t = 0;
+  let total = values[0];
+  rows.push({ time:t, action:'Блум', add:values[0], total });
+  for(let i=1;i<=numPours;i++){
+    t += (i===1 ? BLOOM_TIME : POUR_INTERVAL);
+    total += values[i];
+    rows.push({ time:t, action:'Пролив ' + i, add:values[i], total });
+  }
+  t += POUR_INTERVAL;
+  rows.push({ time:t, action:'Готово', add:null, total });
+  return rows;
+}
+
+const RECIPES = [
+  {
+    id:'cascade',
+    label:'Каскад',
+    ratio:16,
+    schedule(coffee, water){ return formulaSchedule(coffee, water, 'descending'); }
+  },
+  {
+    id:'equal',
+    label:'Поровну',
+    ratio:16,
+    schedule(coffee, water){ return formulaSchedule(coffee, water, 'equal'); }
+  },
+  {
+    id:'custom',
+    label:'Кастом',
+    // ratio:null — «Кастом» не навязывает пропорцию, остаётся та, что выбрана чипами
+    ratio:null,
+    schedule(coffee, water){
+      ensureCustom(coffee, water);
+      const vals = customValues(coffee, water);
+      const steps = state.custom.steps;
+      const rows = [];
+      let t = 0, total = 0;
+      steps.forEach((s,i)=>{
+        total += vals[i];
+        rows.push({ time:t, action: i===0 ? 'Блум' : ('Пролив ' + i), add:vals[i], total });
+        t += s.wait;
+      });
+      rows.push({ time:t, action:'Готово', add:null, total });
+      return rows;
+    }
+  }
+];
+function getRecipe(id){ return RECIPES.find(r=>r.id===id) || RECIPES[0]; }
+
+// Распределяет "main" (воду после блума) по numPours проливам:
+// 'equal' — поровну; 'descending' — по убывающей арифметической прогрессии
+// весов (N, N-1, ..., 1), так что первый пролив самый большой, а дальше меньше.
+function distributePours(main, numPours, shape){
+  let weights;
+  if(shape === 'descending'){
+    weights = [];
+    for(let i=numPours;i>=1;i--) weights.push(i);
+  } else {
+    weights = Array(numPours).fill(1);
+  }
+  const sumW = weights.reduce((a,b)=>a+b,0);
+  return weights.map(w => main*w/sumW);
+}
+
+/* ================= Кастомный график пролива =================
+   Модель: state.custom.steps — массив шагов, первый всегда блум.
+     {kind:'bloom', mult, wait}  — mult = мл воды на грамм зерна (в «Классике» это 2)
+     {kind:'pour',  frac, wait}  — frac = доля от общего объёма воды
+   Храним доли, а не миллилитры: тогда рецепт переживает смену граммовки
+   и пропорции и пересчитывается сам. Пользователь при этом вводит мл.
+   wait — пауза до следующего шага; wait последнего шага = время стекания.
+   Последний пролив не редактируется: он всегда остаток, чтобы сумма
+   сходилась с объёмом ровно (то же правило округления, что и в «Классике»). */
+
+const CUSTOM_MAX_POURS = 6;
+const CUSTOM_STORE_KEY = 'customRecipe';
+
+// Обработчики полей редактора живут дольше одного рендера, поэтому объём
+// они должны спрашивать в момент ввода, а не брать из замыкания.
+function currentBrewValues(){
+  const r = state.ratio;
+  if(state.inputType === 'coffee') return { coffee: state.value, water: state.value * r };
+  return { coffee: r ? state.value / r : 0, water: state.value };
+}
+
+function saveCustom(){
+  try{ localStorage.setItem(CUSTOM_STORE_KEY, JSON.stringify(state.custom)); }catch(e){}
+}
+
+function loadCustom(){
+  try{
+    const raw = localStorage.getItem(CUSTOM_STORE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(!parsed || !Array.isArray(parsed.steps) || parsed.steps.length < 2) return null;
+    if(parsed.steps[0].kind !== 'bloom') return null;
+    // Санитизация: битые числа из storage не должны попасть в расчёт
+    parsed.steps.forEach(s=>{
+      s.wait = Math.max(1, Math.min(600, Number(s.wait) || 45));
+      if(s.kind === 'bloom') s.mult = Math.max(0, Math.min(10, Number(s.mult) || 2));
+      else s.frac = Math.max(0, Math.min(1, Number(s.frac) || 0));
+    });
+    return { steps: parsed.steps.slice(0, CUSTOM_MAX_POURS + 1) };
+  }catch(e){ return null; }
+}
+
+// Первое открытие «Своего» наследует текущую «Классику»: не пустая таблица,
+// а готовый график под текущую граммовку, который дальше правят руками.
+function customFromClassic(coffee, water){
+  const rows = RECIPES[0].schedule(coffee, water);
+  const pours = rows.filter(r=> r.add !== null);
+  const steps = [{
+    kind:'bloom',
+    mult: coffee > 0 ? pours[0].add / coffee : 2,
+    wait: rows[1] ? rows[1].time - rows[0].time : 40
+  }];
+  for(let i=1;i<pours.length;i++){
+    steps.push({
+      kind:'pour',
+      frac: water > 0 ? pours[i].add / water : 0,
+      wait: rows[i+1] ? rows[i+1].time - rows[i].time : 45
+    });
+  }
+  if(steps.length < 2) steps.push({ kind:'pour', frac:0, wait:45 });
+  return { steps };
+}
+
+function ensureCustom(coffee, water){
+  if(!state.custom) state.custom = loadCustom() || customFromClassic(coffee, water);
+  return state.custom;
+}
+
+// Миллилитры каждого шага. Все шаги кроме последнего — целые мл (floor),
+// дробный остаток копится в последний пролив.
+function customValues(coffee, water){
+  const steps = state.custom.steps;
+  const vals = [];
+  let acc = 0;
+  for(let i=0;i<steps.length;i++){
+    if(i === steps.length - 1){
+      vals.push(Math.max(0, Math.round((water - acc) * 10) / 10));
+    } else {
+      const ml = steps[i].kind === 'bloom'
+        ? Math.floor(coffee * steps[i].mult)
+        : Math.floor(water * steps[i].frac);
+      const safe = Math.max(0, ml);
+      acc += safe;
+      vals.push(safe);
+    }
+  }
+  return vals;
+}
+
+// Мягкие подсказки: предупреждаем, но ничего не запрещаем — экспериментировать можно.
+function customWarnings(coffee, water, vals){
+  const steps = state.custom.steps;
+  const out = [];
+  let accExceptLast = 0;
+  for(let i=0;i<vals.length-1;i++) accExceptLast += vals[i];
+  if(accExceptLast > water + 0.5){
+    out.push('Заданные объёмы уже дают ' + fmt(accExceptLast) + ' мл — это больше, чем ' + fmt(water) + ' мл. Уменьшите проливы, иначе на последний ничего не остаётся.');
+  }
+  if(coffee > 0 && vals[0] < coffee * 2 - 0.5){
+    out.push('Блум меньше ×2 от граммовки (' + fmt(coffee * 2) + ' мл) — зерно может смочиться не полностью.');
+  }
+  for(let i=1;i<vals.length;i++){
+    if(vals[i] > 150) out.push('Пролив ' + i + ' — ' + fmt(vals[i]) + ' мл за раз, воронка может переполниться.');
+  }
+  for(let i=0;i<steps.length;i++){
+    if(vals[i] > 100 && steps[i].wait < 20){
+      out.push((i === 0 ? 'После блума' : 'После пролива ' + i) + ' всего ' + steps[i].wait + ' с — вода может не успеть уйти.');
+    }
+  }
+  return out;
+}
+
+const RECIPE_HINTS = {
+  cascade: 'Блум ×2, дальше проливы по убывающей: первый — самый большой, слой ещё рыхлый и легко принимает воду, к концу поток замедляется',
+  equal: 'Блум ×2, дальше все проливы — одного объёма: ровный, предсказуемый ритм',
+  custom: 'Объёмы и паузы задаёте сами, последний пролив — остаток'
+};
+
+function accentVar(mode){ return getComputedStyle(document.documentElement).getPropertyValue(ACCENT[mode]).trim(); }
+
+function moveThumb(segEl, index, count){
+  const thumb = segEl.querySelector('.thumb');
+  const w = (segEl.clientWidth - 4) / count;
+  thumb.style.width = w + 'px';
+  thumb.style.transform = `translateX(${index * w}px)`;
+}
+
+const RATIO_HINTS = {
+  15: 'Крепче, плотнее тело, меньше кислотности',
+  16: 'Баланс — хорошая стартовая точка',
+  17: 'Легче, ярче кислотность, деликатнее'
+};
+
+/* ================= Температура воды =================
+   Две оси: обжарка задаёт базу (пористость зерна — главный фактор
+   растворимости), обработка сдвигает её на пару градусов.
+   Кламп 88…96 держит результат внутри признанного диапазона пуровера
+   даже на крайних комбинациях. */
+
+const ROASTS = [
+  { id:'light',  label:'Светлая', base:94 },
+  { id:'medium', label:'Средняя', base:92 },
+  { id:'dark',   label:'Тёмная',  base:89 }
+];
+const PROCESSES = [
+  { id:'washed',    label:'Мытая',       mod: 1 },
+  { id:'natural',   label:'Натуральная', mod:-2 },
+  { id:'honey',     label:'Хани',        mod: 0 },
+  { id:'anaerobic', label:'Анаэробная',  mod:-3 }
+];
+const TEMP_MIN = 88, TEMP_MAX = 96;
+
+const PROCESS_WHY = {
+  washed: ['Мякоть ягоды смывают до сушки, зерно сохнет голым. Отсюда чистая, прозрачная чашка с выраженной кислотностью — и вода нужна погорячее, чтобы эта кислотность собралась в сладость, а не осталась резкой. Кисло и пусто на вкус — поднимите температуру или измельчите помол.'],
+  natural: ['Зерно сушат прямо в ягоде, и оно вбирает её сахара — в чашке это читается как клубника, черника, вино, компот. Соединения, которые дают эти ноты, хрупкие: на слишком горячей воде они рассыпаются, а вместо них лезет перезрелое, бражное, «квашеное». Ниже температура — ягода звучит чище.'],
+  honey: [
+    'Компромисс между двумя предыдущими: кожицу снимают, но липкий слой мякоти оставляют на зерне сушиться. «Мёд» здесь про липкость при обработке, а не про вкус. Сахара от мякоти зерно взять успевает, но меньше, чем у натуральной, а чистота остаётся почти как у мытой — поэтому и температура посередине.',
+    'Начинать стоит именно с середины: хани бывает жёлтый, красный и чёрный — разница в том, сколько мякоти оставили и как долго сушили, и разброс между ними больше, чем между мытой и натуральной. Единого ориентира тут просто нет. Сварите на этой температуре и двигайте: горчит и мутнеет — на 2 °C ниже, кисло и пусто — на 2 °C выше.'
+  ],
+  anaerobic: ['Ягоды ферментируют в закрытых ёмкостях без кислорода — получаются яркие, часто резкие ноты вроде рома, тропиков, специй. Ферментация уже расщепила часть сахаров, поэтому зерно отдаёт вещества быстрее обычного и легко переэкстрагируется. Держите воду прохладнее либо сократите проливы.']
+};
+const TEMP_FOOTNOTE = 'Это стартовая точка. Температура в первую очередь меняет скорость экстракции — дальше подстраивайте помол и время по вкусу.';
+const TEMP_ICE_NOTE = 'Лёд идёт в чашку после заваривания и на температуру пролива не влияет.';
+
+const YM_ID = 111490970;
+const ymFired = {};
+function track(goal, params){
+  if(typeof ym !== 'function') return;
+  try{
+    if(params) ym(YM_ID, 'params', params);
+    if(goal && !ymFired[goal]){ ymFired[goal] = true; ym(YM_ID, 'reachGoal', goal); }
+  }catch(e){}
+}
+
+function loadBeanPrefs(){
+  try{
+    const r = localStorage.getItem('beanRoast');
+    const p = localStorage.getItem('beanProcess');
+    if(ROASTS.some(x=>x.id===r)) state.roast = r;
+    if(PROCESSES.some(x=>x.id===p)) state.process = p;
+  }catch(e){}
+}
+function saveBeanPrefs(){
+  try{
+    localStorage.setItem('beanRoast', state.roast);
+    localStorage.setItem('beanProcess', state.process);
+  }catch(e){}
+}
+
+function computeBrewTemp(roastId, processId){
+  const roast = ROASTS.find(x=>x.id===roastId) || ROASTS[1];
+  const proc = PROCESSES.find(x=>x.id===processId) || PROCESSES[0];
+  return Math.min(TEMP_MAX, Math.max(TEMP_MIN, roast.base + proc.mod));
+}
+function brewTemp(){
+  return computeBrewTemp(state.roast, state.process);
+}
+
+function buildTempPills(){
+  const mk = (wrapId, items, key)=>{
+    const wrap = document.getElementById(wrapId);
+    wrap.innerHTML = '';
+    items.forEach(it=>{
+      const b = document.createElement('button');
+      b.className = 'pill';
+      b.dataset.value = it.id;
+      b.textContent = it.label;
+      b.onclick = ()=>{
+        state[key] = it.id;
+        saveBeanPrefs();
+        updateTempBlock();
+        track('bean_profile_changed', { bean_roast: state.roast, bean_process: state.process });
+      };
+      wrap.appendChild(b);
+    });
+  };
+  mk('roastPills', ROASTS, 'roast');
+  mk('processPills', PROCESSES, 'process');
+
+  const card = document.getElementById('tempCard');
+  document.getElementById('tempToggle').onclick = ()=>{
+    const open = !card.classList.contains('open');
+    card.classList.toggle('open', open);
+    document.getElementById('tempToggle').setAttribute('aria-expanded', String(open));
+    if(open) track('temp_hint_expanded');
+  };
+}
+
+function updateTempBlock(){
+  const card = document.getElementById('tempCard');
+  if(state.mode === 'cold'){
+    card.style.display = 'none';
+    card.classList.remove('open');
+    document.getElementById('tempToggle').setAttribute('aria-expanded', 'false');
+    return;
+  }
+  card.style.display = 'block';
+
+  const accent = accentVar(state.mode);
+  const valueEl = document.getElementById('tempValue');
+  valueEl.style.setProperty('--accent', accent);
+  valueEl.textContent = brewTemp() + ' °C';
+
+  document.querySelectorAll('#roastPills .pill').forEach(b=>{
+    b.style.setProperty('--accent', accent);
+    b.classList.toggle('active', b.dataset.value === state.roast);
+  });
+  document.querySelectorAll('#processPills .pill').forEach(b=>{
+    b.style.setProperty('--accent', accent);
+    b.classList.toggle('active', b.dataset.value === state.process);
+  });
+
+  const why = document.getElementById('tempWhy');
+  why.innerHTML = '';
+  const paras = (PROCESS_WHY[state.process] || []).slice();
+  if(state.mode === 'v60ice') paras.push(TEMP_ICE_NOTE);
+  paras.forEach(t=>{
+    const p = document.createElement('p');
+    p.className = 'temp-why';
+    p.textContent = t;
+    why.appendChild(p);
+  });
+  const foot = document.createElement('p');
+  foot.className = 'temp-why muted';
+  foot.textContent = TEMP_FOOTNOTE;
+  why.appendChild(foot);
+}
+
+function renderPills(){
+  const wrap = document.getElementById('ratioPills');
+  wrap.innerHTML = '';
+  const accent = accentVar(state.mode);
+  RATIOS[state.mode].forEach(r=>{
+    const b = document.createElement('button');
+    b.className = 'pill' + (r===state.ratio ? ' active' : '');
+    b.style.setProperty('--accent', accent);
+    b.textContent = state.mode==='cold' ? COLD_LABELS[r] : ('1:'+r);
+    b.onclick = ()=>{ state.ratio = r; renderPills(); compute(); };
+    wrap.appendChild(b);
+  });
+  const hint = document.getElementById('ratioHint');
+  hint.textContent = (state.mode==='v60' || state.mode==='v60ice') ? (RATIO_HINTS[state.ratio] || '') : '';
+}
+
+const modeSeg = document.getElementById('modeSeg');
+
+// Кнопки и .thumb строятся один раз — если пересобирать их на каждый клик
+// (как было раньше), новый .thumb рождается сразу в целевой позиции и
+// анимации сдвига попросту неоткуда взяться. Дальше только двигаем thumb
+// и переключаем .active — точно так же, как у modeSeg.
+function buildRecipeSeg(){
+  const wrap = document.getElementById('recipeSeg');
+  wrap.innerHTML = '<div class="thumb"></div>';
+  RECIPES.forEach(rec=>{
+    const b = document.createElement('button');
+    b.className = 'seg-btn';
+    b.textContent = rec.label;
+    b.dataset.recipe = rec.id;
+    b.onclick = ()=>{
+      state.recipe = rec.id;
+      if(rec.ratio != null) state.ratio = rec.ratio;
+      renderRecipeSeg();
+      renderPills();
+      compute();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function renderRecipeSeg(){
+  const wrap = document.getElementById('recipeSeg');
+  const hint = document.getElementById('recipeHint');
+  const header = document.getElementById('recipeHeader');
+  if(state.mode !== 'v60' || RECIPES.length < 2){
+    wrap.style.display = 'none';
+    hint.style.display = 'none';
+    header.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  hint.style.display = 'block';
+  header.style.display = 'block';
+  hint.textContent = RECIPE_HINTS[state.recipe] || '';
+
+  const btns = [...wrap.querySelectorAll('.seg-btn')];
+  btns.forEach(b=> b.classList.toggle('active', b.dataset.recipe === state.recipe));
+  const idx = btns.findIndex(b=>b.classList.contains('active'));
+  if(idx>=0) moveThumb(wrap, idx, btns.length);
+}
+
+function setMode(mode, animate){
+  state.mode = mode;
+  if(mode === 'v60'){
+    const rr = getRecipe(state.recipe).ratio;
+    state.ratio = rr != null ? rr : (state.ratio || DEFAULT_RATIO.v60);
+  } else {
+    state.ratio = DEFAULT_RATIO[mode];
+  }
+  const btns = [...modeSeg.querySelectorAll('.seg-btn')];
+  btns.forEach((b,i)=>{
+    b.classList.toggle('active', b.dataset.mode===mode);
+    if(b.dataset.mode===mode) moveThumb(modeSeg, i, btns.length);
+  });
+  document.getElementById('eyebrow').textContent = EYEBROW[mode];
+  document.getElementById('eyebrow').style.setProperty('--accent', accentVar(mode));
+  document.getElementById('classicInput').style.display = mode==='v60' ? 'none' : 'block';
+  document.getElementById('v60Input').style.display = mode==='v60' ? 'block' : 'none';
+
+  const visualSvg = document.getElementById('visual');
+  const targetRow = mode==='v60' ? document.getElementById('v60VisualRow') : document.getElementById('classicVisualRow');
+  targetRow.appendChild(visualSvg);
+
+  renderRecipeSeg();
+  renderPills();
+  compute();
+}
+
+modeSeg.querySelectorAll('.seg-btn').forEach(b=> b.onclick = ()=> setMode(b.dataset.mode));
+
+/* ---- V60ice/Cold: Зёрна и Вода видны и редактируемы одновременно (как в V60),
+   без переключателя единиц — переключать больше нечего и нечему рассинхронизироваться ---- */
+const classicCoffeeInput = document.getElementById('classicCoffeeInput');
+const classicWaterInput = document.getElementById('classicWaterInput');
+
+classicCoffeeInput.oninput = ()=>{
+  state.inputType = 'coffee';
+  state.value = parseFloat(classicCoffeeInput.value) || 0;
+  compute();
+};
+classicCoffeeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') classicCoffeeInput.blur(); });
+document.getElementById('classicCoffeeStepUp').onclick = ()=>{
+  classicCoffeeInput.value = (parseFloat(classicCoffeeInput.value)||0)+1;
+  classicCoffeeInput.dispatchEvent(new Event('input'));
+};
+document.getElementById('classicCoffeeStepDown').onclick = ()=>{
+  classicCoffeeInput.value = Math.max(0,(parseFloat(classicCoffeeInput.value)||0)-1);
+  classicCoffeeInput.dispatchEvent(new Event('input'));
+};
+
+classicWaterInput.oninput = ()=>{
+  state.inputType = 'water';
+  state.value = parseFloat(classicWaterInput.value) || 0;
+  compute();
+};
+classicWaterInput.addEventListener('keydown', e=>{ if(e.key==='Enter') classicWaterInput.blur(); });
+document.getElementById('classicWaterStepUp').onclick = ()=>{
+  classicWaterInput.value = (parseFloat(classicWaterInput.value)||0)+10;
+  classicWaterInput.dispatchEvent(new Event('input'));
+};
+document.getElementById('classicWaterStepDown').onclick = ()=>{
+  classicWaterInput.value = Math.max(0,(parseFloat(classicWaterInput.value)||0)-10);
+  classicWaterInput.dispatchEvent(new Event('input'));
+};
+
+/* ---- V60: слайдер объёма (с магнитными отметками) + поле граммов кофе,
+   оба редактируемы напрямую и держат state.value/inputType в синхроне ---- */
+const volSlider = document.getElementById('volSlider');
+const coffeeInputV60 = document.getElementById('coffeeInput');
+const sliderVolVal = document.getElementById('sliderVolVal');
+const SNAP_POINTS = [];
+for(let v=100; v<=450; v+=25) SNAP_POINTS.push(v);
+
+function nearestSnap(v){
+  let best=v, bd=999;
+  SNAP_POINTS.forEach(s=>{ const d=Math.abs(v-s); if(d<bd){ bd=d; best=s; } });
+  return {best,bd};
+}
+
+function updateSliderFill(){
+  const accent = accentVar('v60');
+  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
+  const pct = ((parseFloat(volSlider.value)-min)/(max-min))*100;
+  volSlider.style.background = `linear-gradient(to right, ${accent} ${pct}%, var(--fill) ${pct}%)`;
+}
+
+volSlider.oninput = ()=>{
+  let v = parseFloat(volSlider.value);
+  const { best, bd } = nearestSnap(v);
+  if(bd<=6){ v = best; volSlider.value = v; }
+  state.inputType = 'water';
+  state.value = v;
+  updateSliderFill();
+  compute();
+};
+
+coffeeInputV60.oninput = ()=>{
+  state.inputType = 'coffee';
+  state.value = parseFloat(coffeeInputV60.value) || 0;
+  compute();
+};
+coffeeInputV60.addEventListener('keydown', e=>{ if(e.key==='Enter') coffeeInputV60.blur(); });
+
+document.getElementById('coffeeStepUp').onclick = ()=>{
+  coffeeInputV60.value = ((parseFloat(coffeeInputV60.value)||0)+0.5).toFixed(1);
+  coffeeInputV60.dispatchEvent(new Event('input'));
+};
+document.getElementById('coffeeStepDown').onclick = ()=>{
+  coffeeInputV60.value = Math.max(0,(parseFloat(coffeeInputV60.value)||0)-0.5).toFixed(1);
+  coffeeInputV60.dispatchEvent(new Event('input'));
+};
+
+function fmtRatio(r){
+  const v = Math.round(r*10)/10;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+function syncV60Controls(coffee, water){
+  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
+  if(state.inputType !== 'water'){
+    volSlider.value = Math.min(max, Math.max(min, Math.round(water)));
+    updateSliderFill();
+  }
+  sliderVolVal.textContent = fmt(water)+' мл';
+  if(state.inputType !== 'coffee'){
+    coffeeInputV60.value = (Math.round(coffee*2)/2).toFixed(1);
+  }
+  document.getElementById('coffeeRowLabel').textContent = 'Кофе · 1:' + fmtRatio(state.ratio);
+}
+
+function fmt(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
+
+function compute(){
+  const r = state.ratio;
+  let coffee, water;
+  if(state.inputType==='coffee'){ coffee = state.value; water = coffee*r; }
+  else { water = state.value; coffee = water/r; }
+
+  const accent = accentVar(state.mode);
+
+  document.getElementById('brewLive').style.setProperty('--accent', accent);
+  document.getElementById('actionRow').style.setProperty('--accent', accent);
+
+  drawVisual(coffee, water, accent);
+  updateTempBlock();
+  renderNotes();
+  renderCustomEditor(coffee, water, accent);
+  renderPourSchedule(coffee, water, accent);
+  if(state.mode==='v60') syncV60Controls(coffee, water);
+  else syncClassicPair(coffee, water, r);
+
+  state.coffee = coffee;
+  state.water = water;
+}
+
+function syncClassicPair(coffee, water, r){
+  if(document.activeElement !== classicCoffeeInput){
+    classicCoffeeInput.value = (Math.round(coffee*10)/10).toString();
+  }
+  if(document.activeElement !== classicWaterInput){
+    classicWaterInput.value = (Math.round(water*10)/10).toString();
+  }
+
+  const row1 = document.getElementById('classicDerivedRow1');
+  const row2 = document.getElementById('classicDerivedRow2');
+  const waterLabel = document.getElementById('classicWaterLabel');
+  const waterRow = document.getElementById('classicWaterRow');
+
+  if(state.mode==='v60ice'){
+    waterLabel.textContent = 'Вода';
+    waterRow.style.borderBottom = '0.5px solid var(--separator)';
+    const ice = water*0.2, hot = water-ice;
+    row1.style.display = 'flex';
+    row2.style.display = 'flex';
+    document.getElementById('classicDerivedLabel1').textContent = 'Горячая вода';
+    document.getElementById('classicDerivedValue1').textContent = fmt(hot)+' мл';
+    document.getElementById('classicDerivedValue1').style.color = 'var(--label)';
+    document.getElementById('classicDerivedLabel2').textContent = 'Лёд в чашке';
+    document.getElementById('classicDerivedValue2').textContent = fmt(ice)+' г';
+    document.getElementById('classicDerivedValue2').style.color = accentVar('v60ice');
+  } else {
+    waterLabel.textContent = r<=5 ? 'Вода (настой)' : 'Вода (готово)';
+    waterRow.style.borderBottom = 'none';
+    row1.style.display = 'none';
+    row2.style.display = 'none';
+  }
+}
+
+function fmtTime(sec){
+  const m = Math.floor(sec/60);
+  const s = Math.round(sec%60);
+  return m + ':' + String(s).padStart(2,'0');
+}
+
+function renderPourSchedule(coffee, water, accent){
+  const card = document.getElementById('pourCard');
+  if(state.mode !== 'v60'){
+    card.style.display = 'none';
+    document.getElementById('pourHeader').style.display = 'none';
+    document.getElementById('pourToggleCard').style.display = 'none';
+    document.getElementById('actionRow').style.display = 'none';
+    document.getElementById('brewHint').style.display = 'none';
+    if(typeof stopBrew === 'function') stopBrew(true);
+    return;
+  }
+
+  const rows = getRecipe(state.recipe).schedule(coffee, water);
+  state.schedule = rows;
+
+  // Таблицу строим всегда, даже для «Кастома» — в покое она скрыта (шаги уже
+  // видны в редакторе), но во время брю мы её показываем взамен заблокированного
+  // редактора, и подсветка активного шага (tickBrew) должна на неё опираться.
+  // Видимость целиком решает updateScheduleUI(), не это построение.
+  card.innerHTML = '';
+  rows.forEach((r,i)=>{
+    const row = document.createElement('div'); row.className='pour-row'; row.dataset.index=i;
+    const time = document.createElement('span'); time.className='pour-time'; time.style.color=accent; time.textContent = (r===rows[rows.length-1] ? '~' : '') + fmtTime(r.time);
+    const dot = document.createElement('span'); dot.className='pour-dot'; dot.style.background=accent;
+    const action = document.createElement('span'); action.className='pour-action'; action.textContent=r.action;
+    const amounts = document.createElement('div'); amounts.className='pour-amounts';
+    const tot = document.createElement('div'); tot.className='pour-total'; tot.textContent = fmt(r.total)+' мл';
+    const add = document.createElement('div'); add.className='pour-add'; add.textContent = r.add!==null ? '+'+fmt(r.add)+' мл' : '—';
+    amounts.appendChild(tot); amounts.appendChild(add);
+    row.appendChild(time); row.appendChild(dot); row.appendChild(action); row.appendChild(amounts);
+    card.appendChild(row);
+  });
+
+  document.getElementById('actionRow').style.display = 'flex';
+  document.getElementById('brewHint').style.display = 'block';
+  updateScheduleUI();
+}
+
+/* Перерисовываем таблицу целиком только когда изменилось число шагов —
+   иначе обновляем значения на месте, чтобы поле не теряло фокус при вводе. */
+function renderCustomEditor(coffee, water, accent){
+  const wrap = document.getElementById('customEditorWrap');
+  if(state.mode !== 'v60' || state.recipe !== 'custom'){
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  ensureCustom(coffee, water);
+
+  const ed = document.getElementById('customEditor');
+  const steps = state.custom.steps;
+  const vals = customValues(coffee, water);
+  const canDelete = steps.length > 2;
+
+  if(ed.dataset.count !== String(steps.length)){
+    ed.dataset.count = String(steps.length);
+    ed.innerHTML = '';
+    steps.forEach((s,i)=>{
+      const isLast = i === steps.length - 1;
+      const row = document.createElement('div');
+      row.className = 'ce-row';
+      row.dataset.step = i;
+
+      const label = document.createElement('span');
+      label.className = 'ce-label';
+      label.textContent = i === 0 ? 'Блум' : ('Пролив ' + i);
+
+      const spacer = document.createElement('span');
+      spacer.className = 'ce-spacer';
+
+      const mlField = document.createElement('div');
+      mlField.className = 'ce-field';
+      if(isLast){
+        const rest = document.createElement('div');
+        rest.className = 'ce-rest';
+        rest.dataset.role = 'rest';
+        mlField.appendChild(rest);
+      } else {
+        const mlInput = document.createElement('input');
+        mlInput.type = 'number';
+        mlInput.dataset.role = 'ml';
+        mlInput.min = '0';
+        mlInput.step = i === 0 ? '5' : '10';
+        mlInput.oninput = ()=>{
+          const v = Math.max(0, parseFloat(mlInput.value) || 0);
+          const cur = currentBrewValues();
+          const live = state.custom.steps;
+          if(!live[i]) return;
+          if(i === 0) live[0].mult = cur.coffee > 0 ? v / cur.coffee : 0;
+          else live[i].frac = cur.water > 0 ? v / cur.water : 0;
+          saveCustom();
+          compute();
+        };
+        mlInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') mlInput.blur(); });
+        mlField.appendChild(mlInput);
+      }
+      const mlUnit = document.createElement('span');
+      mlUnit.className = 'ce-unit';
+      mlUnit.textContent = 'мл';
+      mlField.appendChild(mlUnit);
+
+      const secField = document.createElement('div');
+      secField.className = 'ce-field';
+      const secInput = document.createElement('input');
+      secInput.type = 'number';
+      secInput.dataset.role = 'wait';
+      secInput.min = '1';
+      secInput.step = '5';
+      secInput.oninput = ()=>{
+        const live = state.custom.steps;
+        if(!live[i]) return;
+        live[i].wait = Math.max(1, Math.min(600, parseInt(secInput.value, 10) || 1));
+        saveCustom();
+        compute();
+      };
+      secInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') secInput.blur(); });
+      const secUnit = document.createElement('span');
+      secUnit.className = 'ce-unit';
+      secUnit.textContent = 'с';
+      secField.appendChild(secInput);
+      secField.appendChild(secUnit);
+
+      const del = document.createElement('button');
+      del.className = 'ce-del' + ((i === 0 || !canDelete) ? ' hidden' : '');
+      del.dataset.role = 'del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', 'Удалить пролив ' + i);
+      del.onclick = ()=>{
+        const live = state.custom.steps;
+        if(live.length <= 2 || i === 0) return;
+        live.splice(i, 1);
+        saveCustom();
+        compute();
+      };
+
+      row.appendChild(label);
+      row.appendChild(spacer);
+      row.appendChild(mlField);
+      row.appendChild(secField);
+      row.appendChild(del);
+      ed.appendChild(row);
+    });
+  }
+
+  [...ed.querySelectorAll('.ce-row')].forEach((row,i)=>{
+    const rest = row.querySelector('[data-role=rest]');
+    if(rest) rest.textContent = fmt(vals[i]);
+    const ml = row.querySelector('[data-role=ml]');
+    if(ml && document.activeElement !== ml) ml.value = String(Math.round(vals[i]));
+    const wait = row.querySelector('[data-role=wait]');
+    if(wait && document.activeElement !== wait) wait.value = String(steps[i].wait);
+    const del = row.querySelector('[data-role=del]');
+    if(del) del.classList.toggle('hidden', i === 0 || !canDelete);
+  });
+
+  const addBtn = document.getElementById('ceAddPour');
+  addBtn.style.setProperty('--accent', accent);
+  addBtn.style.display = (steps.length - 1) >= CUSTOM_MAX_POURS ? 'none' : 'block';
+
+  const totalMl = vals.reduce((a,b)=> a + b, 0);
+  let totalSec = 0;
+  steps.forEach(s=> totalSec += s.wait);
+  document.getElementById('ceTotalsCard').style.setProperty('--accent', accent);
+  document.getElementById('ceTotalWater').textContent = fmt(totalMl) + ' мл';
+  document.getElementById('ceTotalTime').textContent = fmtTime(totalSec);
+
+  const warnEl = document.getElementById('ceWarn');
+  const warns = customWarnings(coffee, water, vals);
+  if(warns.length){
+    warnEl.style.display = 'block';
+    warnEl.style.setProperty('--accent', accent);
+    warnEl.innerHTML = warns.map(w=> '<div><b>·</b> ' + w + '</div>').join('');
+  } else {
+    warnEl.style.display = 'none';
+  }
+}
+
+// Новый пролив делит текущий остаток пополам: предыдущий последний
+// фиксируется на половине, новый становится остатком.
+document.getElementById('ceAddPour').onclick = ()=>{
+  const steps = state.custom && state.custom.steps;
+  if(!steps || (steps.length - 1) >= CUSTOM_MAX_POURS) return;
+  const { coffee, water } = currentBrewValues();
+  const vals = customValues(coffee, water);
+  const rest = vals[vals.length - 1];
+  const lastIdx = steps.length - 1;
+  const keep = Math.floor(rest / 2);
+  if(steps[lastIdx].kind === 'pour') steps[lastIdx].frac = water > 0 ? keep / water : 0;
+  steps.push({ kind:'pour', frac:0, wait: steps[lastIdx].wait });
+  saveCustom();
+  compute();
+};
+
+function drawVisual(coffee, water, accent){
+  const svg = document.getElementById('visual');
+  const max = MAX_SCALE[state.mode];
+  const pct = Math.max(0.05, Math.min(1, water/max));
+  const stroke = 'var(--label-3)';
+
+  if(state.mode==='cold'){
+    const jarTop=20, jarBottom=100, jarLeft=22, jarRight=78, fillH=(jarBottom-jarTop)*pct;
+    svg.innerHTML = `
+      <path d="M30,8 h40 v10 h-4 v6 h-32 v-6 h-4 z" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M${jarLeft},${jarTop} h${jarRight-jarLeft} v${jarBottom-jarTop} q0,8 -8,8 h-${jarRight-jarLeft-16} q-8,0 -8,-8 z" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+      <clipPath id="clip"><path d="M${jarLeft},${jarTop} h${jarRight-jarLeft} v${jarBottom-jarTop} q0,8 -8,8 h-${jarRight-jarLeft-16} q-8,0 -8,-8 z"/></clipPath>
+      <rect x="${jarLeft}" y="${jarBottom-fillH}" width="${jarRight-jarLeft}" height="${fillH+10}" fill="${accent}" opacity="0.85" clip-path="url(#clip)"/>
+    `;
+  } else {
+    // Широкая воронка (V60) стекает в узкое горлышко сервера, который расширяется
+    // книзу — читается как графин/кружка, а не безликий прямоугольник.
+    const coneTopY=6, coneBottomY=44, coneTopL=6, coneTopR=94, neckL=38, neckR=62;
+    const cupTop=50, cupBottomY=110, baseL=14, baseR=86, corner=10;
+    const cupH = cupBottomY-cupTop, fillH = cupH*pct;
+    const coneH = coneBottomY-coneTopY;
+    const coffeePct = Math.max(0, Math.min(1, coffee/(MAX_COFFEE[state.mode]||30)));
+    const coffeeFillH = coneH*coffeePct;
+
+    let ice = '';
+    if(state.mode==='v60ice'){
+      ice = `
+        <rect x="35" y="${cupBottomY-fillH-2}" width="10" height="10" rx="3" fill="var(--card)" opacity="0.9"/>
+        <rect x="52" y="${cupBottomY-fillH-10}" width="9" height="9" rx="3" fill="var(--card)" opacity="0.8"/>
+      `;
+    }
+
+    const conePath = `M${coneTopL},${coneTopY} H${coneTopR} L${neckR},${coneBottomY} H${neckL} Z`;
+    const serverPath = `M${neckL},${cupTop} L${baseL},${cupBottomY-corner} Q${baseL},${cupBottomY} ${baseL+corner},${cupBottomY} H${baseR-corner} Q${baseR},${cupBottomY} ${baseR},${cupBottomY-corner} L${neckR},${cupTop} Z`;
+
+    svg.innerHTML = `
+      <path d="${conePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+      <clipPath id="clipCone"><path d="${conePath}"/></clipPath>
+      <rect x="${coneTopL}" y="${coneBottomY-coffeeFillH}" width="${coneTopR-coneTopL}" height="${coffeeFillH+4}" fill="var(--brown)" opacity="0.9" clip-path="url(#clipCone)"/>
+
+      <path d="${serverPath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
+      <clipPath id="clipServer"><path d="${serverPath}"/></clipPath>
+      <rect x="${baseL}" y="${cupBottomY-fillH}" width="${baseR-baseL}" height="${fillH}" fill="${accent}" opacity="0.85" clip-path="url(#clipServer)"/>
+      ${ice}
+    `;
+  }
+}
+
+function renderNotes(){
+  const el = document.getElementById('notesText');
+  if(state.mode==='v60'){
+    el.innerHTML = `<b>Помол:</b> среднемелкий, как крупная соль. <b>Время:</b> 2:30–3:30.`;
+  } else if(state.mode==='v60ice'){
+    el.innerHTML = `<b>Идея:</b> часть воды заменяется льдом прямо в чашке (~20%), кофе стекает и сразу охлаждается. <b>Помол:</b> чуть мельче обычного V60.`;
+  } else {
+    el.innerHTML = `<b>Помол:</b> крупный, как для френч-пресса. <b>Настаивание:</b> 12–24ч в холодильнике. 1:4–1:5 — концентрат для разбавления, 1:8–1:12 — готовый к питью.`;
+  }
+}
+
+/* ---- iOS-клавиатура для type=number не имеет кнопки «Готово» — тап в любое
+   другое место страницы должен сам её закрывать ---- */
+document.addEventListener('click', e=>{
+  const active = document.activeElement;
+  if(active && active.tagName === 'INPUT' && active.type !== 'range' && e.target !== active){
+    active.blur();
+  }
+});
+
+window.addEventListener('resize', ()=>{
+  const mBtns=[...modeSeg.querySelectorAll('.seg-btn')];
+  const mIdx = mBtns.findIndex(b=>b.classList.contains('active'));
+  moveThumb(modeSeg, mIdx, mBtns.length);
+  const recipeWrap = document.getElementById('recipeSeg');
+  if(recipeWrap.style.display !== 'none'){
+    const rBtns=[...recipeWrap.querySelectorAll('.seg-btn')];
+    const rIdx = rBtns.findIndex(b=>b.classList.contains('active'));
+    if(rIdx>=0) moveThumb(recipeWrap, rIdx, rBtns.length);
+  }
+});
+
+/* ---- Единый источник истины для темы: применяем весь набор цветов разом,
+   никогда не смешивая Telegram-цвета с системными по отдельным свойствам. ---- */
+const PALETTE = {
+  light: {
+    '--bg':'#F2F2F7', '--card':'#FFFFFF', '--card-2':'#F2F2F7', '--label':'#000000',
+    '--label-2':'rgba(60,60,67,0.6)', '--label-3':'rgba(60,60,67,0.3)', '--separator':'rgba(60,60,67,0.29)',
+    '--fill':'rgba(120,120,128,0.12)', '--track':'rgba(120,120,128,0.18)', '--pill-off':'#E5E5EA', '--blue':'#007AFF',
+    '--seg-thumb':'#FFFFFF', '--seg-thumb-text':'#000000', '--pill-text':'#000000',
+    '--orange':'#FF9500', '--teal':'#59C4E8', '--brown':'#A2845E'
+  },
+  dark: {
+    '--bg':'#000000', '--card':'#1C1C1E', '--card-2':'#2C2C2E', '--label':'#FFFFFF',
+    '--label-2':'rgba(235,235,245,0.6)', '--label-3':'rgba(235,235,245,0.3)', '--separator':'rgba(84,84,88,0.6)',
+    '--fill':'rgba(120,120,128,0.24)', '--track':'rgba(120,120,128,0.32)', '--pill-off':'#2C2C2E', '--blue':'#0A84FF',
+    '--seg-thumb':'#636366', '--seg-thumb-text':'#FFFFFF', '--pill-text':'#FFFFFF',
+    '--orange':'#FF9F0A', '--teal':'#64D2FF', '--brown':'#AC8E68'
+  }
+};
+
+function applyPalette(isDark){
+  const p = isDark ? PALETTE.dark : PALETTE.light;
+  const root = document.documentElement.style;
+  Object.keys(p).forEach(k=> root.setProperty(k, p[k]));
+  if(window.Telegram && window.Telegram.WebApp){
+    try{ window.Telegram.WebApp.setBackgroundColor(p['--bg']); }catch(e){}
+    try{ window.Telegram.WebApp.setHeaderColor(p['--bg']); }catch(e){}
+  }
+}
+
+function syncTheme(){
+  let isDark;
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.colorScheme){
+    // Приоритет — явный сигнал темы от самого Telegram, а не отдельные цвета из themeParams.
+    isDark = window.Telegram.WebApp.colorScheme === 'dark';
+  } else {
+    isDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  applyPalette(isDark);
+}
+
+function initTelegram(){
+  if(!window.Telegram || !window.Telegram.WebApp) return;
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  tg.onEvent('themeChanged', syncTheme);
+  if(typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();
+}
+
+syncTheme();
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+    if(!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.colorScheme)) syncTheme();
+  });
+}
+
+/* ---- Живой таймер заваривания ---- */
+let audioCtx = null;
+let brewPhase = 'idle'; // 'idle' | 'counting' | 'running'
+let brewing = false;
+let brewStartTs = 0;
+let brewWallClockStart = 0;
+let brewRAF = null;
+let brewLastIdx = -1;
+let brewDoneFired = false;
+let journalOfferedThisBrew = false;
+
+function beep(freq, dur){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur/1000);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur/1000 + 0.03);
+  }catch(e){}
+}
+function haptic(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback){
+    try{ window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){}
+  } else if(navigator.vibrate){
+    navigator.vibrate(200);
+  }
+}
+function stageAlert(){ beep(880,150); setTimeout(()=>beep(1046,150),170); haptic(); }
+function finishAlert(){ beep(660,120); setTimeout(()=>beep(880,120),140); setTimeout(()=>beep(1175,260),280); haptic(); }
+
+/* ---- Фоновая музыка на время заваривания — отдельный мьют от бипов/вибро ---- */
+const brewMusic = document.getElementById('brewMusic');
+const musicMuteBtn = document.getElementById('musicMuteBtn');
+let musicMuted = localStorage.getItem('musicMuted') === '1';
+
+function applyMusicMuteState(){
+  brewMusic.muted = musicMuted;
+  musicMuteBtn.classList.toggle('muted', musicMuted);
+  musicMuteBtn.setAttribute('aria-pressed', String(musicMuted));
+  musicMuteBtn.setAttribute('aria-label', musicMuted ? 'Включить музыку' : 'Выключить музыку');
+}
+musicMuteBtn.onclick = ()=>{
+  musicMuted = !musicMuted;
+  localStorage.setItem('musicMuted', musicMuted ? '1' : '0');
+  applyMusicMuteState();
+};
+applyMusicMuteState();
+
+function lockControls(locked){
+  modeSeg.querySelectorAll('button').forEach(b=> b.disabled = locked);
+  document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
+  document.querySelectorAll('#recipeSeg button').forEach(b=> b.disabled = locked);
+  document.querySelectorAll('#roastPills .pill').forEach(b=> b.disabled = locked);
+  document.querySelectorAll('#processPills .pill').forEach(b=> b.disabled = locked);
+  document.getElementById('tempToggle').disabled = locked;
+  document.getElementById('beanPickRow').disabled = locked;
+  classicCoffeeInput.disabled = locked;
+  classicWaterInput.disabled = locked;
+  document.getElementById('classicCoffeeStepUp').disabled = locked;
+  document.getElementById('classicCoffeeStepDown').disabled = locked;
+  document.getElementById('classicWaterStepUp').disabled = locked;
+  document.getElementById('classicWaterStepDown').disabled = locked;
+  document.querySelectorAll('#customEditor input').forEach(el=> el.disabled = locked);
+  document.querySelectorAll('#customEditor .ce-del').forEach(el=> el.disabled = locked);
+  document.getElementById('ceAddPour').disabled = locked;
+  volSlider.disabled = locked;
+  coffeeInputV60.disabled = locked;
+  document.getElementById('coffeeStepUp').disabled = locked;
+  document.getElementById('coffeeStepDown').disabled = locked;
+  navLocked = locked;
+  document.getElementById('navIndicator').classList.toggle('locked', locked);
+}
+
+/* ---- Не гасить экран во время заваривания. Лок автоматически снимается
+   системой при уходе в фон — переприобретаем при возврате, если брю ещё идёт. ---- */
+let wakeLock = null;
+
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+  }catch(e){ /* не поддерживается / отклонено — просто работаем без него */ }
+}
+
+function releaseWakeLock(){
+  if(wakeLock){
+    try{ wakeLock.release(); }catch(e){}
+    wakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && brewPhase !== 'idle' && !wakeLock){
+    requestWakeLock();
+  }
+});
+
+/* ---- Геометрия кольца обратного отсчёта ---- */
+const RING_R = 60;
+const RING_C = 2 * Math.PI * RING_R;
+const COUNTDOWN_SECS = 5;
+let countdownStartTs = 0;
+let countdownLastSec = -1;
+
+document.getElementById('brewArc').setAttribute('stroke-dasharray', RING_C.toFixed(1));
+
+const blStage = document.getElementById('brewStageName');
+const blDots = document.getElementById('brewDots');
+const blElapsed = document.getElementById('brewElapsed');
+const blCapL = document.getElementById('brewCapL');
+const blCapR = document.getElementById('brewCapR');
+const blVolNum = document.getElementById('brewVolNum');
+const blVolAdd = document.getElementById('brewVolAdd');
+const blTimeNum = document.getElementById('brewTimeNum');
+const blArc = document.getElementById('brewArc');
+
+function setArc(pct){
+  blArc.setAttribute('stroke-dashoffset', (RING_C * (1 - Math.max(0, Math.min(1, pct)))).toFixed(1));
+}
+
+// Точек столько же, сколько шагов с водой: последняя строка «Готово» не в счёт
+function buildBrewDots(){
+  blDots.innerHTML = '';
+  const n = Math.max(1, (state.schedule || []).length - 1);
+  for(let i=0;i<n;i++){
+    const d = document.createElement('span');
+    d.className = 'bl-dot';
+    blDots.appendChild(d);
+  }
+}
+function paintDots(idx, done){
+  [...blDots.children].forEach((d,i)=>{
+    d.classList.toggle('on', done || i < idx);
+    d.classList.toggle('cur', !done && i === idx);
+  });
+}
+
+function showBrewCard(show){
+  document.getElementById('brewLive').style.display = show ? 'block' : 'none';
+  document.getElementById('musicMuteBtn').style.display = show ? 'flex' : 'none';
+}
+
+/* ---- Сворачиваемый график пролива на время заваривания ----
+   Пока не варим — обычный заголовок и полная таблица, как всегда.
+   Как только стартует отсчёт — заголовок прячется, вместо него
+   тап-строка «График пролива · N шагов»; таблица схлопывается.
+   Возврат к развёрнутому виду — только по явному «Остановить». */
+let pourCollapsed = true;
+
+function ruStepsWord(n){
+  const mod10 = n % 10, mod100 = n % 100;
+  if(mod10 === 1 && mod100 !== 11) return 'шаг';
+  if(mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return 'шага';
+  return 'шагов';
+}
+
+function updateScheduleUI(){
+  const toggleCard = document.getElementById('pourToggleCard');
+  const header = document.getElementById('pourHeader');
+  const card = document.getElementById('pourCard');
+  const btn = document.getElementById('pourToggleBtn');
+  const countEl = document.getElementById('pourToggleCount');
+  const customWrap = document.getElementById('customEditorWrap');
+
+  if(state.mode !== 'v60'){
+    toggleCard.style.display = 'none';
+    toggleCard.classList.remove('open');
+    header.style.display = 'none';
+    card.style.display = 'none';
+    return;
+  }
+
+  const isCustom = state.recipe === 'custom';
+  const brewingNow = brewPhase !== 'idle';
+
+  // «Кастом» в покое: редактор со своими полями заменяет таблицу — показывать
+  // оба одновременно значит дублировать одни и те же шаги.
+  // «Кастом» во время брю: редактор всё равно заблокирован для правки, так что
+  // вместо него показываем ту же таблицу, что у Каскада/Поровну — она даёт
+  // подсветку активного шага, которой в редакторе нет. Итоги («Итого») прячутся
+  // вместе с редактором: тот же объём и время видны в последней строке таблицы.
+  if(isCustom) customWrap.style.display = brewingNow ? 'none' : 'block';
+
+  if(isCustom && !brewingNow){
+    pourCollapsed = true;
+    toggleCard.style.display = 'none';
+    toggleCard.classList.remove('open');
+    header.style.display = 'none';
+    card.style.display = 'none';
+    return;
+  }
+
+  if(!brewingNow){
+    pourCollapsed = true; // сброс — при следующем старте таблица снова схлопнется
+    toggleCard.style.display = 'none';
+    toggleCard.classList.remove('open');
+    header.style.display = 'block';
+    card.style.display = 'block';
+    return;
+  }
+
+  header.style.display = 'none';
+  toggleCard.style.display = 'block';
+  toggleCard.classList.toggle('open', !pourCollapsed);
+  btn.setAttribute('aria-expanded', String(!pourCollapsed));
+  card.style.display = pourCollapsed ? 'none' : 'block';
+
+  const n = (state.schedule || []).length;
+  countEl.textContent = n + ' ' + ruStepsWord(n);
+}
+
+document.getElementById('pourToggleBtn').onclick = ()=>{
+  pourCollapsed = !pourCollapsed;
+  updateScheduleUI();
+};
+
+// «Приготовьтесь» — единственное длинное название этапа среди возможных
+// («Блум», «Пролив N», «Готово»); порог на пару символов выше него,
+// чтобы будущие «Пролив 10» и подобные не переключались зря.
+function setStageLabel(text){
+  blStage.textContent = text;
+  blStage.classList.toggle('bl-stage--tight', text.length > 8);
+}
+
+function beginCountdown(){
+  if(state.mode !== 'v60' || !state.schedule || !state.schedule.length) return;
+  brewPhase = 'counting';
+  countdownStartTs = performance.now();
+  countdownLastSec = -1;
+  const btn = document.getElementById('brewToggle');
+  btn.textContent = 'Отменить';
+  btn.classList.remove('start'); btn.classList.add('stop');
+  buildBrewDots();
+  paintDots(-1, false);
+  showBrewCard(true);
+  updateScheduleUI();
+  lockControls(true);
+  requestWakeLock();
+  // Один кадр на layout после display:none→block, потом ведём карточку
+  // в фокус — иначе на телефоне таймер стартует за пределами экрана.
+  requestAnimationFrame(()=>{
+    document.getElementById('brewLive').scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+  tickCountdown();
+}
+
+/* Отсчёт крутится тем же rAF, что и брю: одна петля, кольцо заполняется плавно,
+   бип срабатывает ровно на смене целой секунды. */
+function tickCountdown(){
+  if(brewPhase !== 'counting') return;
+  const el = (performance.now() - countdownStartTs) / 1000;
+  const left = Math.max(0, COUNTDOWN_SECS - el);
+  const secs = Math.max(1, Math.ceil(left));
+  if(secs !== countdownLastSec){ countdownLastSec = secs; beep(660, 90); }
+
+  const first = state.schedule[0];
+  setStageLabel('Приготовьтесь');
+  blElapsed.classList.add('bl-hidden');
+  blCapL.textContent = 'налить до';
+  blCapR.textContent = 'старт через';
+  blVolNum.textContent = fmt(first.total);
+  blVolAdd.textContent = '+' + fmt(first.add) + ' мл';
+  blVolAdd.classList.remove('bl-hidden');
+  blTimeNum.textContent = String(secs);
+  setArc(el / COUNTDOWN_SECS);
+
+  if(left <= 0){ launchBrew(); return; }
+  brewRAF = requestAnimationFrame(tickCountdown);
+}
+
+function launchBrew(){
+  brewPhase = 'running';
+  brewing = true;
+  brewStartTs = performance.now();
+  brewWallClockStart = Date.now();
+  brewLastIdx = -1;
+  brewDoneFired = false;
+  journalOfferedThisBrew = false;
+  document.getElementById('brewToggle').textContent = 'Остановить';
+  blElapsed.classList.remove('bl-hidden');
+  stageAlert();
+  try{
+    brewMusic.currentTime = 0;
+    brewMusic.muted = musicMuted;
+    brewMusic.play().catch(()=>{});
+  }catch(e){}
+  tickBrew();
+}
+
+function stopBrew(hide){
+  const wasRunning = brewPhase === 'running';
+  brewPhase = 'idle';
+  brewing = false;
+  releaseWakeLock();
+  if(brewRAF) cancelAnimationFrame(brewRAF);
+  const btn = document.getElementById('brewToggle');
+  btn.textContent = 'Начать заваривание';
+  btn.classList.remove('stop'); btn.classList.add('start');
+  if(hide) showBrewCard(false);
+  lockControls(false);
+  brewMusic.pause();
+  try{ brewMusic.currentTime = 0; }catch(e){}
+  document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
+  updateScheduleUI();
+  if(wasRunning) offerJournalSave();
+}
+
+function tickBrew(){
+  if(!brewing) return;
+  const rows = state.schedule;
+  const elapsed = (performance.now() - brewStartTs) / 1000;
+
+  let idx = 0;
+  for(let i=0;i<rows.length;i++){ if(elapsed >= rows[i].time) idx = i; }
+
+  const cur = rows[idx];
+  const next = rows[idx+1];
+  const done = !next;
+
+  if(idx > brewLastIdx){
+    for(let i=brewLastIdx+1; i<=idx; i++){ if(i>0) stageAlert(); }
+    brewLastIdx = idx;
+    document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.toggle('active', Number(el.dataset.index)===idx));
+    paintDots(idx, done);
+  }
+
+  setStageLabel(cur.action);
+  blElapsed.textContent = fmtTime(Math.max(0, elapsed));
+  blVolNum.textContent = fmt(cur.total);
+  blCapL.textContent = done ? 'всего налито' : 'налить до';
+  blCapR.textContent = done ? 'завершено за' : (next.action.toLowerCase() + ' через');
+  blVolAdd.textContent = done ? '' : '+' + fmt(cur.add) + ' мл';
+  blVolAdd.classList.toggle('bl-hidden', done);
+
+  if(done){
+    blTimeNum.textContent = fmtTime(cur.time);
+    setArc(1);
+    if(!brewDoneFired){
+      brewDoneFired = true;
+      finishAlert();
+      setTimeout(offerJournalSave, 700);
+    }
+  } else {
+    blTimeNum.textContent = fmtTime(Math.max(0, next.time - elapsed));
+    setArc((elapsed - cur.time) / (next.time - cur.time));
+  }
+
+  brewRAF = requestAnimationFrame(tickBrew);
+}
+
+document.getElementById('brewToggle').onclick = ()=>{
+  if(brewPhase === 'idle') beginCountdown();
+  else stopBrew(true);
+};
+
+/* ---- Дневник: хранилище ----
+   Источник выбирается один раз за сессию — CloudStorage внутри Telegram,
+   localStorage вне его — и не смешивается, тем же принципом, что и тема. */
+const tgApp = window.Telegram && window.Telegram.WebApp;
+const useCloud = !!(tgApp && tgApp.initData && tgApp.CloudStorage);
+
+function storeGet(key){
+  return new Promise(resolve=>{
+    if(useCloud){
+      tgApp.CloudStorage.getItem(key, (err, value)=> resolve(err || !value ? null : value));
+    } else {
+      resolve(localStorage.getItem(key));
+    }
+  });
+}
+function storeSet(key, value){
+  return new Promise(resolve=>{
+    if(useCloud){
+      tgApp.CloudStorage.setItem(key, value, ()=> resolve());
+    } else {
+      try{ localStorage.setItem(key, value); }catch(e){}
+      resolve();
+    }
+  });
+}
+function storeRemove(key){
+  return new Promise(resolve=>{
+    if(useCloud){
+      tgApp.CloudStorage.removeItem(key, ()=> resolve());
+    } else {
+      localStorage.removeItem(key);
+      resolve();
+    }
+  });
+}
+function storeGetMultiple(keys){
+  return new Promise(resolve=>{
+    if(!keys.length){ resolve({}); return; }
+    if(useCloud){
+      tgApp.CloudStorage.getItems(keys, (err, values)=> resolve(err ? {} : (values || {})));
+    } else {
+      const out = {};
+      keys.forEach(k=>{ const v = localStorage.getItem(k); if(v) out[k] = v; });
+      resolve(out);
+    }
+  });
+}
+
+/* ---- Дневник: модель данных ----
+   journal_index -> [id, id, ...]; journal_entry_<id> -> {id,mode,ratio,coffee,water,pours}
+   id = Date.now() в момент старта заваривания — он же дата записи, отдельного поля не нужно. */
+const JOURNAL_INDEX_KEY = 'journal_index';
+let journalEntries = [];
+
+async function journalReadIndex(){
+  const raw = await storeGet(JOURNAL_INDEX_KEY);
+  if(!raw) return [];
+  try{ const ids = JSON.parse(raw); return Array.isArray(ids) ? ids : []; }catch(e){ return []; }
+}
+
+async function journalLoad(){
+  const ids = await journalReadIndex();
+  if(!ids.length){ journalEntries = []; renderJournal(); return; }
+  const keys = ids.map(id=> 'journal_entry_' + id);
+  const values = await storeGetMultiple(keys);
+  journalEntries = ids
+    .map(id=>{
+      const raw = values['journal_entry_' + id];
+      if(!raw) return null;
+      try{ return JSON.parse(raw); }catch(e){ return null; }
+    })
+    .filter(Boolean)
+    .sort((a,b)=> b.id - a.id);
+  renderJournal();
+}
+
+async function journalSaveEntry(entry){
+  await storeSet('journal_entry_' + entry.id, JSON.stringify(entry));
+  const ids = await journalReadIndex();
+  if(!ids.includes(entry.id)){
+    ids.push(entry.id);
+    await storeSet(JOURNAL_INDEX_KEY, JSON.stringify(ids));
+  }
+  journalEntries = journalEntries.filter(e=> e.id !== entry.id);
+  journalEntries.push(entry);
+  journalEntries.sort((a,b)=> b.id - a.id);
+}
+
+async function journalUpdateEntry(entry){
+  await storeSet('journal_entry_' + entry.id, JSON.stringify(entry));
+  const i = journalEntries.findIndex(e=> e.id === entry.id);
+  if(i >= 0) journalEntries[i] = entry;
+}
+
+async function journalDeleteEntry(id){
+  await storeRemove('journal_entry_' + id);
+  const ids = (await journalReadIndex()).filter(x=> x !== id);
+  await storeSet(JOURNAL_INDEX_KEY, JSON.stringify(ids));
+  journalEntries = journalEntries.filter(e=> e.id !== id);
+}
+
+/* ---- Дневник: форматирование ---- */
+const MONTHS_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+function formatEntryDate(id){
+  const d = new Date(id);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return d.getDate() + ' ' + MONTHS_RU[d.getMonth()] + ', ' + hh + ':' + mm;
+}
+// Для строки списка дата и время показаны раздельно (дата над временем) —
+// formatEntryDate() выше остаётся как есть для заголовка шторки при правке записи.
+function sameDay(a, b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function journalDayLabel(id){
+  const d = new Date(id);
+  const now = new Date();
+  if(sameDay(d, now)) return 'Сегодня';
+  const yesterday = new Date(now.getTime() - 86400000);
+  if(sameDay(d, yesterday)) return 'Вчера';
+  return d.getDate() + ' ' + MONTHS_RU[d.getMonth()];
+}
+function journalTimeLabel(id){
+  const d = new Date(id);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+const TASTE_LABELS = ['Слишком кисло', 'Кисло', 'Сбалансировано', 'Горько', 'Слишком горько'];
+
+// Записи, сохранённые до того как время пролива стало частью записи журнала,
+// хранят проливы простыми числами (граммы) без времени. Оцениваем время по
+// тем же интервалам, что и formulaSchedule() — точно для Каскада/Поровну,
+// приближённо для старого Кастома (там шаги могли идти с другим интервалом).
+function legacyPourTime(i){
+  if(i === 0) return 0;
+  if(i === 1) return BLOOM_TIME;
+  return BLOOM_TIME + (i - 1) * POUR_INTERVAL;
+}
+
+function pluralRu(n, one, few, many){
+  const mod10 = n % 10, mod100 = n % 100;
+  if(mod100 > 10 && mod100 < 20) return many;
+  if(mod10 > 1 && mod10 < 5) return few;
+  if(mod10 === 1) return one;
+  return many;
+}
+
+/* ---- Дневник: список ---- */
+let jSwipeOpenRow = null;
+
+function renderJournal(){
+  const listCard = document.getElementById('journalListCard');
+  const list = document.getElementById('journalList');
+  const empty = document.getElementById('journalEmpty');
+  jSwipeOpenRow = null;
+  if(!journalEntries.length){
+    list.innerHTML = '';
+    listCard.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+  listCard.style.display = 'block';
+  empty.style.display = 'none';
+  list.innerHTML = journalEntries.map(journalRowHTML).join('');
+}
+
+function journalRowHTML(e){
+  const accent = 'var(' + ACCENT[e.mode] + ')';
+  const rated = (e.rating || 0) > 0;
+  const star = rated
+    ? '<span class="j-star" style="color:' + accent + ';">★</span>'
+    : '<span class="j-star" style="color:' + accent + '; opacity:.35;">☆</span>';
+  const bottomRight = e.bean ? e.bean : (fmt(e.water) + ' мл');
+  return '' +
+    '<div class="j-row" data-id="' + e.id + '">' +
+      '<div class="j-row-action">Удалить</div>' +
+      '<div class="j-row-content">' +
+        '<span class="j-left">' +
+          star +
+          '<span class="j-datetime">' +
+            '<span class="j-date">' + journalDayLabel(e.id) + '</span>' +
+            '<span class="j-time">' + journalTimeLabel(e.id) + '</span>' +
+          '</span>' +
+        '</span>' +
+        '<span class="j-amounts-text">' +
+          '<span class="j-amount-top">' + fmt(e.coffee) + ' г</span>' +
+          '<span class="j-amount-bottom" title="' + bottomRight + '">' + bottomRight + '</span>' +
+        '</span>' +
+      '</div>' +
+    '</div>';
+}
+
+function closeJournalRow(row){
+  if(!row) return;
+  const content = row.querySelector('.j-row-content');
+  content.style.transition = 'transform .22s ease';
+  content.style.transform = 'translateX(0)';
+  row.classList.remove('open');
+}
+
+const J_ACTION_WIDTH = 84;
+let jSwipeRow = null, jSwipeStartX = 0, jSwipeStartY = 0, jSwipeDragging = false, jSwipeDecided = false;
+let jSwipeBaseOpen = false, jSwipeLastDx = 0, jSwipeTargetIsAction = false;
+
+const journalList = document.getElementById('journalList');
+
+journalList.addEventListener('touchstart', (e)=>{
+  const row = e.target.closest('.j-row');
+  if(!row) return;
+  jSwipeRow = row;
+  jSwipeBaseOpen = row.classList.contains('open');
+  jSwipeTargetIsAction = !!e.target.closest('.j-row-action');
+  const t = e.touches[0];
+  jSwipeStartX = t.clientX; jSwipeStartY = t.clientY;
+  jSwipeDragging = false; jSwipeDecided = false; jSwipeLastDx = 0;
+}, { passive:true });
+
+journalList.addEventListener('touchmove', (e)=>{
+  if(!jSwipeRow) return;
+  const t = e.touches[0];
+  const dx = t.clientX - jSwipeStartX;
+  const dy = t.clientY - jSwipeStartY;
+  if(!jSwipeDecided){
+    if(Math.abs(dx) > 8 || Math.abs(dy) > 8){
+      jSwipeDecided = true;
+      jSwipeDragging = Math.abs(dx) > Math.abs(dy);
+    }
+  }
+  if(!jSwipeDragging) return;
+  e.preventDefault();
+  jSwipeLastDx = dx;
+  let pos = (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + dx;
+  pos = Math.max(-J_ACTION_WIDTH, Math.min(0, pos));
+  const content = jSwipeRow.querySelector('.j-row-content');
+  content.style.transition = 'none';
+  content.style.transform = 'translateX(' + pos + 'px)';
+}, { passive:false });
+
+journalList.addEventListener('touchend', ()=>{
+  if(!jSwipeRow) return;
+  const row = jSwipeRow;
+  if(jSwipeDragging){
+    const finalPos = Math.max(-J_ACTION_WIDTH, Math.min(0, (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + jSwipeLastDx));
+    const willOpen = finalPos < -J_ACTION_WIDTH / 2;
+    const content = row.querySelector('.j-row-content');
+    content.style.transition = 'transform .22s ease';
+    content.style.transform = willOpen ? 'translateX(-' + J_ACTION_WIDTH + 'px)' : 'translateX(0)';
+    row.classList.toggle('open', willOpen);
+    if(willOpen){
+      if(jSwipeOpenRow && jSwipeOpenRow !== row) closeJournalRow(jSwipeOpenRow);
+      jSwipeOpenRow = row;
+      navHapticTick();
+    } else if(jSwipeOpenRow === row){
+      jSwipeOpenRow = null;
+    }
+  } else if(!jSwipeDecided || !jSwipeTargetIsAction){
+    // не было горизонтального драга — это тап
+    if(row.classList.contains('open')){
+      if(jSwipeTargetIsAction){
+        openDeleteAlert(Number(row.dataset.id));
+      } else {
+        closeJournalRow(row);
+        if(jSwipeOpenRow === row) jSwipeOpenRow = null;
+      }
+    } else {
+      openEditSheet(Number(row.dataset.id));
+    }
+  } else {
+    openDeleteAlert(Number(row.dataset.id));
+  }
+  jSwipeRow = null; jSwipeDragging = false; jSwipeDecided = false;
+});
+
+document.addEventListener('touchstart', (e)=>{
+  if(jSwipeOpenRow && !e.target.closest('.j-row')){
+    closeJournalRow(jSwipeOpenRow);
+    jSwipeOpenRow = null;
+  }
+  if(bSwipeOpenRow && !e.target.closest('.b-row')){
+    closeBeanRow(bSwipeOpenRow);
+    bSwipeOpenRow = null;
+  }
+}, { passive:true });
+
+/* ---- Дневник: шторка (сохранение и правка — один компонент) ---- */
+let sheetMode = null, sheetEntry = null;
+const sheetScrimEl = document.getElementById('sheetScrim');
+const sheetEl = document.getElementById('sheet');
+const sheetTitleEl = document.getElementById('sheetTitle');
+const sheetSubtitleEl = document.getElementById('sheetSubtitle');
+const sheetFieldsEl = document.getElementById('sheetFields');
+const sheetPrimaryBtn = document.getElementById('sheetPrimaryBtn');
+const sheetGhostBtn = document.getElementById('sheetGhostBtn');
+
+const sheetTabSeg = document.getElementById('sheetTabSeg');
+const sheetTabRate = document.getElementById('sheetTabRate');
+const sheetTabRecipe = document.getElementById('sheetTabRecipe');
+const sheetStars = [...document.querySelectorAll('#sheetStars .star')];
+const sheetTasteRange = document.getElementById('sheetTasteRange');
+const sheetTasteLabel = document.getElementById('sheetTasteLabel');
+const sheetGrindInput = document.getElementById('sheetGrindInput');
+const sheetGrindUnit = document.getElementById('sheetGrindUnit');
+const sheetGrindUp = document.getElementById('sheetGrindUp');
+const sheetGrindDown = document.getElementById('sheetGrindDown');
+const sheetNoteInput = document.getElementById('sheetNoteInput');
+const sheetBeanInput = document.getElementById('sheetBeanInput');
+const sheetNoteCount = document.getElementById('sheetNoteCount');
+const NOTE_MAX = 140;
+
+/* Вкладки шторки: строим один раз статично в HTML (их всего 2, без пересборки DOM —
+   тот же урок, что и с .thumb в сегментированных контролах калькулятора). */
+function setSheetTab(tab){
+  const btns = [...sheetTabSeg.querySelectorAll('.seg-btn')];
+  btns.forEach((b,i)=>{
+    b.classList.toggle('active', b.dataset.tab === tab);
+    if(b.dataset.tab === tab) moveThumb(sheetTabSeg, i, btns.length);
+  });
+  sheetTabRate.style.display = tab === 'rate' ? 'block' : 'none';
+  sheetTabRecipe.style.display = tab === 'recipe' ? 'block' : 'none';
+}
+sheetTabSeg.querySelectorAll('.seg-btn').forEach(b=> b.addEventListener('click', ()=>{
+  setSheetTab(b.dataset.tab);
+  navHapticTick();
+}));
+
+function setSheetRating(n){
+  sheetEntry.rating = n;
+  sheetStars.forEach(st=>{
+    const on = Number(st.dataset.i) <= n;
+    st.classList.toggle('on', on);
+    st.setAttribute('fill', on ? 'currentColor' : 'none');
+  });
+}
+sheetStars.forEach(st=> st.addEventListener('click', ()=>{
+  setSheetRating(Number(st.dataset.i));
+  navHapticTick();
+}));
+
+sheetTasteRange.addEventListener('input', ()=>{
+  sheetEntry.taste = Number(sheetTasteRange.value);
+  sheetTasteLabel.textContent = TASTE_LABELS[sheetEntry.taste + 2];
+});
+
+function setSheetGrind(n){
+  sheetEntry.grind = Math.max(0, n);
+  sheetGrindInput.value = sheetEntry.grind;
+  sheetGrindUnit.textContent = pluralRu(sheetEntry.grind, 'клик', 'клика', 'кликов');
+}
+sheetGrindUp.addEventListener('click', ()=> setSheetGrind((sheetEntry.grind || 0) + 1));
+sheetGrindDown.addEventListener('click', ()=> setSheetGrind((sheetEntry.grind || 0) - 1));
+sheetGrindInput.addEventListener('input', ()=> setSheetGrind(parseInt(sheetGrindInput.value) || 0));
+
+sheetBeanInput.addEventListener('input', ()=>{
+  sheetEntry.bean = sheetBeanInput.value;
+});
+
+sheetNoteInput.addEventListener('input', ()=>{
+  sheetEntry.note = sheetNoteInput.value;
+  const left = NOTE_MAX - sheetEntry.note.length;
+  sheetNoteCount.textContent = left;
+  sheetNoteCount.classList.toggle('warn', left <= 10);
+});
+
+function showSheet(){
+  sheetScrimEl.classList.add('show');
+  sheetEl.classList.add('show');
+}
+function closeSheet(){
+  sheetScrimEl.classList.remove('show');
+  sheetEl.classList.remove('show');
+  sheetMode = null; sheetEntry = null;
+}
+
+function offerJournalSave(){
+  if(journalOfferedThisBrew) return;
+  if(!state.schedule || !state.schedule.length) return;
+  const pours = state.schedule
+    .filter(r=> r.add != null)
+    .map(r=> ({ time: Math.round(r.time), add: Math.round(r.add) }));
+  if(!pours.length) return;
+  journalOfferedThisBrew = true;
+  const activeBean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
+  const entry = {
+    id: brewWallClockStart || Date.now(),
+    mode: state.mode,
+    ratio: state.ratio,
+    coffee: Math.round((state.coffee || 0) * 10) / 10,
+    water: pours.reduce((a,b)=> a+b.add, 0),
+    pours: pours,
+    rating: 0,
+    taste: 0,
+    grind: 0,
+    beanId: activeBean ? activeBean.id : null,
+    bean: activeBean ? (activeBean.name || '') : '',
+    note: ''
+  };
+  sheetMode = 'save';
+  sheetEntry = entry;
+  sheetEl.style.removeProperty('--accent');
+  document.getElementById('sheetPills').style.display = 'none';
+  sheetTitleEl.textContent = 'Сохранить в дневник?';
+  sheetSubtitleEl.textContent = fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл · ' +
+    entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
+  // Кофе ещё не остыло — рано оценивать вкус. Вкладка «Оценка» появится позже, по тапу на запись.
+  sheetTabSeg.style.display = 'none';
+  sheetTabRate.style.display = 'none';
+  sheetTabRecipe.style.display = 'none';
+  sheetFieldsEl.style.display = 'none';
+  sheetFieldsEl.innerHTML = '';
+  sheetPrimaryBtn.textContent = 'Записать';
+  sheetGhostBtn.textContent = 'Пропустить';
+  sheetGhostBtn.style.display = '';
+  showSheet();
+}
+
+function openEditSheet(id){
+  const entry = journalEntries.find(e=> e.id === id);
+  if(!entry) return;
+  sheetMode = 'edit';
+  sheetEntry = JSON.parse(JSON.stringify(entry));
+  sheetEl.style.removeProperty('--accent');
+  document.getElementById('sheetPills').style.display = 'none';
+  sheetTitleEl.textContent = formatEntryDate(entry.id);
+  sheetSubtitleEl.textContent = 'V60 · 1:' + entry.ratio;
+
+  // Записи, сохранённые до появления оценки, не имеют этих полей — подставляем дефолты.
+  sheetEntry.rating = sheetEntry.rating || 0;
+  sheetEntry.taste = sheetEntry.taste || 0;
+  sheetEntry.grind = sheetEntry.grind || 0;
+  sheetEntry.bean = sheetEntry.bean || '';
+  sheetEntry.note = sheetEntry.note || '';
+
+  sheetTabSeg.style.display = 'flex';
+  setSheetTab('rate');
+  setSheetRating(sheetEntry.rating);
+  sheetTasteRange.value = sheetEntry.taste;
+  sheetTasteLabel.textContent = TASTE_LABELS[sheetEntry.taste + 2];
+  sheetGrindInput.value = sheetEntry.grind;
+  sheetGrindUnit.textContent = pluralRu(sheetEntry.grind, 'клик', 'клика', 'кликов');
+  sheetBeanInput.value = sheetEntry.bean;
+  sheetNoteInput.value = sheetEntry.note;
+  sheetNoteCount.textContent = NOTE_MAX - sheetEntry.note.length;
+  sheetNoteCount.classList.toggle('warn', NOTE_MAX - sheetEntry.note.length <= 10);
+
+  sheetFieldsEl.style.display = 'block';
+  sheetFieldsEl.innerHTML = '';
+  entry.pours.forEach((p, i)=>{
+    // Старый формат — просто число (граммы). Новый — {time, add}. Приводим
+    // к новому на лету: как только запись пересохранят, она мигрирует сама.
+    const isLegacy = typeof p === 'number';
+    const time = isLegacy ? legacyPourTime(i) : (p.time || 0);
+    const add = isLegacy ? p : (p.add || 0);
+    sheetEntry.pours[i] = { time, add };
+
+    const row = document.createElement('div');
+    row.className = 'sheet-field';
+    const label = document.createElement('span');
+    label.className = 'sheet-field-label';
+    label.textContent = i === 0 ? 'Блум' : ('Пролив ' + i);
+
+    const timeInput = document.createElement('input');
+    timeInput.type = 'number'; timeInput.className = 'sheet-field-time';
+    timeInput.inputMode = 'numeric'; timeInput.min = '0'; timeInput.step = '1';
+    timeInput.value = time;
+    timeInput.addEventListener('input', ()=>{
+      sheetEntry.pours[i].time = parseInt(timeInput.value, 10) || 0;
+    });
+    const timeUnit = document.createElement('span');
+    timeUnit.className = 'unit'; timeUnit.textContent = 'с';
+
+    const gramsInput = document.createElement('input');
+    gramsInput.type = 'number'; gramsInput.inputMode = 'decimal'; gramsInput.min = '0'; gramsInput.step = '1';
+    gramsInput.value = add;
+    gramsInput.addEventListener('input', ()=>{
+      sheetEntry.pours[i].add = parseFloat(gramsInput.value) || 0;
+    });
+
+    row.appendChild(label); row.appendChild(timeInput); row.appendChild(timeUnit); row.appendChild(gramsInput);
+    sheetFieldsEl.appendChild(row);
+  });
+  sheetPrimaryBtn.textContent = 'Сохранить';
+  sheetGhostBtn.textContent = 'Отмена';
+  sheetGhostBtn.style.display = '';
+  showSheet();
+}
+
+function closeSheetAndMaybeStop(){
+  const wasSaveMode = sheetMode === 'save';
+  closeSheet();
+  if(wasSaveMode && brewing) stopBrew(true);
+}
+
+sheetScrimEl.addEventListener('click', ()=>{
+  if(sheetMode === 'save') return; // сохранить/пропустить — только явными кнопками, не тапом мимо
+  closeSheetAndMaybeStop();
+});
+sheetGhostBtn.addEventListener('click', closeSheetAndMaybeStop);
+sheetPrimaryBtn.addEventListener('click', async ()=>{
+  const mode = sheetMode;
+  const entry = sheetEntry;
+  if(mode === 'save'){
+    await journalSaveEntry(entry);
+    await decrementActiveBean(entry.coffee);
+  } else if(mode === 'edit'){
+    entry.water = entry.pours.reduce((a,b)=> a+b.add, 0);
+    await journalUpdateEntry(entry);
+  } else if(mode === 'bean-add'){
+    entry.remaining = entry.startWeight;
+    await beanSaveEntry(entry);
+    track('bean_added');
+    if(beans.length === 1) await setActiveBean(entry.id);
+  } else if(mode === 'bean-edit'){
+    await beanUpdateEntry(entry);
+    track('bean_edited');
+  }
+  closeSheet();
+  if(mode === 'save' || mode === 'edit') renderJournal();
+  if(mode === 'bean-add' || mode === 'bean-edit') renderBeans();
+  if(mode === 'save' && brewing) stopBrew(true);
+});
+
+/* ---- Подтверждение удаления: один визуальный паттерн на дневник и зёрна,
+   различается только заголовок и то, какой delete-метод вызывается. ---- */
+let alertDeleteId = null, alertDeleteKind = 'journal';
+const alertScrimEl = document.getElementById('alertScrim');
+const alertBoxEl = document.getElementById('alertBox');
+const alertTitleEl = document.getElementById('alertTitle');
+
+function openDeleteAlert(id, kind){
+  alertDeleteId = id;
+  alertDeleteKind = kind || 'journal';
+  alertTitleEl.textContent = alertDeleteKind === 'bean' ? 'Удалить пачку?' : 'Удалить запись?';
+  alertScrimEl.classList.add('show');
+  alertBoxEl.classList.add('show');
+}
+function closeDeleteAlert(){
+  alertScrimEl.classList.remove('show');
+  alertBoxEl.classList.remove('show');
+  alertDeleteId = null;
+}
+alertScrimEl.addEventListener('click', closeDeleteAlert);
+document.getElementById('alertCancelBtn').addEventListener('click', closeDeleteAlert);
+document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
+  const id = alertDeleteId;
+  const kind = alertDeleteKind;
+  closeDeleteAlert();
+  if(kind === 'bean'){
+    bSwipeOpenRow = null;
+    await beanDeleteEntry(id);
+    renderBeans();
+  } else {
+    jSwipeOpenRow = null;
+    await journalDeleteEntry(id);
+    renderJournal();
+  }
+});
+
+/* ---- Зёрна: хранилище ----
+   Та же схема, что дневник: индекс + запись по id, id = Date.now() в момент
+   добавления. Активная пачка — отдельный ключ-указатель (максимум одна). */
+const BEANS_INDEX_KEY = 'beans_index';
+const BEANS_ACTIVE_KEY = 'beans_active_id';
+let beans = [];
+let activeBeanId = null;
+
+async function beansReadIndex(){
+  const raw = await storeGet(BEANS_INDEX_KEY);
+  if(!raw) return [];
+  try{ const ids = JSON.parse(raw); return Array.isArray(ids) ? ids : []; }catch(e){ return []; }
+}
+
+async function beansLoad(){
+  const activeRaw = await storeGet(BEANS_ACTIVE_KEY);
+  activeBeanId = activeRaw ? Number(activeRaw) : null;
+  const ids = await beansReadIndex();
+  if(!ids.length){ beans = []; renderBeans(); updateBeanPickRow(); return; }
+  const keys = ids.map(id=> 'bean_' + id);
+  const values = await storeGetMultiple(keys);
+  beans = ids
+    .map(id=>{
+      const raw = values['bean_' + id];
+      if(!raw) return null;
+      try{ return JSON.parse(raw); }catch(e){ return null; }
+    })
+    .filter(Boolean);
+  if(activeBeanId != null && !beans.some(b=> b.id === activeBeanId)) activeBeanId = null;
+  renderBeans();
+  applyActiveBeanProfile();
+  updateBeanPickRow();
+}
+
+async function beanSaveEntry(entry){
+  await storeSet('bean_' + entry.id, JSON.stringify(entry));
+  const ids = await beansReadIndex();
+  if(!ids.includes(entry.id)){
+    ids.push(entry.id);
+    await storeSet(BEANS_INDEX_KEY, JSON.stringify(ids));
+  }
+  beans = beans.filter(b=> b.id !== entry.id);
+  beans.push(entry);
+}
+
+async function beanUpdateEntry(entry){
+  await storeSet('bean_' + entry.id, JSON.stringify(entry));
+  const i = beans.findIndex(b=> b.id === entry.id);
+  if(i >= 0) beans[i] = entry;
+  if(entry.id === activeBeanId) updateBeanPickRow();
+}
+
+async function beanDeleteEntry(id){
+  await storeRemove('bean_' + id);
+  const ids = (await beansReadIndex()).filter(x=> x !== id);
+  await storeSet(BEANS_INDEX_KEY, JSON.stringify(ids));
+  beans = beans.filter(b=> b.id !== id);
+  openTempNoteIds.delete(id);
+  if(activeBeanId === id){
+    activeBeanId = null;
+    await storeRemove(BEANS_ACTIVE_KEY);
+    updateBeanPickRow();
+  }
+}
+
+async function setActiveBean(id){
+  const activating = activeBeanId !== id; // становится активной, а не снимается
+  activeBeanId = (activeBeanId === id) ? null : id; // повторный тап снимает активность
+  if(activeBeanId != null) await storeSet(BEANS_ACTIVE_KEY, String(activeBeanId));
+  else await storeRemove(BEANS_ACTIVE_KEY);
+  if(activating && activeBeanId != null){
+    // Дата вскрытия — по умолчанию момент, когда пачка впервые стала активной
+    // (начали её заваривать); можно поправить вручную в шторке правки.
+    const bean = beans.find(b=> b.id === activeBeanId);
+    if(bean && !bean.openedDate){
+      bean.openedDate = todayISO();
+      await beanUpdateEntry(bean);
+    }
+  }
+  renderBeans();
+  applyActiveBeanProfile();
+  updateBeanPickRow();
+  track('bean_activated');
+}
+
+/* Активная пачка подставляет обжарку/обработку в блок температуры Калькулятора —
+   ровно те же поля, что раньше выбирались только вручную. Ручной выбор пилюль
+   по-прежнему работает как обычно и не трогает данные пачки. */
+function applyActiveBeanProfile(){
+  if(activeBeanId == null || brewing) { updateTempBlock(); return; }
+  const bean = beans.find(b=> b.id === activeBeanId);
+  if(!bean) return;
+  if(ROASTS.some(x=>x.id===bean.roast)) state.roast = bean.roast;
+  if(PROCESSES.some(x=>x.id===bean.process)) state.process = bean.process;
+  saveBeanPrefs();
+  updateTempBlock();
+}
+
+/* Тихое списание остатка после заваривания — без подтверждений, чтобы это
+   не добавляло лишний тап на каждую чашку. Остаток не уходит в минус. */
+async function decrementActiveBean(grams){
+  if(activeBeanId == null || !grams) return;
+  const bean = beans.find(b=> b.id === activeBeanId);
+  if(!bean) return;
+  bean.remaining = Math.max(0, Math.round((bean.remaining - grams) * 10) / 10);
+  await beanUpdateEntry(bean);
+  renderBeans();
+}
+
+/* ---- Калькулятор: строка выбора активной пачки ---- */
+function updateBeanPickRow(){
+  const el = document.getElementById('beanPickValue');
+  if(!el) return;
+  const bean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
+  el.textContent = bean ? (bean.name || 'Без названия') : 'Не выбрана';
+}
+
+function openBeanPickSheet(){
+  if(!beans.length){ navGoTo(0, true); return; }
+  sheetMode = 'bean-pick';
+  sheetEntry = null;
+  sheetEl.style.removeProperty('--accent');
+  document.getElementById('sheetPills').style.display = 'none';
+  sheetTitleEl.textContent = 'Выбрать пачку';
+  sheetSubtitleEl.textContent = 'Обжарка и обработка подставятся в температуру автоматически';
+  sheetTabSeg.style.display = 'none';
+  sheetTabRate.style.display = 'none';
+  sheetTabRecipe.style.display = 'block';
+  sheetFieldsEl.style.display = 'block';
+  sheetFieldsEl.innerHTML = '';
+  [...beans].sort((a,b)=> b.id - a.id).forEach(b=>{
+    const row = document.createElement('div');
+    row.className = 'sheet-field pick';
+    const label = document.createElement('span');
+    label.textContent = (b.id === activeBeanId ? '✓ ' : '') + (b.name || 'Без названия');
+    const meta = document.createElement('span');
+    meta.className = 'sheet-field-meta';
+    meta.textContent = (ROASTS.find(x=>x.id===b.roast) || {}).label || '';
+    row.appendChild(label); row.appendChild(meta);
+    row.addEventListener('click', async ()=>{
+      await setActiveBean(b.id);
+      closeSheet();
+    });
+    sheetFieldsEl.appendChild(row);
+  });
+  sheetPrimaryBtn.textContent = 'Готово';
+  sheetGhostBtn.style.display = 'none';
+  showSheet();
+}
+document.getElementById('beanPickRow').addEventListener('click', openBeanPickSheet);
+
+/* ---- Зёрна: форматирование ---- */
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function daysSinceRoast(dateStr){
+  if(!dateStr) return null;
+  const r = new Date(dateStr + 'T00:00:00');
+  if(isNaN(r)) return null;
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startRoast = new Date(r.getFullYear(), r.getMonth(), r.getDate());
+  return Math.round((startToday - startRoast) / 86400000);
+}
+function freshnessLabel(days){
+  if(days == null) return '';
+  if(days <= 0) return 'сегодня';
+  return days + ' ' + pluralRu(days, 'день', 'дня', 'дней');
+}
+function escapeHTML(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function checkIconSVG(){
+  return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+}
+function infoIconSVG(){
+  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>';
+}
+/* Тот же текст, что в «Почему такая температура» Калькулятора — только без
+   TEMP_ICE_NOTE (он про лёд в чашке, к конкретной пачке отношения не имеет). */
+function beanTempNoteHTML(processId){
+  const paras = (PROCESS_WHY[processId] || []).slice();
+  paras.push(TEMP_FOOTNOTE);
+  return paras.map(t=> '<p>' + t + '</p>').join('');
+}
+function beanBagSVG(pct, id){
+  const bodyTop=15, bodyBottom=44, bodyLeft=6, bodyRight=34, corner=6;
+  const fillH = Math.max(0, (bodyBottom-bodyTop) * Math.max(0, Math.min(1, pct)));
+  const bodyPath = 'M' + bodyLeft + ',' + bodyTop + ' H' + bodyRight + ' V' + (bodyBottom-corner) +
+    ' Q' + bodyRight + ',' + bodyBottom + ' ' + (bodyRight-corner) + ',' + bodyBottom +
+    ' H' + (bodyLeft+corner) + ' Q' + bodyLeft + ',' + bodyBottom + ' ' + bodyLeft + ',' + (bodyBottom-corner) + ' Z';
+  const clipId = 'bagclip' + id;
+  return '<svg viewBox="0 0 40 50" width="32" height="40">' +
+      '<path d="M4,15 L8,5 H32 L36,15 Z" fill="none" stroke="var(--label-3)" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<path d="' + bodyPath + '" fill="none" stroke="var(--label-3)" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<clipPath id="' + clipId + '"><path d="' + bodyPath + '"/></clipPath>' +
+      '<rect x="' + bodyLeft + '" y="' + (bodyBottom-fillH) + '" width="' + (bodyRight-bodyLeft) + '" height="' + (fillH+4) + '" fill="var(--brown)" opacity="0.85" clip-path="url(#' + clipId + ')"/>' +
+      '<circle cx="20" cy="24" r="2.4" fill="var(--card)" stroke="var(--label-3)" stroke-width="1"/>' +
+    '</svg>';
+}
+
+/* ---- Зёрна: список ---- */
+let bSwipeOpenRow = null;
+let openTempNoteIds = new Set(); // какие карточки сейчас показывают «почему такая температура»
+
+function beanRowHTML(b){
+  const isActive = b.id === activeBeanId;
+  const roastLbl = (ROASTS.find(x=>x.id===b.roast) || {}).label || '';
+  const procLbl = (PROCESSES.find(x=>x.id===b.process) || {}).label || '';
+  const temp = computeBrewTemp(b.roast, b.process);
+  const noteOpen = openTempNoteIds.has(b.id);
+  const days = daysSinceRoast(b.roastDate);
+  const stale = days != null && days >= 21;
+  const start = Math.max(0, b.startWeight || 0);
+  const remain = Math.max(0, Math.min(start || Infinity, b.remaining != null ? b.remaining : start));
+  const pct = start > 0 ? remain/start : 0;
+  const low = start > 0 && pct <= 0.15;
+  const openedDays = daysSinceRoast(b.openedDate); // тот же helper, просто другая дата
+  const openedLbl = openedDays == null ? '' : (openedDays <= 0 ? 'вскрыта сегодня' : 'вскрыта ' + freshnessLabel(openedDays) + ' назад');
+  return (
+    '<div class="b-row" data-id="' + b.id + '">' +
+      '<div class="b-row-action">Удалить</div>' +
+      '<div class="b-row-content">' +
+        '<button class="b-active-check' + (isActive ? ' active' : '') + '" aria-label="Сделать активной" aria-pressed="' + isActive + '">' +
+          (isActive ? checkIconSVG() : '') +
+        '</button>' +
+        '<div class="b-bag">' + beanBagSVG(pct, b.id) + '</div>' +
+        '<div class="b-info">' +
+          '<div class="b-top">' +
+            '<span class="b-name">' + escapeHTML(b.name || 'Без названия') + '</span>' +
+            '<span class="b-fresh' + (stale ? ' warm' : '') + '">' + freshnessLabel(days) + '</span>' +
+          '</div>' +
+          (b.roaster ? (
+            '<div class="b-roaster">' +
+              '<span class="b-roaster-avatar">' + escapeHTML((b.roaster || '?').trim().charAt(0)) + '</span>' +
+              '<span>' + escapeHTML(b.roaster) + '</span>' +
+            '</div>'
+          ) : '') +
+          '<div class="b-meta">' + roastLbl + ' · ' + procLbl + ' · <span class="b-temp">' + temp + ' °C</span>' +
+            '<button class="b-temp-info' + (noteOpen ? ' open' : '') + '" aria-label="Почему такая температура" aria-expanded="' + noteOpen + '">' + infoIconSVG() + '</button>' +
+          '</div>' +
+          (noteOpen ? '<div class="b-temp-note">' + beanTempNoteHTML(b.process) + '</div>' : '') +
+          '<div class="b-bar"><div class="b-bar-fill" style="width:' + Math.round(pct*100) + '%;"></div></div>' +
+          '<div class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + ' г' + (low ? ' · заканчивается' : '') + '</div>' +
+          (openedLbl ? '<div class="b-opened">' + openedLbl + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function toggleBeanTempNote(id){
+  if(openTempNoteIds.has(id)) openTempNoteIds.delete(id);
+  else openTempNoteIds.add(id);
+  renderBeans();
+}
+
+function renderBeans(){
+  const wrap = document.getElementById('beansListWrap');
+  const list = document.getElementById('beansList');
+  const empty = document.getElementById('beansEmpty');
+  bSwipeOpenRow = null;
+  if(!beans.length){
+    list.innerHTML = '';
+    wrap.style.display = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+  const sorted = [...beans].sort((a,b)=>{
+    if(a.id === activeBeanId) return -1;
+    if(b.id === activeBeanId) return 1;
+    return b.id - a.id;
+  });
+  wrap.style.display = 'block';
+  empty.style.display = 'none';
+  list.innerHTML = sorted.map(beanRowHTML).join('');
+}
+
+function closeBeanRow(row){
+  if(!row) return;
+  const content = row.querySelector('.b-row-content');
+  content.style.transition = 'transform .22s ease';
+  content.style.transform = 'translateX(0)';
+  row.classList.remove('open');
+}
+
+const B_ACTION_WIDTH = 84;
+let bSwipeRow = null, bSwipeStartX = 0, bSwipeStartY = 0, bSwipeDragging = false, bSwipeDecided = false;
+let bSwipeBaseOpen = false, bSwipeLastDx = 0, bSwipeTargetIsAction = false, bSwipeTargetIsCheck = false, bSwipeTargetIsInfo = false;
+
+const beansList = document.getElementById('beansList');
+
+beansList.addEventListener('touchstart', (e)=>{
+  const row = e.target.closest('.b-row');
+  if(!row) return;
+  bSwipeRow = row;
+  bSwipeBaseOpen = row.classList.contains('open');
+  bSwipeTargetIsAction = !!e.target.closest('.b-row-action');
+  bSwipeTargetIsCheck = !!e.target.closest('.b-active-check');
+  bSwipeTargetIsInfo = !!e.target.closest('.b-temp-info');
+  const t = e.touches[0];
+  bSwipeStartX = t.clientX; bSwipeStartY = t.clientY;
+  bSwipeDragging = false; bSwipeDecided = false; bSwipeLastDx = 0;
+}, { passive:true });
+
+beansList.addEventListener('touchmove', (e)=>{
+  if(!bSwipeRow) return;
+  const t = e.touches[0];
+  const dx = t.clientX - bSwipeStartX;
+  const dy = t.clientY - bSwipeStartY;
+  if(!bSwipeDecided){
+    if(Math.abs(dx) > 8 || Math.abs(dy) > 8){
+      bSwipeDecided = true;
+      bSwipeDragging = Math.abs(dx) > Math.abs(dy);
+    }
+  }
+  if(!bSwipeDragging) return;
+  e.preventDefault();
+  bSwipeLastDx = dx;
+  let pos = (bSwipeBaseOpen ? -B_ACTION_WIDTH : 0) + dx;
+  pos = Math.max(-B_ACTION_WIDTH, Math.min(0, pos));
+  const content = bSwipeRow.querySelector('.b-row-content');
+  content.style.transition = 'none';
+  content.style.transform = 'translateX(' + pos + 'px)';
+}, { passive:false });
+
+beansList.addEventListener('touchend', ()=>{
+  if(!bSwipeRow) return;
+  const row = bSwipeRow;
+  const id = Number(row.dataset.id);
+  if(bSwipeDragging){
+    const finalPos = Math.max(-B_ACTION_WIDTH, Math.min(0, (bSwipeBaseOpen ? -B_ACTION_WIDTH : 0) + bSwipeLastDx));
+    const willOpen = finalPos < -B_ACTION_WIDTH / 2;
+    const content = row.querySelector('.b-row-content');
+    content.style.transition = 'transform .22s ease';
+    content.style.transform = willOpen ? 'translateX(-' + B_ACTION_WIDTH + 'px)' : 'translateX(0)';
+    row.classList.toggle('open', willOpen);
+    if(willOpen){
+      if(bSwipeOpenRow && bSwipeOpenRow !== row) closeBeanRow(bSwipeOpenRow);
+      bSwipeOpenRow = row;
+      navHapticTick();
+    } else if(bSwipeOpenRow === row){
+      bSwipeOpenRow = null;
+    }
+  } else if(row.classList.contains('open')){
+    if(bSwipeTargetIsAction){
+      openDeleteAlert(id, 'bean');
+    } else {
+      closeBeanRow(row);
+      if(bSwipeOpenRow === row) bSwipeOpenRow = null;
+    }
+  } else if(bSwipeTargetIsCheck){
+    setActiveBean(id);
+    navHapticTick();
+  } else if(bSwipeTargetIsInfo){
+    toggleBeanTempNote(id);
+  } else {
+    openBeanEditSheet(id);
+  }
+  bSwipeRow = null; bSwipeDragging = false; bSwipeDecided = false;
+});
+
+/* ---- Зёрна: шторка добавления/правки (переиспользует общий sheet-компонент) ---- */
+function renderBeanSheet(){
+  sheetEl.style.setProperty('--accent', 'var(--blue)');
+  const isAdd = sheetMode === 'bean-add';
+  sheetTitleEl.textContent = isAdd ? 'Новая пачка' : (sheetEntry.name || 'Пачка');
+  sheetSubtitleEl.textContent = isAdd
+    ? 'Обжарка, дата и вес — дальше подставятся сами'
+    : freshnessLabel(daysSinceRoast(sheetEntry.roastDate)) + ' после обжарки';
+
+  sheetTabSeg.style.display = 'none';
+  sheetTabRate.style.display = 'none';
+  sheetTabRecipe.style.display = 'block';
+
+  const pillsWrap = document.getElementById('sheetPills');
+  pillsWrap.style.display = 'block';
+  pillsWrap.innerHTML = '';
+  const mkGroup = (label, items, key)=>{
+    const cap = document.createElement('p');
+    cap.className = 'temp-group-label';
+    cap.textContent = label;
+    pillsWrap.appendChild(cap);
+    const row = document.createElement('div');
+    row.className = 'pills';
+    items.forEach(it=>{
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (sheetEntry[key] === it.id ? ' active' : '');
+      btn.textContent = it.label;
+      btn.onclick = ()=>{
+        sheetEntry[key] = it.id;
+        row.querySelectorAll('.pill').forEach(p=> p.classList.remove('active'));
+        btn.classList.add('active');
+      };
+      row.appendChild(btn);
+    });
+    pillsWrap.appendChild(row);
+  };
+  mkGroup('Обжарка', ROASTS, 'roast');
+  mkGroup('Обработка', PROCESSES, 'process');
+
+  sheetFieldsEl.style.display = 'block';
+  sheetFieldsEl.innerHTML = '';
+  const mkField = (label, input)=>{
+    const row = document.createElement('div');
+    row.className = 'sheet-field';
+    const lab = document.createElement('span');
+    lab.textContent = label;
+    row.appendChild(lab); row.appendChild(input);
+    sheetFieldsEl.appendChild(row);
+  };
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = 'Например, Kenya Kiambu';
+  nameInput.value = sheetEntry.name || '';
+  nameInput.style.width = '170px';
+  nameInput.addEventListener('input', ()=>{ sheetEntry.name = nameInput.value; });
+  mkField('Название', nameInput);
+
+  /* Обжарщик пока текстом — как список с логотипами будет готов, заменим
+     на пилюли/грид с лого, само поле в данных (sheetEntry.roaster) не изменится. */
+  const roasterInput = document.createElement('input');
+  roasterInput.type = 'text';
+  roasterInput.placeholder = 'Не указан';
+  roasterInput.value = sheetEntry.roaster || '';
+  roasterInput.style.width = '170px';
+  roasterInput.addEventListener('input', ()=>{ sheetEntry.roaster = roasterInput.value; });
+  mkField('Обжарщик', roasterInput);
+
+  const dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.value = sheetEntry.roastDate || todayISO();
+  dateInput.addEventListener('input', ()=>{
+    sheetEntry.roastDate = dateInput.value;
+    sheetSubtitleEl.textContent = freshnessLabel(daysSinceRoast(dateInput.value)) + ' после обжарки';
+  });
+  mkField('Дата обжарки', dateInput);
+
+  if(!isAdd){
+    const openedInput = document.createElement('input');
+    openedInput.type = 'date';
+    openedInput.value = sheetEntry.openedDate || '';
+    openedInput.addEventListener('input', ()=>{ sheetEntry.openedDate = openedInput.value; });
+    mkField('Дата вскрытия', openedInput);
+  }
+
+  const startInput = document.createElement('input');
+  startInput.type = 'number'; startInput.inputMode = 'decimal'; startInput.min = '0'; startInput.step = '10';
+  startInput.value = sheetEntry.startWeight;
+  startInput.addEventListener('input', ()=>{
+    const v = parseFloat(startInput.value) || 0;
+    sheetEntry.startWeight = v;
+    if(isAdd) sheetEntry.remaining = v;
+  });
+  mkField('Вес пачки, г', startInput);
+
+  if(!isAdd){
+    const remainInput = document.createElement('input');
+    remainInput.type = 'number'; remainInput.inputMode = 'decimal'; remainInput.min = '0'; remainInput.step = '5';
+    remainInput.value = sheetEntry.remaining;
+    remainInput.addEventListener('input', ()=>{
+      sheetEntry.remaining = parseFloat(remainInput.value) || 0;
+    });
+    mkField('Осталось, г', remainInput);
+  }
+
+  sheetPrimaryBtn.textContent = isAdd ? 'Добавить' : 'Сохранить';
+  sheetGhostBtn.textContent = 'Отмена';
+  sheetGhostBtn.style.display = '';
+  showSheet();
+}
+
+function openBeanAddSheet(){
+  sheetMode = 'bean-add';
+  sheetEntry = { id: Date.now(), name:'', roaster:'', roast:'medium', process:'washed', roastDate: todayISO(), openedDate:'', startWeight:200, remaining:200 };
+  renderBeanSheet();
+}
+function openBeanEditSheet(id){
+  const bean = beans.find(b=> b.id === id);
+  if(!bean) return;
+  sheetMode = 'bean-edit';
+  sheetEntry = JSON.parse(JSON.stringify(bean));
+  renderBeanSheet();
+}
+
+document.getElementById('beanAddBtn').addEventListener('click', ()=>{
+  openBeanAddSheet();
+  track('bean_add_opened');
+});
+
+initTelegram();
+loadBeanPrefs();
+buildTempPills();
+buildRecipeSeg();
+setMode('v60');
+journalLoad();
+beansLoad();
+
+/* ---- Навигация свайпом между разделами: Зёрна / Калькулятор / Журнал ----
+   Точки вместо табов, подпись всплывает только во время жеста,
+   переключение "залипает" после протяжки за NAV_COMMIT_RATIO ширины
+   экрана — короткий флик откатывается назад. Число страниц не хардкодится —
+   считается по факту .page-элементов, так что новый раздел добавляется
+   просто вставкой ещё одной страницы в разметку (плюс не забыть поправить
+   статические ширины в CSS .pages/.page — см. комментарий там). */
+const navPages = document.getElementById('navPages');
+const navViewport = document.querySelector('.pages-viewport');
+const navCaption = document.getElementById('navCaption');
+const navPageEls = [...navPages.querySelectorAll('.page')];
+const NAV_COUNT = navPageEls.length;
+const NAV_STEP = 100 / NAV_COUNT; // % ширины .pages на один шаг — должно совпадать с CSS
+
+const navDotZones = [...document.querySelectorAll('.nav-dot-zone')];
+const navItems = navDotZones.map(z=>({
+  zone: z,
+  dot: z.querySelector('.nav-dot'),
+  fill: z.querySelector('.nav-fill'),
+  cap: navCaption.querySelector('.nav-cap[data-i="' + z.dataset.i + '"]')
+}));
+
+let navIndex = 1; // старт по центру — на Калькуляторе
+let navContainerWidth = navViewport.clientWidth;
+let navStartX = 0, navStartY = 0, navDragging = false, navDecided = false, navDeltaX = 0;
+let navCommitted = false;
+let navCommitTarget = null;
+let navExcluded = false;
+let navHideTimer = null;
+let navLocked = false;
+const NAV_COMMIT_RATIO = 0.4;
+
+window.addEventListener('resize', ()=>{ navContainerWidth = navViewport.clientWidth; });
+
+function navSetTransform(percent, animate){
+  navPages.style.transition = animate ? 'transform .32s cubic-bezier(.25,.8,.25,1)' : 'none';
+  navPages.style.transform = 'translateX(' + percent + '%)';
+}
+/* position — непрерывная координата в "страницах" (0..NAV_COUNT-1).
+   Активность точки/подписи i — треугольная функция от расстояния до position,
+   поэтому при N=2 это в точности старый кроссфейд, а при N=3+ соседние
+   страницы не начинают предательски мигать, пока их не коснулись. */
+function navUpdateIndicator(position, animate){
+  const t = animate ? 'opacity .28s ease' : 'none';
+  navItems.forEach((it, i)=>{
+    const activation = Math.max(0, 1 - Math.abs(position - i));
+    it.fill.style.transition = t;
+    it.fill.style.opacity = activation;
+    it.cap.style.transition = t;
+    it.cap.style.opacity = activation;
+  });
+}
+function navHapticTick(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback){
+    try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){}
+  } else if(navigator.vibrate){
+    navigator.vibrate(10);
+  }
+}
+function navPulseDot(i){
+  const el = navItems[i].dot;
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+}
+function navShowCaption(){
+  navCaption.classList.add('show');
+  clearTimeout(navHideTimer);
+}
+function navScheduleHide(delay){
+  clearTimeout(navHideTimer);
+  navHideTimer = setTimeout(()=> navCaption.classList.remove('show'), delay || 900);
+}
+function navGoTo(i, animate){
+  navIndex = Math.max(0, Math.min(NAV_COUNT - 1, i));
+  navSetTransform(-navIndex * NAV_STEP, animate);
+  navUpdateIndicator(navIndex, animate);
+}
+
+navDotZones.forEach(z=>{
+  z.addEventListener('click', ()=>{
+    if(navLocked) return;
+    navGoTo(Number(z.dataset.i), true);
+    navShowCaption();
+    navScheduleHide();
+  });
+});
+
+navViewport.addEventListener('touchstart', (e)=>{
+  navExcluded = navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.b-row');
+  if(navExcluded) return;
+  const t = e.touches[0];
+  navStartX = t.clientX; navStartY = t.clientY;
+  navDragging = false; navDecided = false; navDeltaX = 0; navCommitted = false; navCommitTarget = null;
+}, { passive:true });
+
+navViewport.addEventListener('touchmove', (e)=>{
+  if(navExcluded) return;
+  const t = e.touches[0];
+  const dx = t.clientX - navStartX;
+  const dy = t.clientY - navStartY;
+
+  if(!navDecided){
+    if(Math.abs(dx) > 8 || Math.abs(dy) > 8){
+      navDecided = true;
+      navDragging = Math.abs(dx) > Math.abs(dy);
+    }
+  }
+  if(!navDragging) return;
+
+  e.preventDefault();
+  navShowCaption();
+  let ddx = dx;
+  if(navIndex === 0 && ddx > 0) ddx *= 0.35;
+  if(navIndex === NAV_COUNT - 1 && ddx < 0) ddx *= 0.35;
+  navDeltaX = ddx;
+  const deltaPercent = (ddx / navContainerWidth) * NAV_STEP;
+  const base = -navIndex * NAV_STEP;
+  navSetTransform(base + deltaPercent, false);
+  const position = Math.max(0, Math.min(NAV_COUNT - 1, navIndex - deltaPercent / NAV_STEP));
+  navUpdateIndicator(position, false);
+
+  let justCrossed = false;
+  if(!navCommitted){
+    if(navIndex < NAV_COUNT - 1 && navDeltaX < -navContainerWidth * NAV_COMMIT_RATIO){ justCrossed = true; navCommitTarget = navIndex + 1; }
+    if(navIndex > 0 && navDeltaX > navContainerWidth * NAV_COMMIT_RATIO){ justCrossed = true; navCommitTarget = navIndex - 1; }
+  }
+  if(justCrossed){
+    navCommitted = true; // залипает: дальше в этом жесте уже не откатится
+    navHapticTick();
+    navPulseDot(navCommitTarget);
+  }
+}, { passive:false });
+
+navViewport.addEventListener('touchend', ()=>{
+  if(navExcluded || !navDragging){ navExcluded = false; return; }
+  if(navCommitted && navCommitTarget !== null) navGoTo(navCommitTarget, true);
+  else navGoTo(navIndex, true);
+  navDragging = false; navDecided = false; navDeltaX = 0; navCommitted = false; navCommitTarget = null;
+  navScheduleHide();
+});
+
+navGoTo(1, false); // сразу центрируемся на Калькуляторе, без анимации
+setTimeout(()=>{ navShowCaption(); navScheduleHide(1500); }, 600);
+</script>
+</body>
+</html>
