@@ -3470,7 +3470,7 @@ async function adjustBeanRemaining(id, delta){
   await beanUpdateEntry(bean);
 }
 
-/* Сводка по зерну из журнала: сколько заварок, сколько оценено, средняя.
+/* Сводка по зерну из журнала: сколько завариваний, сколько оценено, средняя.
    Неоценённые (rating 0) в среднее не входят. */
 function beanStats(id){
   let brews = 0, rated = 0, sum = 0;
@@ -4004,7 +4004,7 @@ function renderBeanSheet(){
       sheetStatEl.innerHTML =
         '<div><div class="v">' + (st.rated ? '<span class="s">★</span> ' + fmt(st.avg) : '—') + '</div><div class="l">средняя</div></div>' +
         '<div><div class="v">' + st.rated + '</div><div class="l">' + pluralRu(st.rated, 'оценка', 'оценки', 'оценок') + '</div></div>' +
-        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'заварка', 'заварки', 'заварок') + '</div></div>';
+        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'завариваний', 'заваривания', 'завариваний') + '</div></div>';
       sheetStatEl.style.display = 'flex';
     } else {
       sheetStatEl.style.display = 'none';
