@@ -416,7 +416,7 @@
     border-radius:12px;
     background:var(--fill);
     /* Фолбэк — синий (интерфейс). На Калькуляторе «добавить пролив» получает
-       --accent режима явно из JS и остаётся в цвете заварки. */
+       --accent режима явно из JS и остаётся в цвете заваривания. */
     color:var(--accent, var(--blue));
     font-size:15px;
     font-weight:590;
@@ -654,7 +654,7 @@
   /* Шторка всегда синяя — задаём --accent прямо здесь, а не из JS при каждом
      открытии: так ни одна шторка не может открыться «в цвете режима» по
      недосмотру. Цвет режима (оранжевый/бирюзовый/коричневый) живёт только
-     на Калькуляторе и в живом брю — он про заварку, а не про интерфейс. */
+     на Калькуляторе и в живом брю — он про заваривание, а не про интерфейс. */
   .sheet{
     --accent: var(--blue);
     position:fixed; left:50%; bottom:0; width:100%; max-width:420px;
@@ -667,7 +667,15 @@
     overscroll-behavior:contain; /* скролл шторки не «протекает» на страницу под ней */
   }
   .sheet.show{ transform:translate(-50%, 0); }
-  .sheet-handle{ width:32px; height:4px; background:var(--track); border-radius:2px; margin:0 auto 12px; }
+  .sheet-handle{ width:32px; height:4px; background:var(--track); border-radius:2px; margin:0 auto; }
+  /* Зона захвата «ручки»: сама полоска 32×4 — слишком мелкая цель для пальца,
+     поэтому тянуть можно за всю верхнюю полосу шторки. touch-action:none —
+     чтобы браузер не пытался скроллить, пока тянем шторку вниз. */
+  .sheet-grab{
+    margin:-10px -16px 0; padding:10px 0 12px;
+    touch-action:none; cursor:grab;
+  }
+  .sheet-grab:active{ cursor:grabbing; }
   .sheet-title{ font-size:15px; font-weight:700; text-align:center; }
   .sheet-subtitle{ font-size:12.5px; color:var(--label-2); text-align:center; margin-top:2px; margin-bottom:14px; }
   .sheet-fields{ background:var(--fill); border-radius:12px; padding:0 14px; margin-bottom:14px; }
@@ -974,7 +982,7 @@
 
         <div class="tip" id="beansEmpty">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
-          <span>Пока пусто. Добавь зерно — обжарка, дата и остаток будут под рукой на каждой заварке.</span>
+          <span>Пока пусто. Добавь зерно — обжарка, дата и остаток будут под рукой при каждом заваривании.</span>
         </div>
 
         <button class="ce-add" id="beanAddBtn" style="margin-top:14px;">Добавить зерно</button>
@@ -1209,7 +1217,7 @@
 
 <div class="sheet-scrim" id="sheetScrim"></div>
 <div class="sheet" id="sheet">
-  <div class="sheet-handle"></div>
+  <div class="sheet-grab" id="sheetGrab"><div class="sheet-handle"></div></div>
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-subtitle" id="sheetSubtitle"></div>
   <div class="saved-mark" id="sheetSavedMark" style="display:none;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
@@ -2991,16 +2999,31 @@ sheetNoteInput.addEventListener('input', ()=>{
    overflow:hidden один не всегда перебивает уже запущенный инерционный
    скролл (-webkit-overflow-scrolling:touch) на iOS — дублируем touchmove-блок. ---- */
 function preventPageTouch(e){ e.preventDefault(); }
+/* Страховка поверх всех блокировок: если движок всё-таки прокрутил страницу
+   под оверлеем (WebKit умеет), возвращаем её туда, где она была при открытии. */
+function holdPageScroll(e){
+  const p = e.currentTarget;
+  const top = Number(p.dataset.lockTop || 0);
+  if(p.scrollTop !== top) p.scrollTop = top;
+}
 function lockPageScroll(){
   document.querySelectorAll('.page').forEach(p=>{
+    if(!p.dataset.locked){
+      p.dataset.locked = '1';
+      p.dataset.lockTop = String(p.scrollTop);
+    }
     p.style.overflow = 'hidden';
     p.addEventListener('touchmove', preventPageTouch, { passive:false });
+    p.addEventListener('scroll', holdPageScroll);
   });
 }
 function unlockPageScroll(){
   document.querySelectorAll('.page').forEach(p=>{
     p.style.overflow = '';
     p.removeEventListener('touchmove', preventPageTouch);
+    p.removeEventListener('scroll', holdPageScroll);
+    delete p.dataset.locked;
+    delete p.dataset.lockTop;
   });
 }
 
@@ -3251,11 +3274,61 @@ function closeSheetAndMaybeStop(){
   if(wasSaveMode && brewing) stopBrew(true);
 }
 
-sheetScrimEl.addEventListener('click', ()=>{
+/* Закрытие жестом (тап мимо или протяжка за ручку) — одна логика на оба жеста. */
+function dismissSheet(){
   // Из пикера зерна тап мимо возвращает к записи, а не выбрасывает черновик правок.
   if(sheetMode === 'entry-bean-pick'){ renderEditSheet('rate'); return; }
   closeSheetAndMaybeStop();
-});
+}
+sheetScrimEl.addEventListener('click', dismissSheet);
+
+/* Протяжка шторки за ручку вниз. Порог — 35% высоты шторки (но не меньше 100px):
+   до него шторка отпружинивает назад, после — закрывается; хаптик ровно в момент
+   пересечения порога, как у свайп-навигации. Быстрый флик вниз закрывает и раньше. */
+(function(){
+  const grab = document.getElementById('sheetGrab');
+  let pid = null, startY = 0, dy = 0, crossed = false, lastY = 0, lastT = 0, vel = 0;
+  const threshold = ()=> Math.max(100, sheetEl.offsetHeight * 0.35);
+  function reset(){
+    sheetEl.style.transition = '';
+    sheetEl.style.transform = '';
+    sheetScrimEl.style.transition = '';
+    sheetScrimEl.style.opacity = '';
+  }
+  grab.addEventListener('pointerdown', (e)=>{
+    if(!sheetEl.classList.contains('show')) return;
+    pid = e.pointerId; startY = lastY = e.clientY; lastT = e.timeStamp;
+    dy = 0; vel = 0; crossed = false;
+    try{ grab.setPointerCapture(pid); }catch(err){}
+    sheetEl.style.transition = 'none';
+    sheetScrimEl.style.transition = 'none';
+  });
+  grab.addEventListener('pointermove', (e)=>{
+    if(e.pointerId !== pid) return;
+    const raw = e.clientY - startY;
+    // Вверх шторка почти не тянется — лёгкое сопротивление, как в iOS.
+    dy = raw > 0 ? raw : raw * 0.15;
+    const dt = e.timeStamp - lastT;
+    if(dt > 0){ vel = (e.clientY - lastY) / dt; lastY = e.clientY; lastT = e.timeStamp; }
+    sheetEl.style.transform = 'translate(-50%, ' + dy + 'px)';
+    const h = sheetEl.offsetHeight || 1;
+    sheetScrimEl.style.opacity = String(Math.max(0.2, 1 - Math.max(0, dy) / h));
+    const now = dy >= threshold();
+    if(now && !crossed) navHapticTick();
+    crossed = now;
+  });
+  function finish(e){
+    if(e.pointerId !== pid) return;
+    pid = null;
+    const close = crossed || (vel > 0.6 && dy > 30); // флик: >0.6 px/мс
+    // Сбрасываем inline-стили — CSS-переход сам доведёт шторку от текущей
+    // позиции: назад в 0 (отпружинила) или вниз за экран (closeSheet снимет .show).
+    reset();
+    if(close) dismissSheet();
+  }
+  grab.addEventListener('pointerup', finish);
+  grab.addEventListener('pointercancel', finish);
+})();
 // overflow:hidden на .page не всегда успевает перебить инерционный скролл
 // (-webkit-overflow-scrolling:touch) на iOS, если жест уже был в движении —
 // глушим сам тач-жест на скриме, чтобы он гарантированно никуда не долетал.
@@ -3269,24 +3342,73 @@ sheetScrimEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:f
    не трогаем; горизонталь — гасим весь жест целиком. Исключения — то, что
    само листается вбок: ленты пилюль и слайдеры. */
 function guardHorizontalPan(el){
-  let sx = 0, sy = 0, decided = false, block = false;
+  let sx = 0, sy = 0, lastY = 0, decided = false, horiz = false;
   el.addEventListener('touchstart', (e)=>{
     const t = e.touches[0];
-    sx = t.clientX; sy = t.clientY; decided = false; block = false;
+    sx = t.clientX; sy = lastY = t.clientY; decided = false; horiz = false;
   }, { passive:true });
   el.addEventListener('touchmove', (e)=>{
+    const t = e.touches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    const stepY = t.clientY - lastY; lastY = t.clientY;
     if(!decided){
-      const t = e.touches[0];
-      const dx = t.clientX - sx, dy = t.clientY - sy;
       if(Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
       decided = true;
-      const ownPan = !!e.target.closest('.pills, input[type="range"]');
-      block = Math.abs(dx) > Math.abs(dy) && !ownPan;
+      horiz = Math.abs(dx) > Math.abs(dy);
     }
-    if(block && e.cancelable) e.preventDefault();
+    if(!horiz){
+      // Вертикаль: пропускаем, только если внутри шторки есть что скроллить в эту
+      // сторону (сама шторка, список пачек, заметка). Шторка короткая или уже
+      // докручена до края — жест гасим, иначе WebKit прокручивает страницу под ней.
+      // Палец вверх (stepY < 0) — контент едет вниз, отсюда -stepY.
+      const dir = stepY !== 0 ? -stepY : -dy;
+      if(!canScrollY(e.target, el, dir) && e.cancelable) e.preventDefault();
+      return;
+    }
+    if(e.target.closest('input[type="range"]')) return;
+    // Лента пилюль — исключение, только если ей действительно есть куда ехать
+    // в эту сторону. Лента, которая целиком влезла (Светлая/Средняя/Тёмная), или
+    // уже докрученная до края, жест не держит — и он утекал бы в документ.
+    const row = e.target.closest('.pills');
+    // Палец вправо (dx > 0) — лента листается назад, поэтому направление -dx.
+    if(row && pillsCanScroll(row, -dx)) return;
+    if(e.cancelable) e.preventDefault();
+  }, { passive:false });
+
+  // Telegram Desktop / трекпад: горизонтальный скролл приходит колесом, а не тачем.
+  el.addEventListener('wheel', (e)=>{
+    if(Math.abs(e.deltaX) <= Math.abs(e.deltaY)){
+      if(!canScrollY(e.target, el, e.deltaY)) e.preventDefault();
+      return;
+    }
+    const row = e.target.closest('.pills');
+    if(row && pillsCanScroll(row, e.deltaX)) return;
+    e.preventDefault();
   }, { passive:false });
 }
+/* Есть ли между target и root элемент, который может прокрутиться по вертикали
+   в сторону delta (> 0 — вниз, < 0 — вверх). */
+function canScrollY(target, root, delta){
+  if(!delta) return true;
+  for(let n = target; n && n !== root.parentElement; n = n.parentElement){
+    if(n.nodeType !== 1) continue;
+    if(n.scrollHeight <= n.clientHeight + 1) continue;
+    const oy = getComputedStyle(n).overflowY;
+    if(oy !== 'auto' && oy !== 'scroll') continue;
+    if(delta > 0 && n.scrollTop + n.clientHeight < n.scrollHeight - 1) return true;
+    if(delta < 0 && n.scrollTop > 0) return true;
+  }
+  return false;
+}
+// delta > 0 — контент едет влево (листаем вперёд), < 0 — назад.
+function pillsCanScroll(row, delta){
+  if(row.scrollWidth <= row.clientWidth + 1) return false;
+  if(delta > 0) return row.scrollLeft + row.clientWidth < row.scrollWidth - 1;
+  if(delta < 0) return row.scrollLeft > 0;
+  return false;
+}
 guardHorizontalPan(sheetEl);
+sheetScrimEl.addEventListener('wheel', (e)=> e.preventDefault(), { passive:false });
 sheetGhostBtn.addEventListener('click', closeSheetAndMaybeStop);
 sheetPrimaryBtn.addEventListener('click', async ()=>{
   const mode = sheetMode;
@@ -3374,6 +3496,8 @@ alertScrimEl.addEventListener('click', closeDeleteAlert);
 alertScrimEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
 // Алерт ничего не скроллит — любой жест по нему гасим целиком.
 alertBoxEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
+alertBoxEl.addEventListener('wheel', (e)=> e.preventDefault(), { passive:false });
+alertScrimEl.addEventListener('wheel', (e)=> e.preventDefault(), { passive:false });
 document.getElementById('alertCancelBtn').addEventListener('click', closeDeleteAlert);
 document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
   const id = alertDeleteId;
@@ -3387,7 +3511,7 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
     renderBeans();
   } else {
     jSwipeOpenRow = null;
-    // Удалённая заварка возвращает граммы своему зерну.
+    // Удалённое заваривание возвращает граммы своему зерну.
     const e = journalEntries.find(x=> x.id === id);
     await journalDeleteEntry(id);
     if(e && normId(e.beanId) != null) await adjustBeanRemaining(normId(e.beanId), e.coffee || 0);
@@ -3506,7 +3630,7 @@ async function adjustBeanRemaining(id, delta){
   await beanUpdateEntry(bean);
 }
 
-/* Сводка по зерну из журнала: сколько заварок, сколько оценено, средняя.
+/* Сводка по зерну из журнала: сколько завариваний, сколько оценено, средняя.
    Неоценённые (rating 0) в среднее не входят. */
 function beanStats(id){
   let brews = 0, rated = 0, sum = 0;
@@ -4040,7 +4164,7 @@ function renderBeanSheet(){
       sheetStatEl.innerHTML =
         '<div><div class="v">' + (st.rated ? '<span class="s">★</span> ' + fmt(st.avg) : '—') + '</div><div class="l">средняя</div></div>' +
         '<div><div class="v">' + st.rated + '</div><div class="l">' + pluralRu(st.rated, 'оценка', 'оценки', 'оценок') + '</div></div>' +
-        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'заварка', 'заварки', 'заварок') + '</div></div>';
+        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'заваривание', 'заваривания', 'завариваний') + '</div></div>';
       sheetStatEl.style.display = 'flex';
     } else {
       sheetStatEl.style.display = 'none';
@@ -4079,7 +4203,7 @@ sheetActionEl.addEventListener('click', async ()=>{
     entry.remaining = 0;
     entry.finishedAt = todayISO();
     await beanUpdateEntry(entry);
-    await deactivateBean(entry.id); // иначе следующая заварка спишется с пустого зерна
+    await deactivateBean(entry.id); // иначе следующее заваривание спишется с пустого зерна
     track('bean_finished');
     closeSheet();
     renderBeans();
