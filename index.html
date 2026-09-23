@@ -137,6 +137,8 @@
     scrollbar-width:none;
   }
   .pills::-webkit-scrollbar{ display:none; }
+  /* Докрутили ленту пилюль до края — жест не передаётся дальше (в шторку/документ). */
+  .pills{ overscroll-behavior-x:contain; }
   .pill{
     flex-shrink:0;
     font-size:14px;
@@ -662,6 +664,7 @@
     transition:transform .32s cubic-bezier(.25,.8,.25,1);
     z-index:41;
     max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain; /* скролл шторки не «протекает» на страницу под ней */
   }
   .sheet.show{ transform:translate(-50%, 0); }
   .sheet-handle{ width:32px; height:4px; background:var(--track); border-radius:2px; margin:0 auto 12px; }
@@ -3011,6 +3014,10 @@ function showSheet(){
   sheetEl.classList.add('show');
 }
 function closeSheet(){
+  // Если WebView всё же успел сдвинуть документ вбок — возвращаем на место.
+  if(document.scrollingElement && document.scrollingElement.scrollLeft) document.scrollingElement.scrollLeft = 0;
+  const vp = document.querySelector('.pages-viewport');
+  if(vp && vp.scrollLeft) vp.scrollLeft = 0;
   sheetScrimEl.classList.remove('show');
   sheetEl.classList.remove('show');
   sheetMode = null; sheetEntry = null;
@@ -3253,6 +3260,33 @@ sheetScrimEl.addEventListener('click', ()=>{
 // (-webkit-overflow-scrolling:touch) на iOS, если жест уже был в движении —
 // глушим сам тач-жест на скриме, чтобы он гарантированно никуда не долетал.
 sheetScrimEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
+
+/* Горизонтальный жест по открытой шторке/алерту.
+   Шторка живёт вне .pages-viewport, поэтому свайп-навигация его не ловит и не
+   гасит preventDefault'ом. В iOS WebView такой непогашенный горизонтальный пан
+   уходит по цепочке в документ — и сдвигает страницу под шторкой. Решаем в
+   первом touchmove, куда идёт жест: вертикаль — это скролл самой шторки,
+   не трогаем; горизонталь — гасим весь жест целиком. Исключения — то, что
+   само листается вбок: ленты пилюль и слайдеры. */
+function guardHorizontalPan(el){
+  let sx = 0, sy = 0, decided = false, block = false;
+  el.addEventListener('touchstart', (e)=>{
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY; decided = false; block = false;
+  }, { passive:true });
+  el.addEventListener('touchmove', (e)=>{
+    if(!decided){
+      const t = e.touches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if(Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      decided = true;
+      const ownPan = !!e.target.closest('.pills, input[type="range"]');
+      block = Math.abs(dx) > Math.abs(dy) && !ownPan;
+    }
+    if(block && e.cancelable) e.preventDefault();
+  }, { passive:false });
+}
+guardHorizontalPan(sheetEl);
 sheetGhostBtn.addEventListener('click', closeSheetAndMaybeStop);
 sheetPrimaryBtn.addEventListener('click', async ()=>{
   const mode = sheetMode;
@@ -3338,6 +3372,8 @@ function closeDeleteAlert(){
 }
 alertScrimEl.addEventListener('click', closeDeleteAlert);
 alertScrimEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
+// Алерт ничего не скроллит — любой жест по нему гасим целиком.
+alertBoxEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:false });
 document.getElementById('alertCancelBtn').addEventListener('click', closeDeleteAlert);
 document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
   const id = alertDeleteId;
@@ -3470,7 +3506,7 @@ async function adjustBeanRemaining(id, delta){
   await beanUpdateEntry(bean);
 }
 
-/* Сводка по зерну из журнала: сколько завариваний, сколько оценено, средняя.
+/* Сводка по зерну из журнала: сколько заварок, сколько оценено, средняя.
    Неоценённые (rating 0) в среднее не входят. */
 function beanStats(id){
   let brews = 0, rated = 0, sum = 0;
@@ -4004,7 +4040,7 @@ function renderBeanSheet(){
       sheetStatEl.innerHTML =
         '<div><div class="v">' + (st.rated ? '<span class="s">★</span> ' + fmt(st.avg) : '—') + '</div><div class="l">средняя</div></div>' +
         '<div><div class="v">' + st.rated + '</div><div class="l">' + pluralRu(st.rated, 'оценка', 'оценки', 'оценок') + '</div></div>' +
-        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'завариваний', 'заваривания', 'завариваний') + '</div></div>';
+        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'заварка', 'заварки', 'заварок') + '</div></div>';
       sheetStatEl.style.display = 'flex';
     } else {
       sheetStatEl.style.display = 'none';
@@ -4170,7 +4206,9 @@ navDotZones.forEach(z=>{
 });
 
 navViewport.addEventListener('touchstart', (e)=>{
-  navExcluded = navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.b-row');
+  // Пока открыта шторка или алерт, страницы под ними не листаются ни при каком жесте.
+  const overlayOpen = sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
+  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.b-row');
   if(navExcluded) return;
   const t = e.touches[0];
   navStartX = t.clientX; navStartY = t.clientY;
