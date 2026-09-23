@@ -2848,6 +2848,11 @@ journalList.addEventListener('touchmove', (e)=>{
 journalList.addEventListener('touchend', ()=>{
   if(!jSwipeRow) return;
   const row = jSwipeRow;
+  // Жест ушёл в вертикаль — это скролл списка, а не тап: ничего не открываем.
+  if(jSwipeDecided && !jSwipeDragging){
+    jSwipeRow = null; jSwipeDecided = false;
+    return;
+  }
   if(jSwipeDragging){
     const finalPos = Math.max(-J_ACTION_WIDTH, Math.min(0, (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + jSwipeLastDx));
     const willOpen = finalPos < -J_ACTION_WIDTH / 2;
@@ -2862,8 +2867,8 @@ journalList.addEventListener('touchend', ()=>{
     } else if(jSwipeOpenRow === row){
       jSwipeOpenRow = null;
     }
-  } else if(!jSwipeDecided || !jSwipeTargetIsAction){
-    // не было горизонтального драга — это тап
+  } else {
+    // пальцем почти не двигали — это тап
     if(row.classList.contains('open')){
       if(jSwipeTargetIsAction){
         openDeleteAlert(Number(row.dataset.id));
@@ -2874,9 +2879,11 @@ journalList.addEventListener('touchend', ()=>{
     } else {
       openEditSheet(Number(row.dataset.id));
     }
-  } else {
-    openDeleteAlert(Number(row.dataset.id));
   }
+  jSwipeRow = null; jSwipeDragging = false; jSwipeDecided = false;
+});
+// iOS отдаёт жест скроллу через touchcancel вместо touchend — сбрасываем состояние.
+journalList.addEventListener('touchcancel', ()=>{
   jSwipeRow = null; jSwipeDragging = false; jSwipeDecided = false;
 });
 
@@ -3843,6 +3850,11 @@ beansList.addEventListener('touchend', ()=>{
   if(!bSwipeRow) return;
   const row = bSwipeRow;
   const id = Number(row.dataset.id);
+  // Та же ловушка, что в журнале: вертикальный скролл по карточке — не тап.
+  if(bSwipeDecided && !bSwipeDragging){
+    bSwipeRow = null; bSwipeDecided = false;
+    return;
+  }
   if(bSwipeDragging){
     const finalPos = Math.max(-B_ACTION_WIDTH, Math.min(0, (bSwipeBaseOpen ? -B_ACTION_WIDTH : 0) + bSwipeLastDx));
     const willOpen = finalPos < -B_ACTION_WIDTH / 2;
@@ -3872,6 +3884,9 @@ beansList.addEventListener('touchend', ()=>{
   } else {
     openBeanEditSheet(id);
   }
+  bSwipeRow = null; bSwipeDragging = false; bSwipeDecided = false;
+});
+beansList.addEventListener('touchcancel', ()=>{
   bSwipeRow = null; bSwipeDragging = false; bSwipeDecided = false;
 });
 
