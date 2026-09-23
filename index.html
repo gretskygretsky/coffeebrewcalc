@@ -690,6 +690,33 @@
   }
   .sheet-btn{ text-align:center; font-size:15px; font-weight:600; border-radius:12px; padding:13px 0; margin-bottom:8px; background:var(--accent, var(--blue)); color:#fff; }
   .sheet-btn.ghost{ background:none; color:var(--label-2); font-weight:500; padding:6px 0; margin-bottom:0; }
+  /* Действие над зерном (закончилось / в архив / вернуть) — строка iOS-таблицы,
+     не красная: это не удаление, --red остаётся только за деструктивом. */
+  .sheet-action{
+    background:var(--fill); border-radius:12px; margin-bottom:14px;
+    text-align:center; padding:12px 0; font-size:15px; font-weight:590; color:var(--blue); cursor:pointer;
+  }
+  .sheet-action:active{ background:var(--track); }
+  .sheet-stat{ display:flex; justify-content:center; gap:18px; margin:-4px 0 14px; }
+  .sheet-stat > div{ text-align:center; }
+  .sheet-stat .v{ font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .sheet-stat .v .s{ color:var(--orange); }
+  .sheet-stat .l{ font-size:11.5px; color:var(--label-2); margin-top:1px; }
+  .saved-mark{
+    width:44px; height:44px; border-radius:50%; margin:4px auto 10px;
+    background:var(--fill); display:flex; align-items:center; justify-content:center; color:var(--blue);
+  }
+  /* Строка выбора зерна в шторке записи — вместо свободного текстового поля */
+  .sheet-pick{
+    display:flex; width:100%; align-items:center; justify-content:space-between; gap:8px;
+    background:var(--fill); border:none; border-radius:12px; padding:11px 12px; margin:12px 0 10px;
+    font-family:inherit; text-align:left; cursor:pointer;
+  }
+  .sheet-pick-label{ font-size:15px; color:var(--label); flex-shrink:0; }
+  .sheet-pick-right{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .sheet-pick-value{ display:flex; flex-direction:column; align-items:flex-end; min-width:0; }
+  .sheet-pick-name{ font-size:15px; color:var(--label-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:190px; }
+  .sheet-pick-note{ font-size:11.5px; color:var(--label-3); }
 
   /* ---- Алерт удаления — единственный паттерн, без вариантов ---- */
   .alert-scrim{
@@ -709,6 +736,7 @@
   .alert-actions{ display:flex; gap:8px; }
   .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:10px; padding:11px 0; background:var(--fill); color:var(--label); }
   .alert-btn.danger{ background:var(--red); color:#fff; }
+  .alert-btn.primary{ background:var(--blue); color:#fff; }
 
   /* ---- Строки журнала: свайп открывает только удаление ----
      Высоту строки задаёт то, что есть у записи всегда (граммы + зерно/мл),
@@ -823,12 +851,51 @@
   .b-weight.low{ color:var(--orange); font-weight:600; }
   .b-opened{ font-size:11.5px; color:var(--label-3); margin-top:2px; }
 
+  /* Средняя оценка — справа от остатка, в той же строке. Считается на лету из
+     журнала по beanId, отдельно не хранится (не может разъехаться с записями). */
+  .b-weight-row{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-top:5px; }
+  .b-weight-row .b-weight{ margin-top:0; }
+  .b-rate{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0; }
+  .b-rate .s{ color:var(--orange); }
+  .b-rate b{ color:var(--label); font-weight:600; }
+  /* Закончившееся (но ещё не архивное) зерно: пустой мешочек, без полоски */
+  .b-row.finished .b-name{ color:var(--label-2); }
+  .b-weight.done{ color:var(--label-2); font-weight:600; }
+
+  /* ---- Архив зёрен: свёрнутая секция внизу страницы, сортировка по оценке ---- */
+  .arch-toggle{
+    display:flex; width:100%; align-items:center; justify-content:space-between;
+    margin:22px 0 8px; padding:0 4px; border:none; background:none; font-family:inherit; cursor:pointer;
+  }
+  .arch-toggle .section-header{ margin:0; display:inline; }
+  .arch-count{ font-size:13px; color:var(--label-3); font-weight:600; margin-left:4px; }
+  .arch-chev{ color:var(--label-3); transition:transform .2s ease; }
+  .arch-toggle.open .arch-chev{ transform:rotate(180deg); }
+  .arch-hint{ font-size:12px; color:var(--label-3); margin:0 4px 8px; }
+  .a-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+    padding:11px 14px; border:none; border-bottom:0.5px solid var(--separator); background:var(--card);
+    font-family:inherit; text-align:left; cursor:pointer;
+  }
+  .a-row:last-child{ border-bottom:none; }
+  .a-row:active{ background:var(--fill); }
+  .a-left{ display:flex; flex-direction:column; min-width:0; }
+  .a-name{ font-size:14px; font-weight:600; color:var(--label); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .a-sub{ font-size:12px; color:var(--label-2); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .a-right{ display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; }
+  .a-rate{ font-size:14px; font-weight:600; color:var(--label); font-variant-numeric:tabular-nums; }
+  .a-rate .s{ color:var(--orange); }
+  .a-rate.none{ color:var(--label-3); font-weight:500; }
+  .a-count{ font-size:12px; color:var(--label-2); margin-top:1px; font-variant-numeric:tabular-nums; }
+
   /* ---- Пикер пачки в шторке — те же карточки, что на странице Зёрен,
      просто без свайпа/редактирования: вся карточка — один тап "выбрать". ---- */
   #sheetBeanPickList{ max-height:52vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin:0 -2px 4px; padding:2px; }
   .bean-pick-card{ margin-bottom:10px; cursor:pointer; }
   .bean-pick-card:last-child{ margin-bottom:0; }
   .bean-pick-card.active{ box-shadow:0 0 0 1.5px var(--blue) inset; }
+  .bean-pick-card.archived{ opacity:.55; }
+  .pick-group-label{ font-size:12px; font-weight:600; color:var(--label-2); margin:16px 4px 8px; }
 
   /* ---- Шторка добавления/правки пачки и выбора активной: пилюли обжарки/обработки
      — как в Калькуляторе; список выбора пачки — те же .sheet-field строки. ---- */
@@ -904,10 +971,11 @@
 
         <div class="tip" id="beansEmpty">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
-          <span>Пока пусто. Добавь пачку — обжарка, дата и остаток будут под рукой на каждой заварке.</span>
+          <span>Пока пусто. Добавь зерно — обжарка, дата и остаток будут под рукой на каждой заварке.</span>
         </div>
 
-        <button class="ce-add" id="beanAddBtn" style="margin-top:14px;">Добавить пачку</button>
+        <button class="ce-add" id="beanAddBtn" style="margin-top:14px;">Добавить зерно</button>
+        <div id="beansArchive"></div>
       </div>
 
       <div class="page" id="pageCalc">
@@ -1010,7 +1078,7 @@
     <button class="bean-pick-row" id="beanPickRow" type="button">
       <span class="row-label">Зерно</span>
       <span class="bean-pick-right">
-        <span class="bean-pick-value" id="beanPickValue">Не выбрана</span>
+        <span class="bean-pick-value" id="beanPickValue">Не выбрано</span>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </span>
     </button>
@@ -1141,6 +1209,8 @@
   <div class="sheet-handle"></div>
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-subtitle" id="sheetSubtitle"></div>
+  <div class="saved-mark" id="sheetSavedMark" style="display:none;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+  <div class="sheet-stat" id="sheetStat" style="display:none;"></div>
   <div class="sheet-pills" id="sheetPills" style="display:none;"></div>
 
   <div class="segmented" id="sheetTabSeg" style="display:none; margin-bottom:12px;">
@@ -1174,7 +1244,16 @@
         <span class="unit" id="sheetGrindUnit" style="width:auto; white-space:nowrap;">кликов</span>
       </div>
     </div>
-    <input type="text" class="bean-input" id="sheetBeanInput" maxlength="60" placeholder="Название зерна">
+    <button class="sheet-pick" id="sheetBeanPick" type="button">
+      <span class="sheet-pick-label">Зерно</span>
+      <span class="sheet-pick-right">
+        <span class="sheet-pick-value">
+          <span class="sheet-pick-name" id="sheetBeanPickName">Не выбрано</span>
+          <span class="sheet-pick-note" id="sheetBeanPickNote" style="display:none;">не привязано</span>
+        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </span>
+    </button>
     <div class="note-wrap">
       <textarea class="note" id="sheetNoteInput" maxlength="140" placeholder="Ощущения от чашки…"></textarea>
       <div class="note-count" id="sheetNoteCount">140</div>
@@ -1186,6 +1265,7 @@
   </div>
   <div id="sheetBeanPickList" style="display:none;"></div>
 
+  <div class="sheet-action" id="sheetAction" style="display:none;"></div>
   <div class="sheet-btn" id="sheetPrimaryBtn"></div>
   <div class="sheet-btn ghost" id="sheetGhostBtn"></div>
 </div>
@@ -1193,7 +1273,7 @@
 <div class="alert-scrim" id="alertScrim"></div>
 <div class="alert-box" id="alertBox">
   <div class="alert-title" id="alertTitle">Удалить запись?</div>
-  <div class="alert-text">Это действие нельзя отменить.</div>
+  <div class="alert-text" id="alertText">Это действие нельзя отменить.</div>
   <div class="alert-actions">
     <div class="alert-btn" id="alertCancelBtn">Отмена</div>
     <div class="alert-btn danger" id="alertDeleteBtn">Удалить</div>
@@ -2159,6 +2239,10 @@ let brewRAF = null;
 let brewLastIdx = -1;
 let brewDoneFired = false;
 let journalOfferedThisBrew = false;
+/* Запись журнала создаётся в момент старта брю (после отсчёта) — id и промис
+   её создания, чтобы шторка «Оценить» дождалась записи даже на очень коротком брю. */
+let brewEntryId = null;
+let brewEntryPromise = null;
 
 function beep(freq, dur){
   try{
@@ -2435,6 +2519,7 @@ function launchBrew(){
   brewLastIdx = -1;
   brewDoneFired = false;
   journalOfferedThisBrew = false;
+  brewEntryPromise = createBrewEntry();
   document.getElementById('brewToggle').textContent = 'Остановить';
   blElapsed.classList.remove('bl-hidden');
   stageAlert();
@@ -2461,7 +2546,7 @@ function stopBrew(hide){
   try{ brewMusic.currentTime = 0; }catch(e){}
   document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
   updateScheduleUI();
-  if(wasRunning) offerJournalSave();
+  if(wasRunning) offerRateSheet();
 }
 
 function tickBrew(){
@@ -2497,7 +2582,7 @@ function tickBrew(){
     if(!brewDoneFired){
       brewDoneFired = true;
       finishAlert();
-      setTimeout(offerJournalSave, 700);
+      setTimeout(offerRateSheet, 700);
     }
   } else {
     blTimeNum.textContent = fmtTime(Math.max(0, next.time - elapsed));
@@ -2664,6 +2749,8 @@ function renderJournal(){
   const list = document.getElementById('journalList');
   const empty = document.getElementById('journalEmpty');
   jSwipeOpenRow = null;
+  // Средние оценки на странице Зёрен считаются из журнала — перерисовываем и их.
+  if(typeof renderBeans === 'function' && document.getElementById('beansList')) renderBeans();
   if(!journalEntries.length){
     list.innerHTML = '';
     listCard.style.display = 'none';
@@ -2675,6 +2762,15 @@ function renderJournal(){
   list.innerHTML = journalEntries.map(journalRowHTML).join('');
 }
 
+/* Имя зерна записи: по beanId — актуальное название пачки (переименование
+   подтягивается), иначе — снимок имени, сохранённый в записи. */
+function entryBeanName(e){
+  const id = normId(e.beanId);
+  const b = id != null ? beans.find(x=> x.id === id) : null;
+  return b ? (b.name || 'Без названия') : (e.bean || '');
+}
+function normId(x){ return (x == null || x === '') ? null : Number(x); }
+
 function journalRowHTML(e){
   // Звезда — про оценку, поэтому всегда оранжевая; раньше она красилась в цвет
   // режима, из-за чего список пестрел тремя цветами без всякого смысла.
@@ -2682,7 +2778,8 @@ function journalRowHTML(e){
   const star = rated
     ? '<span class="j-star" style="color:var(--orange);">★</span>'
     : '<span class="j-star" style="color:var(--orange); opacity:.35;">☆</span>';
-  const name = e.bean ? e.bean : (fmt(e.water) + ' мл');
+  const beanName = entryBeanName(e);
+  const name = escapeHTML(beanName ? beanName : (fmt(e.water) + ' мл'));
   return '' +
     '<div class="j-row" data-id="' + e.id + '">' +
       '<div class="j-row-action">Удалить</div>' +
@@ -2815,7 +2912,12 @@ const sheetGrindUnit = document.getElementById('sheetGrindUnit');
 const sheetGrindUp = document.getElementById('sheetGrindUp');
 const sheetGrindDown = document.getElementById('sheetGrindDown');
 const sheetNoteInput = document.getElementById('sheetNoteInput');
-const sheetBeanInput = document.getElementById('sheetBeanInput');
+const sheetSavedMark = document.getElementById('sheetSavedMark');
+const sheetStatEl = document.getElementById('sheetStat');
+const sheetActionEl = document.getElementById('sheetAction');
+const sheetBeanPickBtn = document.getElementById('sheetBeanPick');
+const sheetBeanPickName = document.getElementById('sheetBeanPickName');
+const sheetBeanPickNote = document.getElementById('sheetBeanPickNote');
 const sheetNoteCount = document.getElementById('sheetNoteCount');
 const NOTE_MAX = 140;
 
@@ -2862,8 +2964,9 @@ sheetGrindUp.addEventListener('click', ()=> setSheetGrind((sheetEntry.grind || 0
 sheetGrindDown.addEventListener('click', ()=> setSheetGrind((sheetEntry.grind || 0) - 1));
 sheetGrindInput.addEventListener('input', ()=> setSheetGrind(parseInt(sheetGrindInput.value) || 0));
 
-sheetBeanInput.addEventListener('input', ()=>{
-  sheetEntry.bean = sheetBeanInput.value;
+sheetBeanPickBtn.addEventListener('click', ()=>{
+  if(sheetMode !== 'edit') return;
+  openEntryBeanPick();
 });
 
 sheetNoteInput.addEventListener('input', ()=>{
@@ -2892,6 +2995,10 @@ function unlockPageScroll(){
 }
 
 function showSheet(){
+  // Доп. блоки шторки принадлежат конкретным режимам — прячем централизованно,
+  // чтобы ни одна шторка не открылась с хвостом от предыдущей.
+  if(sheetMode !== 'bean-edit'){ sheetStatEl.style.display = 'none'; sheetActionEl.style.display = 'none'; }
+  if(sheetMode !== 'saved') sheetSavedMark.style.display = 'none';
   lockPageScroll();
   sheetScrimEl.classList.add('show');
   sheetEl.classList.add('show');
@@ -2903,14 +3010,15 @@ function closeSheet(){
   if(!alertBoxEl.classList.contains('show')) unlockPageScroll();
 }
 
-function offerJournalSave(){
-  if(journalOfferedThisBrew) return;
-  if(!state.schedule || !state.schedule.length) return;
+/* Автосохранение: запись появляется в журнале сразу при старте брю (после
+   отсчёта; отменённый отсчёт записи не создаёт). Зерно списывается тогда же. */
+async function createBrewEntry(){
+  brewEntryId = null;
+  if(!state.schedule || !state.schedule.length) return null;
   const pours = state.schedule
     .filter(r=> r.add != null)
     .map(r=> ({ time: Math.round(r.time), add: Math.round(r.add) }));
-  if(!pours.length) return;
-  journalOfferedThisBrew = true;
+  if(!pours.length) return null;
   const activeBean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
   const entry = {
     id: brewWallClockStart || Date.now(),
@@ -2924,23 +3032,50 @@ function offerJournalSave(){
     grind: 0,
     beanId: activeBean ? activeBean.id : null,
     bean: activeBean ? (activeBean.name || '') : '',
-    note: ''
+    note: '',
+    duration: 0
   };
-  sheetMode = 'save';
+  brewEntryId = entry.id;
+  await journalSaveEntry(entry);
+  if(entry.beanId != null) await adjustBeanRemaining(entry.beanId, -entry.coffee);
+  renderJournal();
+  track('journal_autosaved');
+  return entry.id;
+}
+
+/* Конец брю (последний пролив или ручная остановка): дописываем фактическую
+   длительность и предлагаем оценить. Сохранять уже нечего — запись есть. */
+async function offerRateSheet(){
+  if(journalOfferedThisBrew) return;
+  journalOfferedThisBrew = true;
+  const id = brewEntryPromise ? await brewEntryPromise : null;
+  const entry = id != null ? journalEntries.find(e=> e.id === id) : null;
+  if(!entry) return;
+  const rows = state.schedule || [];
+  const last = rows.length ? Math.round(rows[rows.length-1].time) : 0;
+  const elapsed = Math.max(0, Math.round((performance.now() - brewStartTs) / 1000));
+  entry.duration = last ? Math.min(elapsed, last) : elapsed;
+  await journalUpdateEntry(entry);
+  // Пока ждали запись, могли открыть другую шторку — не перебиваем её.
+  if(sheetEl.classList.contains('show')) return;
+
+  sheetMode = 'saved';
   sheetEntry = entry;
   document.getElementById('sheetPills').style.display = 'none';
   document.getElementById('sheetBeanPickList').style.display = 'none';
-  sheetTitleEl.textContent = 'Сохранить в дневник?';
-  sheetSubtitleEl.textContent = fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл · ' +
+  sheetSavedMark.style.display = 'flex';
+  sheetTitleEl.textContent = 'Записано в журнал';
+  const beanName = entryBeanName(entry);
+  sheetSubtitleEl.textContent = (beanName ? beanName + ' · ' : '') +
+    fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл · ' +
     entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
-  // Кофе ещё не остыло — рано оценивать вкус. Вкладка «Оценка» появится позже, по тапу на запись.
   sheetTabSeg.style.display = 'none';
   sheetTabRate.style.display = 'none';
   sheetTabRecipe.style.display = 'none';
   sheetFieldsEl.style.display = 'none';
   sheetFieldsEl.innerHTML = '';
-  sheetPrimaryBtn.textContent = 'Записать';
-  sheetGhostBtn.textContent = 'Пропустить';
+  sheetPrimaryBtn.textContent = 'Оценить';
+  sheetGhostBtn.textContent = 'Позже';
   sheetGhostBtn.style.display = '';
   showSheet();
 }
@@ -2948,28 +3083,39 @@ function offerJournalSave(){
 function openEditSheet(id){
   const entry = journalEntries.find(e=> e.id === id);
   if(!entry) return;
-  sheetMode = 'edit';
   sheetEntry = JSON.parse(JSON.stringify(entry));
-  document.getElementById('sheetPills').style.display = 'none';
-  document.getElementById('sheetBeanPickList').style.display = 'none';
-  sheetTitleEl.textContent = formatEntryDate(entry.id);
-  sheetSubtitleEl.textContent = 'V60 · 1:' + entry.ratio;
-
   // Записи, сохранённые до появления оценки, не имеют этих полей — подставляем дефолты.
   sheetEntry.rating = sheetEntry.rating || 0;
   sheetEntry.taste = sheetEntry.taste || 0;
   sheetEntry.grind = sheetEntry.grind || 0;
   sheetEntry.bean = sheetEntry.bean || '';
   sheetEntry.note = sheetEntry.note || '';
+  sheetEntry.beanId = normId(sheetEntry.beanId);
+  // Старый формат пролива — просто число (граммы). Новый — {time, add}. Приводим
+  // к новому на лету: как только запись пересохранят, она мигрирует сама.
+  sheetEntry.pours = (sheetEntry.pours || []).map((p, i)=> typeof p === 'number'
+    ? { time: legacyPourTime(i), add: p }
+    : { time: p.time || 0, add: p.add || 0 });
+  renderEditSheet('rate');
+}
+
+/* Шторка записи рисуется из sheetEntry (черновика), а не из сохранённой записи —
+   так после выбора зерна в пикере возвращаемся к ней, не теряя правок. */
+function renderEditSheet(tab){
+  sheetMode = 'edit';
+  document.getElementById('sheetPills').style.display = 'none';
+  document.getElementById('sheetBeanPickList').style.display = 'none';
+  sheetTitleEl.textContent = formatEntryDate(sheetEntry.id);
+  sheetSubtitleEl.textContent = 'V60 · 1:' + sheetEntry.ratio;
 
   sheetTabSeg.style.display = 'flex';
-  setSheetTab('rate');
+  setSheetTab(tab || 'rate');
   setSheetRating(sheetEntry.rating);
   sheetTasteRange.value = sheetEntry.taste;
   sheetTasteLabel.textContent = TASTE_LABELS[sheetEntry.taste + 2];
   sheetGrindInput.value = sheetEntry.grind;
   sheetGrindUnit.textContent = pluralRu(sheetEntry.grind, 'клик', 'клика', 'кликов');
-  sheetBeanInput.value = sheetEntry.bean;
+  updateSheetBeanPick();
   sheetNoteInput.value = sheetEntry.note;
   sheetNoteCount.textContent = NOTE_MAX - sheetEntry.note.length;
   sheetNoteCount.classList.toggle('warn', NOTE_MAX - sheetEntry.note.length <= 10);
@@ -2977,14 +3123,7 @@ function openEditSheet(id){
   sheetFieldsEl.style.display = 'block';
   sheetFieldsEl.innerHTML = '';
   const pourTotalEls = [];
-  entry.pours.forEach((p, i)=>{
-    // Старый формат — просто число (граммы). Новый — {time, add}. Приводим
-    // к новому на лету: как только запись пересохранят, она мигрирует сама.
-    const isLegacy = typeof p === 'number';
-    const time = isLegacy ? legacyPourTime(i) : (p.time || 0);
-    const add = isLegacy ? p : (p.add || 0);
-    sheetEntry.pours[i] = { time, add };
-
+  sheetEntry.pours.forEach((p, i)=>{
     const row = document.createElement('div');
     row.className = 'sheet-field';
     const label = document.createElement('span');
@@ -2994,7 +3133,7 @@ function openEditSheet(id){
     const timeInput = document.createElement('input');
     timeInput.type = 'number'; timeInput.className = 'sheet-field-time';
     timeInput.inputMode = 'numeric'; timeInput.min = '0'; timeInput.step = '1';
-    timeInput.value = time;
+    timeInput.value = p.time;
     timeInput.addEventListener('input', ()=>{
       sheetEntry.pours[i].time = parseInt(timeInput.value, 10) || 0;
     });
@@ -3014,7 +3153,7 @@ function openEditSheet(id){
     const plus = document.createElement('span'); plus.textContent = '+';
     const gramsInput = document.createElement('input');
     gramsInput.type = 'number'; gramsInput.inputMode = 'decimal'; gramsInput.min = '0'; gramsInput.step = '1';
-    gramsInput.value = add;
+    gramsInput.value = p.add;
     gramsInput.addEventListener('input', ()=>{
       sheetEntry.pours[i].add = parseFloat(gramsInput.value) || 0;
       updatePourTotals();
@@ -3041,14 +3180,66 @@ function openEditSheet(id){
   showSheet();
 }
 
+function updateSheetBeanPick(){
+  const id = normId(sheetEntry.beanId);
+  const b = id != null ? beans.find(x=> x.id === id) : null;
+  sheetBeanPickName.textContent = b ? (b.name || 'Без названия') : (sheetEntry.bean || 'Не выбрано');
+  const orphan = !b && !!sheetEntry.bean;
+  sheetBeanPickNote.style.display = orphan ? '' : 'none';
+  sheetBeanPickNote.textContent = id != null ? 'зерно удалено' : 'не привязано';
+}
+
+/* Пикер зерна для записи: текущие зёрна + приглушённая группа «Архив» —
+   чтобы исправить запись задним числом на уже закончившееся зерно. */
+function openEntryBeanPick(){
+  sheetMode = 'entry-bean-pick';
+  document.getElementById('sheetPills').style.display = 'none';
+  sheetTabSeg.style.display = 'none';
+  sheetTabRate.style.display = 'none';
+  sheetTabRecipe.style.display = 'none';
+  sheetFieldsEl.style.display = 'none';
+  sheetTitleEl.textContent = 'Зерно для заваривания';
+  const stored = journalEntries.find(e=> e.id === sheetEntry.id);
+  const storedId = stored ? normId(stored.beanId) : null;
+  const hadBean = storedId != null && beans.some(b=> b.id === storedId);
+  const g = fmt(sheetEntry.coffee || 0) + ' г';
+  sheetSubtitleEl.textContent = !beans.length
+    ? 'Сначала добавь зерно на странице «Зёрна»'
+    : (hadBean ? g + ' вернутся прежнему зерну и спишутся с выбранного' : g + ' спишутся с выбранного зерна');
+
+  const selId = normId(sheetEntry.beanId);
+  const current = sortCurrentBeans(beans.filter(b=> !b.archived), null);
+  const archived = beans.filter(b=> b.archived).sort((a,b)=> b.id - a.id);
+  const listEl = document.getElementById('sheetBeanPickList');
+  listEl.style.display = 'block';
+  listEl.innerHTML =
+    current.map(b=> beanPickCardHTML(b, selId, false)).join('') +
+    (archived.length ? '<div class="pick-group-label">Архив</div>' + archived.map(b=> beanPickCardHTML(b, selId, true)).join('') : '');
+  listEl.querySelectorAll('.bean-pick-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const b = beans.find(x=> x.id === Number(card.dataset.id));
+      if(!b) return;
+      sheetEntry.beanId = b.id;
+      sheetEntry.bean = b.name || '';
+      navHapticTick();
+      renderEditSheet('rate');
+    });
+  });
+
+  sheetPrimaryBtn.textContent = 'Готово';
+  sheetGhostBtn.style.display = 'none';
+  showSheet();
+}
+
 function closeSheetAndMaybeStop(){
-  const wasSaveMode = sheetMode === 'save';
+  const wasSaveMode = sheetMode === 'saved';
   closeSheet();
   if(wasSaveMode && brewing) stopBrew(true);
 }
 
 sheetScrimEl.addEventListener('click', ()=>{
-  if(sheetMode === 'save') return; // сохранить/пропустить — только явными кнопками, не тапом мимо
+  // Из пикера зерна тап мимо возвращает к записи, а не выбрасывает черновик правок.
+  if(sheetMode === 'entry-bean-pick'){ renderEditSheet('rate'); return; }
   closeSheetAndMaybeStop();
 });
 // overflow:hidden на .page не всегда успевает перебить инерционный скролл
@@ -3059,11 +3250,26 @@ sheetGhostBtn.addEventListener('click', closeSheetAndMaybeStop);
 sheetPrimaryBtn.addEventListener('click', async ()=>{
   const mode = sheetMode;
   const entry = sheetEntry;
-  if(mode === 'save'){
-    await journalSaveEntry(entry);
-    await decrementActiveBean(entry.coffee);
-  } else if(mode === 'edit'){
+  if(mode === 'saved'){
+    // «Оценить»: брю завершаем, и та же шторка превращается в детальную записи.
+    const id = entry.id;
+    if(brewing) stopBrew(true);
+    track('journal_rate_opened');
+    openEditSheet(id);
+    return;
+  }
+  if(mode === 'entry-bean-pick'){ renderEditSheet('rate'); return; }
+  if(mode === 'edit'){
     entry.water = entry.pours.reduce((a,b)=> a+b.add, 0);
+    // Смена зерна переносит граммы: вернуть прежнему, списать с нового.
+    const before = journalEntries.find(e=> e.id === entry.id);
+    const oldId = before ? normId(before.beanId) : null;
+    const newId = normId(entry.beanId);
+    if(before && oldId !== newId){
+      if(oldId != null) await adjustBeanRemaining(oldId, before.coffee || 0);
+      if(newId != null) await adjustBeanRemaining(newId, -(entry.coffee || 0));
+      track('journal_bean_changed');
+    }
     await journalUpdateEntry(entry);
   } else if(mode === 'bean-add'){
     entry.remaining = entry.startWeight;
@@ -3071,13 +3277,15 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
     track('bean_added');
     if(beans.length === 1) await setActiveBean(entry.id);
   } else if(mode === 'bean-edit'){
+    // Вручную вернули остаток — зерно снова «в деле», метка «Закончилось» снимается.
+    if(beanRemainingTouched && (entry.remaining || 0) > 0) entry.finishedAt = null;
     await beanUpdateEntry(entry);
     track('bean_edited');
   }
   closeSheet();
-  if(mode === 'save' || mode === 'edit') renderJournal();
+  if(mode === 'edit') renderJournal();
   if(mode === 'bean-add' || mode === 'bean-edit') renderBeans();
-  if(mode === 'save' && brewing) stopBrew(true);
+  updateBeanPickRow();
 });
 
 /* ---- Подтверждение удаления: один визуальный паттерн на дневник и зёрна,
@@ -3086,11 +3294,31 @@ let alertDeleteId = null, alertDeleteKind = 'journal';
 const alertScrimEl = document.getElementById('alertScrim');
 const alertBoxEl = document.getElementById('alertBox');
 const alertTitleEl = document.getElementById('alertTitle');
+const alertTextEl = document.getElementById('alertText');
+const alertCancelBtn = document.getElementById('alertCancelBtn');
+const alertConfirmBtn = document.getElementById('alertDeleteBtn');
 
 function openDeleteAlert(id, kind){
   alertDeleteId = id;
   alertDeleteKind = kind || 'journal';
-  alertTitleEl.textContent = alertDeleteKind === 'bean' ? 'Удалить пачку?' : 'Удалить запись?';
+  alertTitleEl.textContent = alertDeleteKind === 'bean' ? 'Удалить зерно?' : 'Удалить запись?';
+  alertTextEl.textContent = 'Это действие нельзя отменить.';
+  alertCancelBtn.textContent = 'Отмена';
+  alertConfirmBtn.textContent = 'Удалить';
+  alertConfirmBtn.className = 'alert-btn danger';
+  lockPageScroll();
+  alertScrimEl.classList.add('show');
+  alertBoxEl.classList.add('show');
+}
+/* Тот же алерт, но не деструктивный: основное действие синее, не красное. */
+function openArchiveAlert(id){
+  alertDeleteId = id;
+  alertDeleteKind = 'archive';
+  alertTitleEl.textContent = 'Убрать в архив?';
+  alertTextEl.textContent = 'Зерно пропадёт из выбора в калькуляторе. Оценки и записи в журнале сохранятся.';
+  alertCancelBtn.textContent = 'Оставить';
+  alertConfirmBtn.textContent = 'В архив';
+  alertConfirmBtn.className = 'alert-btn primary';
   lockPageScroll();
   alertScrimEl.classList.add('show');
   alertBoxEl.classList.add('show');
@@ -3108,14 +3336,20 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
   const id = alertDeleteId;
   const kind = alertDeleteKind;
   closeDeleteAlert();
-  if(kind === 'bean'){
+  if(kind === 'archive'){
+    await archiveBean(id);
+  } else if(kind === 'bean'){
     bSwipeOpenRow = null;
     await beanDeleteEntry(id);
     renderBeans();
   } else {
     jSwipeOpenRow = null;
+    // Удалённая заварка возвращает граммы своему зерну.
+    const e = journalEntries.find(x=> x.id === id);
     await journalDeleteEntry(id);
+    if(e && normId(e.beanId) != null) await adjustBeanRemaining(normId(e.beanId), e.coffee || 0);
     renderJournal();
+    updateBeanPickRow();
   }
 });
 
@@ -3217,15 +3451,78 @@ function applyActiveBeanProfile(){
   updateTempBlock();
 }
 
-/* Тихое списание остатка после заваривания — без подтверждений, чтобы это
-   не добавляло лишний тап на каждую чашку. Остаток не уходит в минус. */
-async function decrementActiveBean(grams){
-  if(activeBeanId == null || !grams) return;
-  const bean = beans.find(b=> b.id === activeBeanId);
+/* Изменение остатка зерна на delta граммов (минус — списание, плюс — возврат).
+   Остаток хранится честно, даже ниже нуля: иначе серия правок «туда-обратно»
+   (смена зерна в записи, удаление записи) портит цифры. На экране — не меньше нуля. */
+async function adjustBeanRemaining(id, delta){
+  if(id == null || !delta) return;
+  const bean = beans.find(b=> b.id === id);
   if(!bean) return;
-  bean.remaining = Math.max(0, Math.round((bean.remaining - grams) * 10) / 10);
+  const cur = bean.remaining != null ? bean.remaining : (bean.startWeight || 0);
+  bean.remaining = Math.round((cur + delta) * 10) / 10;
   await beanUpdateEntry(bean);
+}
+
+/* Сводка по зерну из журнала: сколько заварок, сколько оценено, средняя.
+   Неоценённые (rating 0) в среднее не входят. */
+function beanStats(id){
+  let brews = 0, rated = 0, sum = 0;
+  journalEntries.forEach(e=>{
+    if(normId(e.beanId) !== id) return;
+    brews++;
+    if((e.rating || 0) > 0){ rated++; sum += e.rating; }
+  });
+  return { brews, rated, avg: rated ? sum / rated : null };
+}
+
+async function deactivateBean(id){
+  if(activeBeanId !== id) return;
+  activeBeanId = null;
+  await storeRemove(BEANS_ACTIVE_KEY);
+  updateBeanPickRow();
+}
+
+async function archiveBean(id){
+  const bean = beans.find(b=> b.id === id);
+  if(!bean) return;
+  bean.archived = true;
+  await beanUpdateEntry(bean);
+  await deactivateBean(id);
+  track('bean_archived');
   renderBeans();
+  updateBeanPickRow();
+}
+
+/* Текущие (не архивные) зёрна: активное сверху, закончившиеся — вниз, дальше новые выше. */
+function sortCurrentBeans(list, activeId){
+  return [...list].sort((a,b)=>{
+    if(activeId != null){
+      if(a.id === activeId) return -1;
+      if(b.id === activeId) return 1;
+    }
+    const fa = a.finishedAt ? 1 : 0, fb = b.finishedAt ? 1 : 0;
+    if(fa !== fb) return fa - fb;
+    return b.id - a.id;
+  });
+}
+
+/* Привязка старых записей журнала (только имя зерна, без beanId) к зерну по
+   совпадению названия. Остатки при этом не трогаем: эти граммы уже когда-то
+   списались (или пачку завели позже с актуальным весом). */
+async function linkLegacyEntries(){
+  const toSave = [];
+  journalEntries.forEach(e=>{
+    if(normId(e.beanId) != null || !e.bean) return;
+    const key = e.bean.trim().toLowerCase();
+    const matches = beans.filter(b=> (b.name || '').trim().toLowerCase() === key);
+    if(!matches.length) return;
+    const before = matches.filter(b=> b.id <= e.id).sort((a,b)=> b.id - a.id);
+    const pick = before[0] || matches.sort((a,b)=> a.id - b.id)[0];
+    e.beanId = pick.id;
+    toSave.push(e);
+  });
+  for(const e of toSave) await journalUpdateEntry(e);
+  if(toSave.length) renderJournal();
 }
 
 /* ---- Калькулятор: строка выбора активной пачки ---- */
@@ -3233,7 +3530,7 @@ function updateBeanPickRow(){
   const el = document.getElementById('beanPickValue');
   if(!el) return;
   const bean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
-  el.textContent = bean ? (bean.name || 'Без названия') : 'Не выбрана';
+  el.textContent = bean ? (bean.name || 'Без названия') : 'Не выбрано';
 }
 
 /* Карточка для пикера пачки — визуально идентична beanRowHTML (та же обводка,
@@ -3241,8 +3538,8 @@ function updateBeanPickRow(){
    «почему такая температура», тут выбирают пачку, поэтому вся карточка — один
    тап. Клип-id мешочка отдельный (pick-<id>), чтобы не столкнуться с тем же
    мешочком на странице Зёрен, если она в этот момент тоже есть в DOM. */
-function beanPickCardHTML(b){
-  const isActive = b.id === activeBeanId;
+function beanPickCardHTML(b, selectedId, archived){
+  const isActive = b.id === (selectedId === undefined ? activeBeanId : selectedId);
   const roastLbl = (ROASTS.find(x=>x.id===b.roast) || {}).label || '';
   const procLbl = (PROCESSES.find(x=>x.id===b.process) || {}).label || '';
   const temp = computeBrewTemp(b.roast, b.process);
@@ -3255,7 +3552,7 @@ function beanPickCardHTML(b){
   const openedDays = daysSinceRoast(b.openedDate);
   const openedLbl = openedDays == null ? '' : (openedDays <= 0 ? 'вскрыта сегодня' : 'вскрыта ' + freshnessLabel(openedDays) + ' назад');
   return (
-    '<div class="b-row-content bean-pick-card' + (isActive ? ' active' : '') + '" data-id="' + b.id + '">' +
+    '<div class="b-row-content bean-pick-card' + (isActive ? ' active' : '') + (archived ? ' archived' : '') + '" data-id="' + b.id + '">' +
       '<span class="b-active-check' + (isActive ? ' active' : '') + '">' + (isActive ? checkIconSVG() : '') + '</span>' +
       '<div class="b-bag">' + beanBagSVG(pct, 'pick' + b.id) + '</div>' +
       '<div class="b-info">' +
@@ -3270,20 +3567,19 @@ function beanPickCardHTML(b){
           '</div>'
         ) : '') +
         '<div class="b-meta">' + roastLbl + ' · ' + procLbl + ' · <span class="b-temp">' + temp + ' °C</span></div>' +
-        '<div class="b-bar"><div class="b-bar-fill" style="width:' + Math.round(pct*100) + '%;"></div></div>' +
-        '<div class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + ' г' + (low ? ' · заканчивается' : '') + '</div>' +
-        (openedLbl ? '<div class="b-opened">' + openedLbl + '</div>' : '') +
+        beanStatusHTML(b, pct, low, remain, start, openedLbl) +
       '</div>' +
     '</div>'
   );
 }
 
 function openBeanPickSheet(){
-  if(!beans.length){ navGoTo(0, true); return; }
+  const pickable = beans.filter(b=> !b.archived); // архивное зерно в калькуляторе не выбирается
+  if(!pickable.length){ navGoTo(0, true); return; }
   sheetMode = 'bean-pick';
   sheetEntry = null;
   document.getElementById('sheetPills').style.display = 'none';
-  sheetTitleEl.textContent = 'Выбрать пачку';
+  sheetTitleEl.textContent = 'Выбрать зерно';
   sheetSubtitleEl.textContent = 'Обжарка и обработка подставятся в температуру автоматически';
   sheetTabSeg.style.display = 'none';
   sheetTabRate.style.display = 'none';
@@ -3292,12 +3588,8 @@ function openBeanPickSheet(){
 
   const listEl = document.getElementById('sheetBeanPickList');
   listEl.style.display = 'block';
-  const sorted = [...beans].sort((a,b)=>{
-    if(a.id === activeBeanId) return -1;
-    if(b.id === activeBeanId) return 1;
-    return b.id - a.id;
-  });
-  listEl.innerHTML = sorted.map(beanPickCardHTML).join('');
+  const sorted = sortCurrentBeans(pickable, activeBeanId);
+  listEl.innerHTML = sorted.map(b=> beanPickCardHTML(b)).join('');
   listEl.querySelectorAll('.bean-pick-card').forEach(card=>{
     card.addEventListener('click', async ()=>{
       const id = Number(card.dataset.id);
@@ -3365,6 +3657,24 @@ function beanBagSVG(pct, id){
     '</svg>';
 }
 
+/* Нижняя часть карточки зерна: полоска остатка, остаток + средняя оценка,
+   дата вскрытия. У закончившегося — без полоски, «Закончилось» и когда. */
+function beanStatusHTML(b, pct, low, remain, start, openedLbl){
+  const st = beanStats(b.id);
+  const rate = st.rated
+    ? '<span class="b-rate"><span class="s">★</span> <b>' + fmt(st.avg) + '</b> · ' + st.rated + '</span>'
+    : '<span class="b-rate">нет оценок</span>';
+  if(b.finishedAt){
+    const d = daysSinceRoast(b.finishedAt);
+    const when = d == null ? '' : (d <= 0 ? 'закончилось сегодня' : d === 1 ? 'закончилось вчера' : 'закончилось ' + freshnessLabel(d) + ' назад');
+    return '<div class="b-weight-row"><span class="b-weight done">Закончилось</span>' + rate + '</div>' +
+      (when ? '<div class="b-opened">' + when + '</div>' : '');
+  }
+  return '<div class="b-bar"><div class="b-bar-fill" style="width:' + Math.round(pct*100) + '%;"></div></div>' +
+    '<div class="b-weight-row"><span class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + ' г' + (low ? ' · заканчивается' : '') + '</span>' + rate + '</div>' +
+    (openedLbl ? '<div class="b-opened">' + openedLbl + '</div>' : '');
+}
+
 /* ---- Зёрна: список ---- */
 let bSwipeOpenRow = null;
 let openTempNoteIds = new Set(); // какие карточки сейчас показывают «почему такая температура»
@@ -3384,7 +3694,7 @@ function beanRowHTML(b){
   const openedDays = daysSinceRoast(b.openedDate); // тот же helper, просто другая дата
   const openedLbl = openedDays == null ? '' : (openedDays <= 0 ? 'вскрыта сегодня' : 'вскрыта ' + freshnessLabel(openedDays) + ' назад');
   return (
-    '<div class="b-row" data-id="' + b.id + '">' +
+    '<div class="b-row' + (b.finishedAt ? ' finished' : '') + '" data-id="' + b.id + '">' +
       '<div class="b-row-action">Удалить</div>' +
       '<div class="b-row-content">' +
         '<button class="b-active-check' + (isActive ? ' active' : '') + '" aria-label="Сделать активной" aria-pressed="' + isActive + '">' +
@@ -3406,9 +3716,7 @@ function beanRowHTML(b){
             '<button class="b-temp-info' + (noteOpen ? ' open' : '') + '" aria-label="Почему такая температура" aria-expanded="' + noteOpen + '">' + infoIconSVG() + '</button>' +
           '</div>' +
           (noteOpen ? '<div class="b-temp-note">' + beanTempNoteHTML(b.process) + '</div>' : '') +
-          '<div class="b-bar"><div class="b-bar-fill" style="width:' + Math.round(pct*100) + '%;"></div></div>' +
-          '<div class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + ' г' + (low ? ' · заканчивается' : '') + '</div>' +
-          (openedLbl ? '<div class="b-opened">' + openedLbl + '</div>' : '') +
+          beanStatusHTML(b, pct, low, remain, start, openedLbl) +
         '</div>' +
       '</div>' +
     '</div>'
@@ -3426,21 +3734,62 @@ function renderBeans(){
   const list = document.getElementById('beansList');
   const empty = document.getElementById('beansEmpty');
   bSwipeOpenRow = null;
-  if(!beans.length){
+  const current = beans.filter(b=> !b.archived);
+  renderBeansArchive(beans.filter(b=> b.archived));
+  if(!current.length){
     list.innerHTML = '';
     wrap.style.display = 'none';
     empty.style.display = 'flex';
     return;
   }
-  const sorted = [...beans].sort((a,b)=>{
-    if(a.id === activeBeanId) return -1;
-    if(b.id === activeBeanId) return 1;
-    return b.id - a.id;
-  });
+  const sorted = sortCurrentBeans(current, activeBeanId);
   wrap.style.display = 'block';
   empty.style.display = 'none';
   list.innerHTML = sorted.map(beanRowHTML).join('');
 }
+
+/* ---- Зёрна: архив — свёрнутая секция внизу, по средней оценке ---- */
+let beansArchiveOpen = false;
+function renderBeansArchive(list){
+  const el = document.getElementById('beansArchive');
+  if(!el) return;
+  if(!list.length){ el.innerHTML = ''; return; }
+  const rows = list.map(b=> ({ b, st: beanStats(b.id) })).sort((x, y)=>{
+    const ax = x.st.avg, ay = y.st.avg;
+    if(ax == null && ay == null) return y.b.id - x.b.id;
+    if(ax == null) return 1;
+    if(ay == null) return -1;
+    return (ay - ax) || (y.st.rated - x.st.rated);
+  });
+  const chev = '<svg class="arch-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  el.innerHTML =
+    '<button class="arch-toggle' + (beansArchiveOpen ? ' open' : '') + '" type="button" aria-expanded="' + beansArchiveOpen + '">' +
+      '<span><span class="section-header">Архив</span><span class="arch-count">' + list.length + '</span></span>' + chev +
+    '</button>' +
+    (beansArchiveOpen ? (
+      '<div class="arch-hint">По средней оценке — какие зёрна брать снова</div>' +
+      '<div class="card">' + rows.map(({ b, st })=>{
+        const sub = b.roaster || [((ROASTS.find(x=>x.id===b.roast) || {}).label || ''), ((PROCESSES.find(x=>x.id===b.process) || {}).label || '')].filter(Boolean).join(' · ');
+        const right = st.rated
+          ? '<span class="a-rate"><span class="s">★</span> ' + fmt(st.avg) + '</span><span class="a-count">' + st.rated + ' ' + pluralRu(st.rated, 'оценка', 'оценки', 'оценок') + '</span>'
+          : '<span class="a-rate none">—</span><span class="a-count">без оценок</span>';
+        return '<button class="a-row" type="button" data-id="' + b.id + '">' +
+          '<span class="a-left"><span class="a-name">' + escapeHTML(b.name || 'Без названия') + '</span>' +
+          (sub ? '<span class="a-sub">' + escapeHTML(sub) + '</span>' : '') + '</span>' +
+          '<span class="a-right">' + right + '</span></button>';
+      }).join('') + '</div>'
+    ) : '');
+}
+document.getElementById('beansArchive').addEventListener('click', (e)=>{
+  if(e.target.closest('.arch-toggle')){
+    beansArchiveOpen = !beansArchiveOpen;
+    renderBeans();
+    navHapticTick();
+    return;
+  }
+  const row = e.target.closest('.a-row');
+  if(row) openBeanEditSheet(Number(row.dataset.id));
+});
 
 function closeBeanRow(row){
   if(!row) return;
@@ -3529,7 +3878,8 @@ beansList.addEventListener('touchend', ()=>{
 /* ---- Зёрна: шторка добавления/правки (переиспользует общий sheet-компонент) ---- */
 function renderBeanSheet(){
   const isAdd = sheetMode === 'bean-add';
-  sheetTitleEl.textContent = isAdd ? 'Новая пачка' : (sheetEntry.name || 'Пачка');
+  sheetTitleEl.textContent = isAdd ? 'Новое зерно' : (sheetEntry.name || 'Зерно');
+  beanRemainingTouched = false;
   sheetSubtitleEl.textContent = isAdd
     ? 'Обжарка, дата и вес — дальше подставятся сами'
     : freshnessLabel(daysSinceRoast(sheetEntry.roastDate)) + ' после обжарки';
@@ -3625,11 +3975,28 @@ function renderBeanSheet(){
   if(!isAdd){
     const remainInput = document.createElement('input');
     remainInput.type = 'number'; remainInput.inputMode = 'decimal'; remainInput.min = '0'; remainInput.step = '5';
-    remainInput.value = sheetEntry.remaining;
+    remainInput.value = Math.max(0, sheetEntry.remaining || 0); // внутри может быть < 0, показываем не меньше нуля
     remainInput.addEventListener('input', ()=>{
       sheetEntry.remaining = parseFloat(remainInput.value) || 0;
+      beanRemainingTouched = true;
     });
     mkField('Осталось, г', remainInput);
+  }
+
+  if(!isAdd){
+    const st = beanStats(sheetEntry.id);
+    if(st.brews){
+      sheetStatEl.innerHTML =
+        '<div><div class="v">' + (st.rated ? '<span class="s">★</span> ' + fmt(st.avg) : '—') + '</div><div class="l">средняя</div></div>' +
+        '<div><div class="v">' + st.rated + '</div><div class="l">' + pluralRu(st.rated, 'оценка', 'оценки', 'оценок') + '</div></div>' +
+        '<div><div class="v">' + st.brews + '</div><div class="l">' + pluralRu(st.brews, 'заварка', 'заварки', 'заварок') + '</div></div>';
+      sheetStatEl.style.display = 'flex';
+    } else {
+      sheetStatEl.style.display = 'none';
+    }
+    sheetActionEl.textContent = sheetEntry.archived ? 'Вернуть из архива'
+      : (sheetEntry.finishedAt ? 'Убрать в архив' : 'Зерно закончилось');
+    sheetActionEl.style.display = 'block';
   }
 
   sheetPrimaryBtn.textContent = isAdd ? 'Добавить' : 'Сохранить';
@@ -3637,6 +4004,42 @@ function renderBeanSheet(){
   sheetGhostBtn.style.display = '';
   showSheet();
 }
+
+let beanRemainingTouched = false;
+
+/* Действие над зерном в детальной: закончилось → (алерт) в архив → вернуть.
+   Правки полей, сделанные в шторке до нажатия, сохраняются вместе с действием. */
+sheetActionEl.addEventListener('click', async ()=>{
+  if(sheetMode !== 'bean-edit' || !sheetEntry) return;
+  const entry = sheetEntry;
+  navHapticTick();
+  if(entry.archived){
+    entry.archived = false;
+    await beanUpdateEntry(entry);
+    track('bean_unarchived');
+    renderBeans();
+    updateBeanPickRow();
+    // Шторка остаётся открытой — сразу поправить остаток, если купил ту же пачку снова.
+    sheetEntry = JSON.parse(JSON.stringify(entry));
+    renderBeanSheet();
+    return;
+  }
+  if(!entry.finishedAt){
+    entry.remaining = 0;
+    entry.finishedAt = todayISO();
+    await beanUpdateEntry(entry);
+    await deactivateBean(entry.id); // иначе следующая заварка спишется с пустого зерна
+    track('bean_finished');
+    closeSheet();
+    renderBeans();
+    updateBeanPickRow();
+    openArchiveAlert(entry.id);
+    return;
+  }
+  await beanUpdateEntry(entry);
+  closeSheet();
+  await archiveBean(entry.id);
+});
 
 function openBeanAddSheet(){
   sheetMode = 'bean-add';
@@ -3661,8 +4064,7 @@ loadBeanPrefs();
 buildTempPills();
 buildRecipeSeg();
 setMode('v60');
-journalLoad();
-beansLoad();
+Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries);
 
 /* ---- Навигация свайпом между разделами: Зёрна / Калькулятор / Журнал ----
    Точки вместо табов, подпись всплывает только во время жеста,
