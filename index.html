@@ -27,6 +27,20 @@
     --teal: #59C4E8;
     --brown: #A2845E;
     --red: #FF3B30;
+    /* Liquid Glass — имитация линзы: размытие+насыщение фона, светлая кромка, блик.
+       Только для хрома (таб-бар, кнопка действия, шторка, алерт, панель таймера),
+       контент остаётся непрозрачным. Полный набор дублируется в PALETTE (JS). */
+    --glass-bg: rgba(255,255,255,0.56);
+    --glass-solid: #F9F9FB;
+    --glass-edge: rgba(255,255,255,0.75);
+    --glass-hi: rgba(255,255,255,0.95);
+    --glass-lo: rgba(0,0,0,0.06);
+    --glass-sheen: rgba(255,255,255,0.55);
+    --glass-shadow: rgba(0,0,0,0.14);
+    --lens: rgba(120,120,128,0.14);
+    --sheet-bg: rgba(255,255,255,0.78);
+    --scrim: rgba(0,0,0,0.22);
+    --edge-fade: rgba(242,242,247,0.85);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark){
@@ -50,9 +64,43 @@
       --teal: #64D2FF;
       --brown: #AC8E68;
       --red: #FF453A;
+      --glass-bg: rgba(42,42,46,0.5);
+      --glass-solid: #1E1E21;
+      --glass-edge: rgba(255,255,255,0.14);
+      --glass-hi: rgba(255,255,255,0.22);
+      --glass-lo: rgba(0,0,0,0.5);
+      --glass-sheen: rgba(255,255,255,0.08);
+      --glass-shadow: rgba(0,0,0,0.55);
+      --lens: rgba(255,255,255,0.12);
+      --sheet-bg: rgba(30,30,33,0.76);
+      --scrim: rgba(0,0,0,0.45);
+      --edge-fade: rgba(0,0,0,0.85);
     }
   }
   html, body{ overflow-x:hidden; height:100%; }
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+
+  /* ---------- Стекло ---------- */
+  .glass{
+    position:relative; isolation:isolate;
+    background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(22px) saturate(180%);
+    backdrop-filter:blur(22px) saturate(180%);
+    border:0.5px solid var(--glass-edge);
+    box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 -0.5px 0 var(--glass-lo), 0 10px 30px var(--glass-shadow), 0 1px 3px var(--glass-shadow);
+  }
+  .glass::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:-1;
+    background:linear-gradient(180deg, var(--glass-sheen) 0%, transparent 48%);
+  }
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+    .glass{ background:var(--glass-solid); }
+    .sheet, .brew-live, .alert-box{ background:var(--card) !important; }
+  }
+  @media (prefers-reduced-transparency: reduce){
+    .glass{ background:var(--glass-solid); -webkit-backdrop-filter:none; backdrop-filter:none; }
+    .sheet, .brew-live, .alert-box{ background:var(--card) !important; }
+  }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   body{
     margin:0;
@@ -61,7 +109,8 @@
     height:100vh;
     height:100dvh;
     width:100%;
-    padding: max(20px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
+    /* Снизу без отступа: страницы уходят под плавающий док до самого края экрана */
+    padding: max(20px, env(safe-area-inset-top)) 16px 0;
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -85,23 +134,24 @@
   }
 
   /* iOS segmented control */
+  /* Капсула с бегунком-бликом (iOS 26). Отступ 3px — moveThumb() считает от него. */
   .segmented{
     position:relative;
     display:flex;
     background:var(--fill);
-    border-radius:9px;
-    padding:2px;
+    border-radius:999px;
+    padding:3px;
     margin-bottom:22px;
-    height:32px;
+    height:38px;
   }
   .segmented .thumb{
     position:absolute;
-    top:2px; bottom:2px;
-    left:2px;
+    top:3px; bottom:3px;
+    left:3px;
     background:var(--seg-thumb);
-    border-radius:7px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 1px rgba(0,0,0,0.08);
-    transition: transform .32s cubic-bezier(.34,1.3,.64,1), width .32s cubic-bezier(.34,1.3,.64,1);
+    border-radius:999px;
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04);
+    transition: transform .42s cubic-bezier(.3,1.35,.5,1), width .32s cubic-bezier(.34,1.3,.64,1);
     z-index:0;
   }
   .seg-btn{
@@ -116,7 +166,8 @@
     padding:0 6px;
     cursor:pointer;
     transition:color .2s ease;
-    line-height:28px;
+    line-height:32px;
+    border-radius:999px;
   }
   .seg-btn.active{ color:var(--seg-thumb-text); }
 
@@ -143,7 +194,7 @@
     flex-shrink:0;
     font-size:14px;
     font-weight:590;
-    padding:8px 14px;
+    padding:9px 16px;
     border-radius:999px;
     border:none;
     background:var(--pill-off);
@@ -152,7 +203,7 @@
     transition: all .18s ease;
   }
   .pill:active{ transform:scale(0.94); }
-  .pill.active{ background:var(--accent, var(--orange)); color:#fff; }
+  .pill.active{ background:var(--accent, var(--orange)); color:#fff; box-shadow:inset 0 1px 0 rgba(255,255,255,0.35); }
 
   .ratio-hint{
     font-size:12.5px;
@@ -170,14 +221,14 @@
 
   .card{
     background:var(--card);
-    border-radius:14px;
+    border-radius:22px;
     overflow:hidden;
   }
   .row{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:12px 16px;
+    padding:12px 18px;
     min-height:44px;
     border-bottom:0.5px solid var(--separator);
   }
@@ -198,7 +249,7 @@
     font-variant-numeric: tabular-nums;
     background:var(--fill);
     border:none;
-    border-radius:8px;
+    border-radius:12px;
     padding:6px 4px;
     color:var(--label);
   }
@@ -243,11 +294,13 @@
     display:flex;
     align-items:center;
     background:var(--fill);
-    border-radius:8px;
+    border-radius:999px;
     overflow:hidden;
+    padding:0 2px;
   }
   .stepper button{
-    width:30px; height:30px;
+    width:32px; height:32px;
+    border-radius:999px;
     border:none;
     background:transparent;
     color:var(--accent, var(--blue));
@@ -265,7 +318,7 @@
     gap:16px;
     align-items:center;
     background:var(--card);
-    border-radius:14px;
+    border-radius:22px;
     padding:18px 16px;
   }
   .visual{ width:64px; height:80px; flex-shrink:0; }
@@ -289,7 +342,7 @@
     display:flex;
     gap:10px;
     background:var(--fill);
-    border-radius:14px;
+    border-radius:22px;
     padding:14px 16px;
     font-size:13px;
     line-height:1.5;
@@ -411,9 +464,9 @@
     display:block;
     width:100%;
     margin-top:8px;
-    padding:11px;
+    padding:12px;
     border:none;
-    border-radius:12px;
+    border-radius:999px;
     background:var(--fill);
     /* Фолбэк — синий (интерфейс). На Калькуляторе «добавить пролив» получает
        --accent режима явно из JS и остаётся в цвете заваривания. */
@@ -487,46 +540,105 @@
   .temp-why + .temp-why{ margin-top:8px; }
   .temp-why.muted{ color:var(--label-3); }
 
-  /* ---- Кнопка старта + кнопка музыки в одном ряду ---- */
-  .action-row{ display:none; gap:8px; margin-top:16px; }
-  .brew-btn{
-    flex:1;
-    padding:14px;
-    border:none;
-    border-radius:14px;
-    font-size:16px;
-    font-weight:600;
-    font-family:inherit;
-    cursor:pointer;
-    transition: transform .15s ease;
-  }
-  .brew-btn:active{ transform:scale(0.97); }
-  .brew-btn.start{ background:var(--accent, var(--orange)); color:#fff; }
-  .brew-btn.stop{ background:var(--fill); color:var(--label); }
-  .music-square{
+  /* ---- Живой таймер: плавающая стеклянная панель над доком ----
+     Экран не прокручивается к таймеру — он всегда внизу, под пальцем,
+     а контент (график пролива) уходит под него. */
+  .brew-live{
     display:none;
-    flex:0 0 52px;
-    align-items:center; justify-content:center;
-    border:none;
-    border-radius:14px;
-    background:var(--fill);
-    color:var(--label-2);
-    cursor:pointer;
+    position:fixed; z-index:31;
+    left:50%; transform:translateX(-50%);
+    width:calc(100% - 32px); max-width:420px;
+    bottom:calc(14px + 64px + 12px + env(safe-area-inset-bottom, 0px));
+    border-radius:30px;
+    padding:14px 12px 16px;
+    background:var(--sheet-bg) !important;
+    border:1.5px solid color-mix(in srgb, var(--accent, var(--orange)) 70%, transparent) !important;
+    animation:liveIn .5s cubic-bezier(.3,1.25,.5,1);
   }
-  .music-square:active{ background:rgba(120,120,128,0.24); }
+  @keyframes liveIn{ from{ opacity:0; transform:translate(-50%, 40px) scale(.94); } to{ opacity:1; transform:translateX(-50%); } }
+  /* Пока идёт брю — запас снизу, чтобы весь Калькулятор можно было докрутить выше панели */
+  body.brewing #pageCalc{ padding-bottom:calc(420px + env(safe-area-inset-bottom, 0px)); }
+  .bl-note{
+    margin:-6px 6px 14px; padding:8px 12px; border-radius:14px;
+    font-size:13px; line-height:1.35; text-align:center; color:var(--label);
+    background:color-mix(in srgb, var(--accent, var(--teal)) 16%, transparent);
+  }
+
+  /* ---- Док: таб-бар (4 раздела) + круглая контекстная кнопка справа ---- */
+  .dock{
+    position:fixed; left:0; right:0; bottom:0; z-index:30; pointer-events:none;
+    padding:0 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .dock-inner{ position:relative; max-width:420px; margin:0 auto; height:64px; display:flex; gap:10px; }
+  .dock-inner > *{ pointer-events:auto; }
+  .edge-fade{
+    position:fixed; left:0; right:0; bottom:0; height:120px; pointer-events:none; z-index:29;
+    background:linear-gradient(to top, var(--edge-fade), transparent); opacity:.55;
+  }
+
+  /* Ширины статикой в CSS (урок сегмент-контролов): 4 колонки и линза в 1/4 */
+  .tabbar{
+    flex:1; min-width:0; height:64px; border-radius:999px; padding:4px;
+    display:grid; grid-template-columns:repeat(4,1fr);
+    transition:transform .45s cubic-bezier(.3,1.25,.5,1), opacity .3s;
+  }
+  .tab-lens{
+    position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px) / 4);
+    transform:translateX(calc(var(--pos,1) * 100%)); border-radius:999px; background:var(--lens);
+    box-shadow: inset 0 1px 0 var(--glass-hi);
+  }
+  .tab-lens.anim{ transition:transform .45s cubic-bezier(.3,1.35,.5,1); }
+  .tab{
+    position:relative; z-index:1; border:none; background:none; cursor:pointer; border-radius:999px; min-width:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    color:var(--label); font-size:10.5px; font-weight:600; font-family:inherit; letter-spacing:0;
+    transition:color .2s, transform .15s;
+  }
+  .tab span{ max-width:100%; white-space:nowrap; }
+  .tab:active{ transform:scale(.94); }
+  .tab.on{ color:var(--blue); }
+  .tab:focus-visible{ outline:2px solid var(--blue); outline-offset:-3px; }
+
+  /* Контекстная кнопка: всегда на месте, меняется смысл.
+     play — старт заваривания (цвет режима), add — добавить зерно (синий),
+     off — на этом экране действия нет, stop — идёт брю. */
+  .action-wrap{ width:64px; flex-shrink:0; }
+  .action{
+    --tone:var(--accent, var(--orange));
+    width:64px; height:64px; border-radius:50%; cursor:pointer; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .3s cubic-bezier(.3,1.35,.5,1), background .35s, color .3s, box-shadow .35s, border-color .35s;
+  }
+  .action:active{ transform:scale(.92); }
+  .action.add{ --tone:var(--blue); }
+  .action.play, .action.add{
+    color:#fff; border-color:rgba(255,255,255,0.35);
+    background:color-mix(in srgb, var(--tone) 88%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 10px 26px color-mix(in srgb, var(--tone) 42%, transparent);
+  }
+  .action.play::before, .action.add::before{ background:linear-gradient(180deg, rgba(255,255,255,0.32), transparent 55%); }
+  .action.stop{ color:var(--label); }
+  .action.off{ color:var(--label-3); cursor:default; }
+  .action.off:active{ transform:none; }
+  .action svg{
+    position:absolute; opacity:0; transform:scale(.4) rotate(-90deg);
+    transition:opacity .22s ease, transform .4s cubic-bezier(.3,1.35,.5,1);
+  }
+  .action.play .i-play, .action.off .i-play, .action.add .i-plus, .action.stop .i-stop{ opacity:1; transform:none; }
+
+  /* Мьют появляется на месте таб-бара, пока идёт брю */
+  .music-square{
+    position:absolute; right:74px; bottom:0; width:64px; height:64px; border-radius:50%; padding:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--label-2);
+    transform:scale(.5); opacity:0; pointer-events:none !important;
+    transition:transform .45s cubic-bezier(.3,1.35,.5,1), opacity .25s;
+  }
   .music-square.muted{ color:var(--accent, var(--orange)); }
   .music-square.muted .mute-wave{ display:none; }
   .music-square:not(.muted) .mute-x{ display:none; }
+  .dock.brewing .tabbar{ transform:translateY(24px) scale(.9); opacity:0; pointer-events:none; }
+  .dock.brewing .music-square{ transform:scale(1); opacity:1; pointer-events:auto !important; }
 
-  /* ---- Карточка живого заваривания ---- */
-  .brew-live{
-    display:none;
-    margin-top:16px;
-    border-radius:16px;
-    padding:14px 12px 20px;
-    background:var(--card);
-    border:1.5px solid var(--accent, var(--orange));
-  }
   .tnum{ font-variant-numeric: tabular-nums; }
 
   /* Грид minmax(0,1fr)/auto/minmax(0,1fr): точки стоят строго по центру.
@@ -538,7 +650,7 @@
     grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
     align-items:center;
     gap:8px;
-    padding:0 4px 20px;
+    padding:0 6px 14px;
   }
   .bl-stage{
     justify-self:start;
@@ -568,7 +680,7 @@
   }
   .bl-circle{
     position:relative;
-    width:clamp(112px,37vw,136px);
+    width:clamp(104px,33vw,124px);
     aspect-ratio:1;
     display:flex; align-items:center; justify-content:center;
   }
@@ -580,7 +692,7 @@
      вынесены из потока, поэтому объём и таймер стоят на одной высоте. */
   .c-num{
     position:relative; display:inline-block;
-    font-size:clamp(34px,11vw,40px);
+    font-size:clamp(32px,10vw,38px);
     font-weight:700; letter-spacing:-0.025em; line-height:1;
   }
   .c-num.acc{ color:var(--accent, var(--orange)); }
@@ -594,60 +706,25 @@
 
   button:disabled, input:disabled{ opacity:0.35; pointer-events:none; }
 
-  /* ---- Верхняя навигация между разделами: точки + всплывающая подпись ---- */
-  .nav-indicator{
-    position:relative;
-    display:flex; flex-direction:column; align-items:center;
-    margin-bottom:24px;
-    flex-shrink:0;
-  }
-  .nav-caption{
-    position:relative; height:15px; margin-bottom:8px;
-    opacity:0; transform:translateY(2px);
-    transition:opacity .22s ease, transform .22s ease;
-    pointer-events:none;
-  }
-  .nav-caption.show{ opacity:1; transform:translateY(0); }
-  .nav-cap{
-    position:absolute; left:50%; top:0; transform:translateX(-50%);
-    font-size:12px; font-weight:500; letter-spacing:.1px;
-    color:var(--label-2); white-space:nowrap;
-  }
-  .nav-dots{ display:flex; gap:8px; }
-  .nav-dot-zone{ padding:12px; margin:-12px; cursor:pointer; }
-  .nav-dot{
-    width:6px; height:6px; border-radius:50%;
-    background:var(--track); position:relative;
-  }
-  .nav-fill{ position:absolute; inset:0; border-radius:50%; background:var(--blue); opacity:0; }
-  @keyframes navDotPulse{
-    0%{ transform:scale(1); }
-    45%{ transform:scale(1.6); }
-    100%{ transform:scale(1); }
-  }
-  .nav-dot.pulse{ animation:navDotPulse .26s ease; }
-  @media (prefers-reduced-motion: reduce){
-    .nav-dot.pulse{ animation:none; }
-  }
-  .nav-indicator.locked .nav-dot-zone{ pointer-events:none; opacity:.45; }
-
   /* Ширины страниц — статика, не JS: сегмент-контролы меряют clientWidth
      синхронно при первой отрисовке, и если ширина ещё не устаканилась —
      считают неправильно (самолечится только после первого переключения).
-     При добавлении/удалении страницы поменять оба числа ниже (300% / 3). */
-  .pages-viewport{ flex:1; min-height:0; overflow:hidden; }
-  .pages{ display:flex; height:100%; width:300%; will-change:transform; }
+     При добавлении/удалении страницы поменять оба числа ниже (400% / 4)
+     и колонки таб-бара (.tabbar, .tab-lens). */
+  .pages-viewport{ flex:1; min-height:0; overflow:hidden; margin:0 -16px; }
+  .pages{ display:flex; height:100%; width:400%; will-change:transform; }
   .page{
-    height:100%; width:33.3333%; flex-shrink:0; min-width:0;
+    height:100%; width:25%; flex-shrink:0; min-width:0;
     overflow-y:auto; -webkit-overflow-scrolling:touch;
-    padding:0 8px 40px;
+    /* снизу запас под плавающий док: контент проезжает под стеклом */
+    padding:0 24px calc(112px + env(safe-area-inset-bottom, 0px));
     scrollbar-width:none;
   }
   .page::-webkit-scrollbar{ display:none; }
 
   /* ---- Шторка: и предложение сохранить, и правка записи — один компонент ---- */
   .sheet-scrim{
-    position:fixed; inset:0; background:rgba(0,0,0,0.35);
+    position:fixed; inset:0; background:var(--scrim);
     opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:40;
   }
   .sheet-scrim.show{ opacity:1; pointer-events:auto; }
@@ -657,17 +734,21 @@
      на Калькуляторе и в живом брю — он про заваривание, а не про интерфейс. */
   .sheet{
     --accent: var(--blue);
-    position:fixed; left:50%; bottom:0; width:100%; max-width:420px;
-    background:var(--card); border-radius:16px 16px 0 0;
-    padding:10px 16px max(16px, env(safe-area-inset-bottom));
-    transform:translate(-50%, 100%);
-    transition:transform .32s cubic-bezier(.25,.8,.25,1);
+    /* Стеклянная шторка iOS 26: плавает с отступом 8px от краёв экрана */
+    position:fixed; left:50%; bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+    width:calc(100% - 16px); max-width:420px;
+    background:var(--sheet-bg) !important; border-radius:34px;
+    padding:10px 18px 18px;
+    transform:translate(-50%, calc(100% + 40px));
+    transition:transform .45s cubic-bezier(.25,1.1,.4,1);
     z-index:41;
-    max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    max-height:calc(88vh - 16px); overflow-y:auto; -webkit-overflow-scrolling:touch;
     overscroll-behavior:contain; /* скролл шторки не «протекает» на страницу под ней */
   }
   .sheet.show{ transform:translate(-50%, 0); }
-  .sheet-handle{ width:32px; height:4px; background:var(--track); border-radius:2px; margin:0 auto; }
+  /* Спрятанная шторка не должна выглядывать снизу, даже если вьюпорт выше видимой области */
+  .sheet:not(.show){ visibility:hidden; transition:transform .45s cubic-bezier(.25,1.1,.4,1), visibility 0s .45s; }
+  .sheet-handle{ width:36px; height:5px; background:var(--track); border-radius:2px; margin:0 auto; }
   /* Зона захвата «ручки»: сама полоска 32×4 — слишком мелкая цель для пальца,
      поэтому тянуть можно за всю верхнюю полосу шторки. touch-action:none —
      чтобы браузер не пытался скроллить, пока тянем шторку вниз. */
@@ -699,8 +780,8 @@
     width:30px; font-size:11px; font-weight:500; color:var(--label-2); text-align:right;
     border:none; background:none; font-family:inherit; padding:0;
   }
-  .sheet-btn{ text-align:center; font-size:15px; font-weight:600; border-radius:12px; padding:13px 0; margin-bottom:8px; background:var(--accent, var(--blue)); color:#fff; }
-  .sheet-btn.ghost{ background:none; color:var(--label-2); font-weight:500; padding:6px 0; margin-bottom:0; }
+  .sheet-btn{ text-align:center; font-size:16px; font-weight:600; border-radius:999px; padding:14px 0; box-shadow:inset 0 1px 0 rgba(255,255,255,0.35); margin-bottom:8px; background:var(--accent, var(--blue)); color:#fff; }
+  .sheet-btn.ghost{ background:none; box-shadow:none; color:var(--label-2); font-weight:500; padding:8px 0; margin-bottom:0; }
   /* Действие над зерном (закончилось / в архив / вернуть) — строка iOS-таблицы,
      не красная: это не удаление, --red остаётся только за деструктивом. */
   .sheet-action{
@@ -731,13 +812,13 @@
 
   /* ---- Алерт удаления — единственный паттерн, без вариантов ---- */
   .alert-scrim{
-    position:fixed; inset:0; background:rgba(0,0,0,0.35);
+    position:fixed; inset:0; background:var(--scrim);
     opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:50;
   }
   .alert-scrim.show{ opacity:1; pointer-events:auto; }
   .alert-box{
     position:fixed; top:50%; left:50%; width:260px; max-width:80vw;
-    background:var(--card); border-radius:14px; padding:18px 16px 16px; text-align:center;
+    background:var(--sheet-bg); border-radius:26px; padding:20px 16px 16px; text-align:center;
     transform:translate(-50%,-50%) scale(0.92); opacity:0; pointer-events:none;
     transition:transform .2s ease, opacity .2s ease; z-index:51;
   }
@@ -745,7 +826,7 @@
   .alert-title{ font-size:15px; font-weight:700; margin-bottom:4px; }
   .alert-text{ font-size:12.5px; color:var(--label-2); margin-bottom:16px; line-height:1.4; }
   .alert-actions{ display:flex; gap:8px; }
-  .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:10px; padding:11px 0; background:var(--fill); color:var(--label); }
+  .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:999px; padding:12px 0; background:var(--fill); color:var(--label); }
   .alert-btn.danger{ background:var(--red); color:#fff; }
   .alert-btn.primary{ background:var(--blue); color:#fff; }
 
@@ -809,7 +890,7 @@
   /* ---- Зёрна: каждая пачка — своя плитка (не общий список, как в Журнале) —
      на карточке больше данных, чем в одну строку: тумблер активной пачки,
      мешочек с уровнем остатка, полоска прогресса. Свайп-удаление — тот же приём. ---- */
-  .b-row{ position:relative; overflow:hidden; border-radius:14px; margin-bottom:10px; }
+  .b-row{ position:relative; overflow:hidden; border-radius:22px; margin-bottom:10px; }
   .b-row:last-child{ margin-bottom:0; }
   .b-row-action{
     position:absolute; top:0; right:0; bottom:0; width:84px;
@@ -817,7 +898,7 @@
     display:flex; align-items:center; justify-content:center;
   }
   .b-row-content{
-    position:relative; background:var(--card); border-radius:14px;
+    position:relative; background:var(--card); border-radius:22px;
     display:flex; align-items:flex-start; gap:11px; padding:14px;
   }
   .b-active-check{
@@ -929,6 +1010,49 @@
     color:var(--label-2); font-size:15px; overflow:hidden; text-overflow:ellipsis;
     white-space:nowrap; max-width:170px;
   }
+  /* ---- Плитки размеров порции: S · M · L · Свой (V60 и Iced V60) ----
+     Силуэт сервера растёт от S к L — размер виден раньше, чем цифра. */
+  .sizes{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:6px; border-bottom:0.5px solid var(--separator); }
+  .size{
+    border:none; background:none; cursor:pointer; border-radius:16px; padding:10px 2px 9px; min-width:0;
+    display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--label); font-family:inherit;
+    transition:background .25s, transform .15s;
+  }
+  .size:active{ transform:scale(.95); }
+  .size .art{ height:42px; display:flex; align-items:flex-end; justify-content:center; margin-bottom:3px; }
+  .size .art svg{ display:block; }
+  .size .letter{ font-size:15px; font-weight:700; line-height:1.1; }
+  .size .ml{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .size .liquid{ opacity:0; transition:opacity .25s; }
+  .size.on{ background:var(--fill); }
+  .size.on .letter{ color:var(--accent, var(--orange)); }
+  .size.on .liquid{ opacity:.85; }
+  .size.on .knob{ fill:var(--accent, var(--orange)); }
+  .size.on .rail-on{ stroke:var(--accent, var(--orange)); }
+  .size:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
+  .custom-row{ animation:rowIn .35s cubic-bezier(.3,1.25,.5,1); }
+  @keyframes rowIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+
+  /* Подсказка про лёд — тонирована в цвет режима: это шаг подготовки, а не справка */
+  .tip.ice{ margin:0 0 12px; color:var(--label); background:color-mix(in srgb, var(--accent, var(--teal)) 14%, transparent); }
+  .tip.ice svg{ color:var(--accent, var(--teal)); }
+
+  /* ---- Еще → Настройки: размер на строку — силуэт, имя, капсула «− 220 мл +» ---- */
+  .set-row{ display:flex; align-items:center; gap:12px; padding:10px 12px 10px 16px; min-height:58px; border-bottom:0.5px solid var(--separator); }
+  .set-row:last-child{ border-bottom:none; }
+  .set-art{ width:30px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .set-art .liquid{ opacity:0; } /* в настройках — только контур, заливка значит «выбрано» на Кофе */
+  .set-name{ flex:1; min-width:0; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .set-name b{ font-weight:700; margin-right:6px; }
+  .vstep{ display:flex; align-items:center; flex-shrink:0; background:var(--fill); border-radius:999px; height:36px; padding:0 2px; }
+  .vstep button{ width:34px; height:32px; border:none; background:none; border-radius:999px; color:var(--blue); font-size:20px; line-height:1; cursor:pointer; font-family:inherit; }
+  .vstep button:active{ background:var(--track); }
+  .vstep .v{ min-width:66px; text-align:center; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
+
+  @media (prefers-reduced-motion: reduce){
+    .brew-live, .custom-row{ animation:none; }
+    .tab-lens.anim, .action, .action svg, .tabbar, .music-square{ transition:none; }
+  }
 </style>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
@@ -958,23 +1082,11 @@
 </head>
 <body>
 <div class="screen">
-  <div class="nav-indicator" id="navIndicator">
-    <div class="nav-caption" id="navCaption">
-      <span class="nav-cap" data-i="0">Зёрна</span>
-      <span class="nav-cap" data-i="1">Калькулятор</span>
-      <span class="nav-cap" data-i="2">Журнал</span>
-    </div>
-    <div class="nav-dots">
-      <div class="nav-dot-zone" data-i="0"><div class="nav-dot"><div class="nav-fill"></div></div></div>
-      <div class="nav-dot-zone" data-i="1"><div class="nav-dot"><div class="nav-fill"></div></div></div>
-      <div class="nav-dot-zone" data-i="2"><div class="nav-dot"><div class="nav-fill"></div></div></div>
-    </div>
-  </div>
   <div class="pages-viewport">
     <div class="pages" id="navPages">
       <div class="page" id="pageBeans">
-        <p class="eyebrow" style="color:var(--blue);">Зёрна</p>
-        <h1>Мои зёрна</h1>
+        <p class="eyebrow" style="color:var(--blue);">Зерна</p>
+        <h1>Мои зерна</h1>
 
         <div id="beansListWrap" style="display:none;">
           <div id="beansList"></div>
@@ -982,10 +1094,9 @@
 
         <div class="tip" id="beansEmpty">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
-          <span>Пока пусто. Добавь зерно — обжарка, дата и остаток будут под рукой при каждом заваривании.</span>
+          <span>Пока пусто. Нажми «+» внизу и добавь зерно — обжарка, дата и остаток будут под рукой при каждом заваривании.</span>
         </div>
 
-        <button class="ce-add" id="beanAddBtn" style="margin-top:14px;">Добавить зерно</button>
         <div id="beansArchive"></div>
       </div>
 
@@ -1003,18 +1114,18 @@
   <!-- Место под выбор рецепта (Hario / Rao / наш) — рендерится и показывается,
        только когда рецептов больше одного, см. RECIPES и renderRecipeSeg() -->
 
-  <div id="classicInput">
-    <p class="section-header">Пропорция</p>
-    <div class="pills" id="ratioPills"></div>
-    <p class="ratio-hint" id="ratioHint"></p>
+  <p class="section-header">Пропорция</p>
+  <div class="pills" id="ratioPills"></div>
+  <p class="ratio-hint" id="ratioHint"></p>
 
+  <div id="classicInput">
     <p class="section-header">Объём</p>
     <div class="card">
       <div style="display:flex; align-items:stretch;">
-        <div id="classicVisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;"></div>
+        <div id="classicVisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;"><svg id="visual" viewBox="0 0 100 120" style="width:56px; height:67px;"></svg></div>
         <div style="flex:1; min-width:0;">
       <div class="row">
-        <span class="row-label">Зёрна</span>
+        <span class="row-label">Зерна</span>
         <div class="stepper-field">
           <div class="stepper">
             <button id="classicCoffeeStepDown">−</button>
@@ -1050,22 +1161,19 @@
     </div>
   </div>
 
-  <div id="v60Input" style="display:none;">
+  <!-- V60 и Iced V60: порции S · M · L · Свой. Объём для Iced — вместе со льдом. -->
+  <div id="cupInput" style="display:none;">
     <p class="section-header">Объём</p>
     <div class="card">
-      <div style="display:flex; align-items:stretch;">
-        <div id="v60VisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;">
-          <svg id="visual" viewBox="0 0 100 120" style="width:56px; height:67px;"></svg>
-        </div>
-        <div style="flex:1; min-width:0;">
-      <div class="row" style="flex-direction:column; align-items:stretch; gap:8px;">
+      <div class="sizes" id="cupSizes" role="radiogroup" aria-label="Размер порции"></div>
+      <div class="row custom-row" id="cupCustomRow" style="flex-direction:column; align-items:stretch; gap:8px; display:none;">
         <div style="display:flex; justify-content:space-between; align-items:baseline;">
-          <span class="row-label">Вода</span>
+          <span class="row-label">Свой объём</span>
           <span class="stat-value" id="sliderVolVal" style="font-size:20px;">300 мл</span>
         </div>
-        <input type="range" id="volSlider" min="100" max="450" step="1" value="300">
+        <input type="range" id="volSlider" min="100" max="500" step="1" value="300" aria-label="Свой объём воды">
         <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--label-2);">
-          <span>150</span><span>400</span>
+          <span>100</span><span>500</span>
         </div>
       </div>
       <div class="row">
@@ -1080,7 +1188,13 @@
           <span class="unit">г</span>
         </div>
       </div>
-        </div>
+      <div class="row" id="cupHotRow" style="display:none;">
+        <span class="row-label">Горячая вода</span>
+        <span class="stat-value" id="cupHotVal" style="font-size:17px; color:var(--label);"></span>
+      </div>
+      <div class="row" id="cupIceRow" style="display:none;">
+        <span class="row-label">Лёд в сервере</span>
+        <span class="stat-value" id="cupIceVal" style="font-size:17px;"></span>
       </div>
     </div>
   </div>
@@ -1137,6 +1251,10 @@
     <div class="ce-warn" id="ceWarn" style="display:none;"></div>
   </div>
 
+  <div class="tip ice" id="iceTip" style="display:none; margin-top:22px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
+    <span id="iceTipText"></span>
+  </div>
   <p class="section-header pour-header" id="pourHeader" style="display:none;">График пролива</p>
   <div class="card pour-toggle-card" id="pourToggleCard" style="display:none;">
     <button class="pour-toggle-btn" id="pourToggleBtn" aria-expanded="false" aria-controls="pourCard">
@@ -1149,25 +1267,47 @@
   </div>
   <div class="card pour-card" id="pourCard"></div>
 
-  <div class="action-row" id="actionRow">
-    <button class="brew-btn start" id="brewToggle">Начать заваривание</button>
-    <button class="music-square" id="musicMuteBtn" aria-label="Выключить музыку" aria-pressed="false">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/>
-        <path class="mute-wave" d="M16 8a5 5 0 010 8"/>
-        <path class="mute-wave" d="M18.7 5.3a9 9 0 010 13.4"/>
-        <path class="mute-x" d="M16 9l5 6M21 9l-5 6"/>
-      </svg>
-    </button>
-  </div>
-  <p class="brew-hint" id="brewHint">Перед стартом — 5 секунд на подготовку</p>
+  <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
 
-  <div class="brew-live" id="brewLive">
+  <div class="tip" id="notes">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+    <span id="notesText"></span>
+  </div>
+      </div>
+
+      <div class="page" id="pageJournal">
+        <p class="eyebrow" style="color:var(--blue);">Журнал</p>
+        <h1>История</h1>
+        <div class="card" id="journalListCard" style="margin-bottom:8px; display:none;">
+          <div id="journalList"></div>
+        </div>
+        <div class="tip" id="journalEmpty">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <span>Пока пусто. Здесь появятся твои записи — дата, пропорция и проливы каждой чашки.</span>
+        </div>
+      </div>
+
+
+      <div class="page" id="pageMore">
+        <p class="eyebrow" style="color:var(--blue);">Приложение</p>
+        <h1>Настройки</h1>
+        <p class="section-header">Размеры порций</p>
+        <div class="card" id="sizeSettings"></div>
+        <p class="ratio-hint">Плитки S, M, L на Калькуляторе. Для Iced V60 объём считается вместе со льдом.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="edge-fade"></div>
+
+  <div class="brew-live glass" id="brewLive">
     <div class="bl-top">
       <span class="bl-stage" id="brewStageName">Приготовьтесь</span>
       <span class="bl-dots" id="brewDots"></span>
       <span class="bl-elapsed tnum" id="brewElapsed">0:00</span>
     </div>
+    <div class="bl-note" id="brewNote" style="display:none;"></div>
     <div class="bl-cols">
       <div class="bl-col">
         <div class="bl-cap" id="brewCapL">налить до</div>
@@ -1191,32 +1331,48 @@
       </div>
     </div>
   </div>
-  <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
 
-  <div class="tip" id="notes">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
-    <span id="notesText"></span>
-  </div>
-      </div>
-
-      <div class="page" id="pageJournal">
-        <p class="eyebrow" style="color:var(--blue);">Журнал</p>
-        <h1>История</h1>
-        <div class="card" id="journalListCard" style="margin-bottom:8px; display:none;">
-          <div id="journalList"></div>
-        </div>
-        <div class="tip" id="journalEmpty">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
-          <span>Пока пусто. Здесь появятся твои записи — дата, пропорция и проливы каждой чашки.</span>
-        </div>
-      </div>
-
+<div class="dock" id="dock">
+  <div class="dock-inner">
+    <nav class="tabbar glass" id="tabbar" style="--pos:1;" aria-label="Разделы">
+      <div class="tab-lens" id="tabLens"></div>
+      <button class="tab" data-i="0" type="button">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><ellipse cx="12" cy="12" rx="6.5" ry="9" transform="rotate(30 12 12)"/><path d="M9 5.5c3 3 3 9.5 6 13"/></svg>
+        <span>Зерна</span>
+      </button>
+      <button class="tab on" data-i="1" type="button">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6 8h-5z"/><path d="M9.5 13v2h5v-2M7 19h10"/></svg>
+        <span>Кофе</span>
+      </button>
+      <button class="tab" data-i="2" type="button">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>
+        <span>Журнал</span>
+      </button>
+      <button class="tab" data-i="3" type="button">
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
+        <span>Еще</span>
+      </button>
+    </nav>
+    <button class="music-square glass" id="musicMuteBtn" type="button" aria-label="Выключить музыку" aria-pressed="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/>
+        <path class="mute-wave" d="M16 8a5 5 0 010 8"/>
+        <path class="mute-wave" d="M18.7 5.3a9 9 0 010 13.4"/>
+        <path class="mute-x" d="M16 9l5 6M21 9l-5 6"/>
+      </svg>
+    </button>
+    <div class="action-wrap">
+      <button class="action play glass" id="actionBtn" type="button" aria-label="Начать заваривание">
+        <svg class="i-play" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.6-6.8c.6-.4.6-1.3 0-1.7L9.6 4.3C8.9 3.9 8 4.4 8 5.2z"/></svg>
+        <svg class="i-stop" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>
+        <svg class="i-plus" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
     </div>
   </div>
 </div>
 
 <div class="sheet-scrim" id="sheetScrim"></div>
-<div class="sheet" id="sheet">
+<div class="sheet glass" id="sheet">
   <div class="sheet-grab" id="sheetGrab"><div class="sheet-handle"></div></div>
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-subtitle" id="sheetSubtitle"></div>
@@ -1282,7 +1438,7 @@
 </div>
 
 <div class="alert-scrim" id="alertScrim"></div>
-<div class="alert-box" id="alertBox">
+<div class="alert-box glass" id="alertBox">
   <div class="alert-title" id="alertTitle">Удалить запись?</div>
   <div class="alert-text" id="alertText">Это действие нельзя отменить.</div>
   <div class="alert-actions">
@@ -1293,6 +1449,41 @@
 
 <script>
 const state = { mode:'v60', ratio:16, inputType:'coffee', value:26, recipe:'cascade', custom:null, roast:'medium', process:'washed' };
+
+/* ---- Порции S · M · L · Свой (V60 и Iced V60) ----
+   Объём порции — это вся вода в чашке; для Iced V60 — вместе со льдом.
+   Пресеты правятся во вкладке «Еще», выбор и «Свой» объём запоминаются.
+   Это локальные настройки устройства — как musicMuted и customRecipe. */
+const CUP_KEYS = ['S','M','L'];
+const CUP_NAMES = { S:'Маленькая', M:'Средняя', L:'Большая' };
+const CUP_SCALE = { S:.7, M:.85, L:1 };
+const CUP_MIN = 100, CUP_MAX = 600;
+const ICE_SHARE = 0.2;
+const cup = { sizes:{ S:220, M:320, L:420 }, size:'M', custom:300 };
+(function loadCupPrefs(){
+  try{
+    const s = JSON.parse(localStorage.getItem('cupSizes') || 'null');
+    if(s) CUP_KEYS.forEach(k=>{ const v = Number(s[k]); if(v >= CUP_MIN && v <= CUP_MAX) cup.sizes[k] = Math.round(v); });
+    const sz = localStorage.getItem('cupSize');
+    if(sz === 'custom' || CUP_KEYS.includes(sz)) cup.size = sz;
+    const c = Number(localStorage.getItem('cupCustom'));
+    if(c >= CUP_MIN && c <= CUP_MAX) cup.custom = c;
+  }catch(e){}
+})();
+function saveCupPrefs(){
+  try{
+    localStorage.setItem('cupSizes', JSON.stringify(cup.sizes));
+    localStorage.setItem('cupSize', cup.size);
+    localStorage.setItem('cupCustom', String(cup.custom));
+  }catch(e){}
+}
+function cupWater(){ return cup.size === 'custom' ? cup.custom : cup.sizes[cup.size]; }
+// Вода совпала с пресетом — подсвечиваем его, иначе «Свой».
+function matchCupSize(w){ return CUP_KEYS.find(k=> Math.abs(cup.sizes[k] - w) < 0.5) || 'custom'; }
+// Режимы с графиком пролива и таймером
+function isBrewMode(m){ m = m || state.mode; return m === 'v60' || m === 'v60ice'; }
+// Вода, которая идёт через воронку: для Iced V60 — без льда (лёд уже в сервере, весы обнулены)
+function brewWaterOf(water){ return state.mode === 'v60ice' ? water * (1 - ICE_SHARE) : water; }
 
 const RATIOS = { v60:[15,16,17], v60ice:[15,16,17], cold:[4,5,8,10,12] };
 const COLD_LABELS = {4:'1:4 конц.',5:'1:5 конц.',8:'1:8 готово',10:'1:10 готово',12:'1:12 готово'};
@@ -1405,8 +1596,8 @@ const CUSTOM_STORE_KEY = 'customRecipe';
 // они должны спрашивать в момент ввода, а не брать из замыкания.
 function currentBrewValues(){
   const r = state.ratio;
-  if(state.inputType === 'coffee') return { coffee: state.value, water: state.value * r };
-  return { coffee: r ? state.value / r : 0, water: state.value };
+  if(state.inputType === 'coffee') return { coffee: state.value, water: brewWaterOf(state.value * r) };
+  return { coffee: r ? state.value / r : 0, water: brewWaterOf(state.value) };
 }
 
 function saveCustom(){
@@ -1510,7 +1701,7 @@ function accentVar(mode){ return getComputedStyle(document.documentElement).getP
 
 function moveThumb(segEl, index, count){
   const thumb = segEl.querySelector('.thumb');
-  const w = (segEl.clientWidth - 4) / count;
+  const w = (segEl.clientWidth - 6) / count;
   thumb.style.width = w + 'px';
   thumb.style.transform = `translateX(${index * w}px)`;
 }
@@ -1665,7 +1856,11 @@ function renderPills(){
     b.className = 'pill' + (r===state.ratio ? ' active' : '');
     b.style.setProperty('--accent', accent);
     b.textContent = state.mode==='cold' ? COLD_LABELS[r] : ('1:'+r);
-    b.onclick = ()=>{ state.ratio = r; renderPills(); compute(); };
+    b.onclick = ()=>{
+      state.ratio = r;
+      if(isBrewMode()){ state.inputType = 'water'; state.value = cupWater(); }
+      renderPills(); compute();
+    };
     wrap.appendChild(b);
   });
   const hint = document.getElementById('ratioHint');
@@ -1689,6 +1884,7 @@ function buildRecipeSeg(){
     b.onclick = ()=>{
       state.recipe = rec.id;
       if(rec.ratio != null) state.ratio = rec.ratio;
+      if(isBrewMode()){ state.inputType = 'water'; state.value = cupWater(); }
       renderRecipeSeg();
       renderPills();
       compute();
@@ -1701,7 +1897,7 @@ function renderRecipeSeg(){
   const wrap = document.getElementById('recipeSeg');
   const hint = document.getElementById('recipeHint');
   const header = document.getElementById('recipeHeader');
-  if(state.mode !== 'v60' || RECIPES.length < 2){
+  if(!isBrewMode() || RECIPES.length < 2){
     wrap.style.display = 'none';
     hint.style.display = 'none';
     header.style.display = 'none';
@@ -1720,9 +1916,12 @@ function renderRecipeSeg(){
 
 function setMode(mode, animate){
   state.mode = mode;
-  if(mode === 'v60'){
+  if(isBrewMode(mode)){
     const rr = getRecipe(state.recipe).ratio;
-    state.ratio = rr != null ? rr : (state.ratio || DEFAULT_RATIO.v60);
+    state.ratio = rr != null ? rr : (state.ratio || DEFAULT_RATIO[mode]);
+    // V60 и Iced V60 считаются от порции: объём чашки фиксирован, граммы — производные
+    state.inputType = 'water';
+    state.value = cupWater();
   } else {
     state.ratio = DEFAULT_RATIO[mode];
   }
@@ -1733,12 +1932,8 @@ function setMode(mode, animate){
   });
   document.getElementById('eyebrow').textContent = EYEBROW[mode];
   document.getElementById('eyebrow').style.setProperty('--accent', accentVar(mode));
-  document.getElementById('classicInput').style.display = mode==='v60' ? 'none' : 'block';
-  document.getElementById('v60Input').style.display = mode==='v60' ? 'block' : 'none';
-
-  const visualSvg = document.getElementById('visual');
-  const targetRow = mode==='v60' ? document.getElementById('v60VisualRow') : document.getElementById('classicVisualRow');
-  targetRow.appendChild(visualSvg);
+  document.getElementById('classicInput').style.display = isBrewMode(mode) ? 'none' : 'block';
+  document.getElementById('cupInput').style.display = isBrewMode(mode) ? 'block' : 'none';
 
   renderRecipeSeg();
   renderPills();
@@ -1788,7 +1983,7 @@ const volSlider = document.getElementById('volSlider');
 const coffeeInputV60 = document.getElementById('coffeeInput');
 const sliderVolVal = document.getElementById('sliderVolVal');
 const SNAP_POINTS = [];
-for(let v=100; v<=450; v+=25) SNAP_POINTS.push(v);
+for(let v=CUP_MIN; v<=500; v+=25) SNAP_POINTS.push(v);
 
 function nearestSnap(v){
   let best=v, bd=999;
@@ -1797,22 +1992,28 @@ function nearestSnap(v){
 }
 
 function updateSliderFill(){
-  const accent = accentVar('v60');
+  const accent = accentVar(state.mode);
   const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
   const pct = ((parseFloat(volSlider.value)-min)/(max-min))*100;
   volSlider.style.background = `linear-gradient(to right, ${accent} ${pct}%, var(--fill) ${pct}%)`;
 }
 
+// Ползунок виден только у «Свой»: двигаем — меняется свой объём
 volSlider.oninput = ()=>{
   let v = parseFloat(volSlider.value);
   const { best, bd } = nearestSnap(v);
   if(bd<=6){ v = best; volSlider.value = v; }
+  cup.size = 'custom';
+  cup.custom = v;
+  saveCupPrefs();
   state.inputType = 'water';
   state.value = v;
   updateSliderFill();
   compute();
 };
 
+// Граммы правятся напрямую; объём следует за ними — совпал с пресетом, значит пресет,
+// иначе выбор сам уходит на «Свой» (см. compute → syncCupControls).
 coffeeInputV60.oninput = ()=>{
   state.inputType = 'coffee';
   state.value = parseFloat(coffeeInputV60.value) || 0;
@@ -1829,22 +2030,91 @@ document.getElementById('coffeeStepDown').onclick = ()=>{
   coffeeInputV60.dispatchEvent(new Event('input'));
 };
 
-function fmtRatio(r){
-  const v = Math.round(r*10)/10;
-  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+/* ---- Плитки S · M · L · Свой ----
+   Строятся один раз (тот же урок, что с .thumb: без пересборки DOM на каждый клик),
+   дальше только переключаем .on и подписи. */
+function cupServerSVG(scale, idp){
+  const w = Math.round(40*scale), h = Math.round(42*scale), id = idp + w;
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 40 42" aria-hidden="true">' +
+    '<clipPath id="'+id+'"><path d="M14,2 L4,32 Q4,40 11,40 H29 Q36,40 36,32 L26,2 Z"/></clipPath>' +
+    '<rect class="liquid" x="0" y="16" width="40" height="26" fill="var(--accent, var(--orange))" clip-path="url(#'+id+')"/>' +
+    '<path d="M14,2 L4,32 Q4,40 11,40 H29 Q36,40 36,32 L26,2 Z" fill="none" stroke="var(--label-3)" stroke-width="'+(2/scale).toFixed(2)+'" stroke-linejoin="round"/>' +
+    '</svg>';
+}
+const CUP_CUSTOM_SVG = '<svg width="40" height="30" viewBox="0 0 40 30" aria-hidden="true">' +
+  '<path d="M4 15H36" stroke="var(--label-3)" stroke-width="3" stroke-linecap="round"/>' +
+  '<path class="rail-on" d="M4 15H22" stroke="var(--label-3)" stroke-width="3" stroke-linecap="round"/>' +
+  '<circle class="knob" cx="22" cy="15" r="6.5" fill="var(--card)" stroke="var(--label-3)" stroke-width="1.5"/></svg>';
+
+function buildCupSizes(){
+  const wrap = document.getElementById('cupSizes');
+  wrap.innerHTML = CUP_KEYS.map(k=>
+    '<button class="size" type="button" role="radio" data-k="'+k+'" aria-label="'+CUP_NAMES[k]+'">' +
+      '<span class="art">'+cupServerSVG(CUP_SCALE[k], 'cuptile')+'</span>' +
+      '<span class="letter">'+k+'</span><span class="ml"></span></button>').join('') +
+    '<button class="size" type="button" role="radio" data-k="custom" aria-label="Свой объём">' +
+      '<span class="art">'+CUP_CUSTOM_SVG+'</span><span class="letter">Свой</span><span class="ml"></span></button>';
+  wrap.querySelectorAll('.size').forEach(b=> b.addEventListener('click', ()=>{
+    cup.size = b.dataset.k;
+    saveCupPrefs();
+    state.inputType = 'water';
+    state.value = cupWater();
+    navHapticTick();
+    track('cup_size_selected', { cup_size: cup.size });
+    compute();
+  }));
 }
 
-function syncV60Controls(coffee, water){
-  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
-  if(state.inputType !== 'water'){
-    volSlider.value = Math.min(max, Math.max(min, Math.round(water)));
-    updateSliderFill();
+function syncCupControls(coffee, water){
+  // Граммы правили руками — объём поехал: подсвечиваем совпавший пресет или «Свой»
+  if(state.inputType === 'coffee'){
+    const m = matchCupSize(Math.round(water*10)/10);
+    cup.size = m;
+    if(m === 'custom') cup.custom = Math.round(water);
+    saveCupPrefs();
   }
+  const accent = accentVar(state.mode);
+  document.getElementById('cupInput').style.setProperty('--accent', accent);
+  document.querySelectorAll('#cupSizes .size').forEach(b=>{
+    const k = b.dataset.k, on = k === cup.size;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
+    const ml = b.querySelector('.ml');
+    if(k === 'custom') ml.textContent = on ? fmt(water) + ' мл' : '—';
+    else ml.textContent = cup.sizes[k] + ' мл';
+  });
+
+  const isCustom = cup.size === 'custom';
+  document.getElementById('cupCustomRow').style.display = isCustom ? 'flex' : 'none';
+  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
+  if(document.activeElement !== volSlider){
+    volSlider.value = Math.min(max, Math.max(min, Math.round(water)));
+  }
+  updateSliderFill();
   sliderVolVal.textContent = fmt(water)+' мл';
-  if(state.inputType !== 'coffee'){
+  if(document.activeElement !== coffeeInputV60){
     coffeeInputV60.value = (Math.round(coffee*2)/2).toFixed(1);
   }
   document.getElementById('coffeeRowLabel').textContent = 'Кофе · 1:' + fmtRatio(state.ratio);
+
+  const iced = state.mode === 'v60ice';
+  const ice = water * ICE_SHARE, hot = water - ice;
+  document.getElementById('cupHotRow').style.display = iced ? 'flex' : 'none';
+  document.getElementById('cupIceRow').style.display = iced ? 'flex' : 'none';
+  document.getElementById('cupHotVal').textContent = fmt(hot) + ' мл';
+  document.getElementById('cupIceVal').textContent = fmt(ice) + ' г';
+  document.getElementById('cupIceVal').style.color = accent;
+
+  const tip = document.getElementById('iceTip');
+  tip.style.display = iced ? 'flex' : 'none';
+  tip.style.setProperty('--accent', accent);
+  document.getElementById('iceTipText').innerHTML = '<b>Перед стартом:</b> положи ' + fmt(ice) +
+    ' г льда в сервер, поставь его на весы и обнули их. Дальше весы показывают только горячую воду — по ней и идёт график.';
+}
+
+function fmtRatio(r){
+  const v = Math.round(r*10)/10;
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
 function fmt(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
@@ -1858,14 +2128,16 @@ function compute(){
   const accent = accentVar(state.mode);
 
   document.getElementById('brewLive').style.setProperty('--accent', accent);
-  document.getElementById('actionRow').style.setProperty('--accent', accent);
+  document.getElementById('dock').style.setProperty('--accent', accent);
 
-  drawVisual(coffee, water, accent);
+  // Через воронку идёт только горячая вода: для Iced V60 лёд уже в сервере
+  const brewWater = brewWaterOf(water);
+  if(!isBrewMode()) drawVisual(coffee, water, accent);
   updateTempBlock();
   renderNotes();
-  renderCustomEditor(coffee, water, accent);
-  renderPourSchedule(coffee, water, accent);
-  if(state.mode==='v60') syncV60Controls(coffee, water);
+  renderCustomEditor(coffee, brewWater, accent);
+  renderPourSchedule(coffee, brewWater, accent);
+  if(isBrewMode()) syncCupControls(coffee, water);
   else syncClassicPair(coffee, water, r);
 
   state.coffee = coffee;
@@ -1913,13 +2185,13 @@ function fmtTime(sec){
 
 function renderPourSchedule(coffee, water, accent){
   const card = document.getElementById('pourCard');
-  if(state.mode !== 'v60'){
+  if(!isBrewMode()){
     card.style.display = 'none';
     document.getElementById('pourHeader').style.display = 'none';
     document.getElementById('pourToggleCard').style.display = 'none';
-    document.getElementById('actionRow').style.display = 'none';
-    document.getElementById('brewHint').style.display = 'none';
-    if(typeof stopBrew === 'function') stopBrew(true);
+    document.getElementById('iceTip').style.display = 'none';
+    if(typeof stopBrew === 'function' && brewPhase !== 'idle') stopBrew(true);
+    updateDock();
     return;
   }
 
@@ -1944,8 +2216,7 @@ function renderPourSchedule(coffee, water, accent){
     card.appendChild(row);
   });
 
-  document.getElementById('actionRow').style.display = 'flex';
-  document.getElementById('brewHint').style.display = 'block';
+  updateDock();
   updateScheduleUI();
 }
 
@@ -1953,7 +2224,7 @@ function renderPourSchedule(coffee, water, accent){
    иначе обновляем значения на месте, чтобы поле не теряло фокус при вводе. */
 function renderCustomEditor(coffee, water, accent){
   const wrap = document.getElementById('customEditorWrap');
-  if(state.mode !== 'v60' || state.recipe !== 'custom'){
+  if(!isBrewMode() || state.recipe !== 'custom'){
     wrap.style.display = 'none';
     return;
   }
@@ -2157,7 +2428,7 @@ function renderNotes(){
   if(state.mode==='v60'){
     el.innerHTML = `<b>Помол:</b> среднемелкий, как крупная соль. <b>Время:</b> 2:30–3:30.`;
   } else if(state.mode==='v60ice'){
-    el.innerHTML = `<b>Идея:</b> часть воды заменяется льдом прямо в чашке (~20%), кофе стекает и сразу охлаждается. <b>Помол:</b> чуть мельче обычного V60.`;
+    el.innerHTML = `<b>Идея:</b> ~20% воды заменяется льдом в сервере, кофе стекает на лёд и сразу охлаждается. <b>Помол:</b> чуть мельче обычного V60 — горячей воды меньше, экстракции нужно помочь.`;
   } else {
     el.innerHTML = `<b>Помол:</b> крупный, как для френч-пресса. <b>Настаивание:</b> 12–24ч в холодильнике. 1:4–1:5 — концентрат для разбавления, 1:8–1:12 — готовый к питью.`;
   }
@@ -2192,14 +2463,22 @@ const PALETTE = {
     '--label-2':'rgba(60,60,67,0.6)', '--label-3':'rgba(60,60,67,0.3)', '--separator':'rgba(60,60,67,0.29)',
     '--fill':'rgba(120,120,128,0.12)', '--track':'rgba(120,120,128,0.18)', '--pill-off':'#E5E5EA', '--blue':'#007AFF',
     '--seg-thumb':'#FFFFFF', '--seg-thumb-text':'#000000', '--pill-text':'#000000',
-    '--orange':'#FF9500', '--teal':'#59C4E8', '--brown':'#A2845E'
+    '--orange':'#FF9500', '--teal':'#59C4E8', '--brown':'#A2845E',
+    '--glass-bg':'rgba(255,255,255,0.56)', '--glass-solid':'#F9F9FB', '--glass-edge':'rgba(255,255,255,0.75)',
+    '--glass-hi':'rgba(255,255,255,0.95)', '--glass-lo':'rgba(0,0,0,0.06)', '--glass-sheen':'rgba(255,255,255,0.55)',
+    '--glass-shadow':'rgba(0,0,0,0.14)', '--lens':'rgba(120,120,128,0.14)', '--sheet-bg':'rgba(255,255,255,0.78)',
+    '--scrim':'rgba(0,0,0,0.22)', '--edge-fade':'rgba(242,242,247,0.85)'
   },
   dark: {
     '--bg':'#000000', '--card':'#1C1C1E', '--card-2':'#2C2C2E', '--label':'#FFFFFF',
     '--label-2':'rgba(235,235,245,0.6)', '--label-3':'rgba(235,235,245,0.3)', '--separator':'rgba(84,84,88,0.6)',
     '--fill':'rgba(120,120,128,0.24)', '--track':'rgba(120,120,128,0.32)', '--pill-off':'#2C2C2E', '--blue':'#0A84FF',
     '--seg-thumb':'#636366', '--seg-thumb-text':'#FFFFFF', '--pill-text':'#FFFFFF',
-    '--orange':'#FF9F0A', '--teal':'#64D2FF', '--brown':'#AC8E68'
+    '--orange':'#FF9F0A', '--teal':'#64D2FF', '--brown':'#AC8E68',
+    '--glass-bg':'rgba(42,42,46,0.5)', '--glass-solid':'#1E1E21', '--glass-edge':'rgba(255,255,255,0.14)',
+    '--glass-hi':'rgba(255,255,255,0.22)', '--glass-lo':'rgba(0,0,0,0.5)', '--glass-sheen':'rgba(255,255,255,0.08)',
+    '--glass-shadow':'rgba(0,0,0,0.55)', '--lens':'rgba(255,255,255,0.12)', '--sheet-bg':'rgba(30,30,33,0.76)',
+    '--scrim':'rgba(0,0,0,0.45)', '--edge-fade':'rgba(0,0,0,0.85)'
   }
 };
 
@@ -2320,8 +2599,8 @@ function lockControls(locked){
   coffeeInputV60.disabled = locked;
   document.getElementById('coffeeStepUp').disabled = locked;
   document.getElementById('coffeeStepDown').disabled = locked;
+  document.querySelectorAll('#cupSizes .size').forEach(b=> b.disabled = locked);
   navLocked = locked;
-  document.getElementById('navIndicator').classList.toggle('locked', locked);
 }
 
 /* ---- Не гасить экран во время заваривания. Лок автоматически снимается
@@ -2391,7 +2670,9 @@ function paintDots(idx, done){
 
 function showBrewCard(show){
   document.getElementById('brewLive').style.display = show ? 'block' : 'none';
-  document.getElementById('musicMuteBtn').style.display = show ? 'flex' : 'none';
+  // Таб-бар уезжает, на его место встаёт мьют; кнопка действия становится «стоп»
+  document.getElementById('dock').classList.toggle('brewing', show);
+  document.body.classList.toggle('brewing', show);
 }
 
 /* ---- Сворачиваемый график пролива на время заваривания ----
@@ -2416,7 +2697,7 @@ function updateScheduleUI(){
   const countEl = document.getElementById('pourToggleCount');
   const customWrap = document.getElementById('customEditorWrap');
 
-  if(state.mode !== 'v60'){
+  if(!isBrewMode()){
     toggleCard.style.display = 'none';
     toggleCard.classList.remove('open');
     header.style.display = 'none';
@@ -2477,24 +2758,26 @@ function setStageLabel(text){
 }
 
 function beginCountdown(){
-  if(state.mode !== 'v60' || !state.schedule || !state.schedule.length) return;
+  if(!isBrewMode() || !state.schedule || !state.schedule.length) return;
   brewPhase = 'counting';
   countdownStartTs = performance.now();
   countdownLastSec = -1;
-  const btn = document.getElementById('brewToggle');
-  btn.textContent = 'Отменить';
-  btn.classList.remove('start'); btn.classList.add('stop');
+  setAction('stop', 'Отменить');
+  // Iced V60: на отсчёте напоминаем про лёд и тару — последний момент это сделать
+  const note = document.getElementById('brewNote');
+  if(state.mode === 'v60ice'){
+    note.textContent = 'Лёд ' + fmt((state.water || 0) * ICE_SHARE) + ' г — в сервер, весы на ноль';
+    note.style.display = 'block';
+  } else {
+    note.style.display = 'none';
+  }
   buildBrewDots();
   paintDots(-1, false);
+  // Панель таймера выезжает снизу над доком — экран никуда не прокручиваем
   showBrewCard(true);
   updateScheduleUI();
   lockControls(true);
   requestWakeLock();
-  // Один кадр на layout после display:none→block, потом ведём карточку
-  // в фокус — иначе на телефоне таймер стартует за пределами экрана.
-  requestAnimationFrame(()=>{
-    document.getElementById('brewLive').scrollIntoView({ behavior:'smooth', block:'center' });
-  });
   tickCountdown();
 }
 
@@ -2531,7 +2814,8 @@ function launchBrew(){
   brewDoneFired = false;
   journalOfferedThisBrew = false;
   brewEntryPromise = createBrewEntry();
-  document.getElementById('brewToggle').textContent = 'Остановить';
+  setAction('stop', 'Остановить');
+  document.getElementById('brewNote').style.display = 'none';
   blElapsed.classList.remove('bl-hidden');
   stageAlert();
   try{
@@ -2548,10 +2832,8 @@ function stopBrew(hide){
   brewing = false;
   releaseWakeLock();
   if(brewRAF) cancelAnimationFrame(brewRAF);
-  const btn = document.getElementById('brewToggle');
-  btn.textContent = 'Начать заваривание';
-  btn.classList.remove('stop'); btn.classList.add('start');
   if(hide) showBrewCard(false);
+  updateDock();
   lockControls(false);
   brewMusic.pause();
   try{ brewMusic.currentTime = 0; }catch(e){}
@@ -2603,9 +2885,63 @@ function tickBrew(){
   brewRAF = requestAnimationFrame(tickBrew);
 }
 
-document.getElementById('brewToggle').onclick = ()=>{
-  if(brewPhase === 'idle') beginCountdown();
-  else stopBrew(true);
+/* ---- Еще → Настройки: размеры порций S/M/L ----
+   Шаг 10 мл. Плитки на Кофе обновляются сразу; если правят выбранный
+   размер — объём текущего расчёта меняется вместе с ним. */
+function renderSizeSettings(){
+  const wrap = document.getElementById('sizeSettings');
+  wrap.innerHTML = CUP_KEYS.map(k=>
+    '<div class="set-row">' +
+      '<div class="set-art">' + cupServerSVG(CUP_SCALE[k]*0.75, 'cupset') + '</div>' +
+      '<div class="set-name"><b>'+k+'</b>'+CUP_NAMES[k]+'</div>' +
+      '<div class="vstep">' +
+        '<button type="button" data-k="'+k+'" data-d="-10" aria-label="'+CUP_NAMES[k]+': меньше">−</button>' +
+        '<span class="v" data-v="'+k+'">'+cup.sizes[k]+' мл</span>' +
+        '<button type="button" data-k="'+k+'" data-d="10" aria-label="'+CUP_NAMES[k]+': больше">+</button>' +
+      '</div>' +
+    '</div>').join('');
+  wrap.querySelectorAll('button[data-k]').forEach(b=> b.addEventListener('click', ()=>{
+    const k = b.dataset.k;
+    const next = Math.max(CUP_MIN, Math.min(CUP_MAX, cup.sizes[k] + Number(b.dataset.d)));
+    if(next === cup.sizes[k]) return;
+    cup.sizes[k] = next;
+    saveCupPrefs();
+    wrap.querySelector('[data-v="'+k+'"]').textContent = next + ' мл';
+    track('cup_sizes_edited', { cup_size: k, cup_ml: next });
+    if(cup.size === k && isBrewMode() && brewPhase === 'idle'){ state.inputType = 'water'; state.value = next; }
+    compute();
+  }));
+}
+
+/* ---- Контекстная кнопка дока ----
+   Всегда на месте, меняется смысл по разделу:
+   Кофе (V60 / Iced V60) — старт заваривания; Зерна — добавить зерно;
+   остальное — приглушённый play без действия; во время брю — стоп. */
+var dockPage = 1; // var, а не let: updateDock() зовётся из setMode() раньше секции навигации
+const actionBtn = document.getElementById('actionBtn');
+const ACTION_LABEL = {
+  play: 'Начать заваривание',
+  add: 'Добавить зерно',
+  off: 'Таймер есть для V60 и Iced V60 в разделе Кофе'
+};
+function setAction(kind, label){
+  actionBtn.classList.remove('play', 'add', 'off', 'stop');
+  actionBtn.classList.add(kind);
+  actionBtn.setAttribute('aria-label', label || ACTION_LABEL[kind] || '');
+  actionBtn.setAttribute('aria-disabled', String(kind === 'off'));
+}
+function updateDock(){
+  if(brewPhase !== 'idle') return;
+  setAction(dockPage === 0 ? 'add' : (dockPage === 1 && isBrewMode()) ? 'play' : 'off');
+}
+actionBtn.onclick = ()=>{
+  if(brewPhase !== 'idle'){ stopBrew(true); return; }
+  if(actionBtn.classList.contains('play')){ beginCountdown(); return; }
+  if(actionBtn.classList.contains('add')){
+    navHapticTick();
+    openBeanAddSheet();
+    track('bean_add_opened');
+  }
 };
 
 /* ---- Дневник: хранилище ----
@@ -3064,6 +3400,7 @@ async function createBrewEntry(){
     coffee: Math.round((state.coffee || 0) * 10) / 10,
     water: pours.reduce((a,b)=> a+b.add, 0),
     pours: pours,
+    ice: state.mode === 'v60ice' ? Math.round((state.water || 0) * ICE_SHARE) : 0,
     rating: 0,
     taste: 0,
     grind: 0,
@@ -3104,7 +3441,7 @@ async function offerRateSheet(){
   sheetTitleEl.textContent = 'Записано в журнал';
   const beanName = entryBeanName(entry);
   sheetSubtitleEl.textContent = (beanName ? beanName + ' · ' : '') +
-    fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл · ' +
+    fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл' + (entry.ice ? ' + ' + fmt(entry.ice) + ' г льда' : '') + ' · ' +
     entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
   sheetTabSeg.style.display = 'none';
   sheetTabRate.style.display = 'none';
@@ -3143,7 +3480,8 @@ function renderEditSheet(tab){
   document.getElementById('sheetPills').style.display = 'none';
   document.getElementById('sheetBeanPickList').style.display = 'none';
   sheetTitleEl.textContent = formatEntryDate(sheetEntry.id);
-  sheetSubtitleEl.textContent = 'V60 · 1:' + sheetEntry.ratio;
+  sheetSubtitleEl.textContent = (sheetEntry.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + sheetEntry.ratio +
+    (sheetEntry.ice ? ' · лёд ' + fmt(sheetEntry.ice) + ' г' : '');
 
   sheetTabSeg.style.display = 'flex';
   setSheetTab(tab || 'rate');
@@ -3241,7 +3579,7 @@ function openEntryBeanPick(){
   const hadBean = storedId != null && beans.some(b=> b.id === storedId);
   const g = fmt(sheetEntry.coffee || 0) + ' г';
   sheetSubtitleEl.textContent = !beans.length
-    ? 'Сначала добавь зерно на странице «Зёрна»'
+    ? 'Сначала добавь зерно на странице «Зерна»'
     : (hadBean ? g + ' вернутся прежнему зерну и спишутся с выбранного' : g + ' спишутся с выбранного зерна');
 
   const selId = normId(sheetEntry.beanId);
@@ -3934,7 +4272,7 @@ function renderBeansArchive(list){
       '<span><span class="section-header">Архив</span><span class="arch-count">' + list.length + '</span></span>' + chev +
     '</button>' +
     (beansArchiveOpen ? (
-      '<div class="arch-hint">По средней оценке — какие зёрна брать снова</div>' +
+      '<div class="arch-hint">По средней оценке — какие зерна брать снова</div>' +
       '<div class="card">' + rows.map(({ b, st })=>{
         const sub = b.roaster || [((ROASTS.find(x=>x.id===b.roast) || {}).label || ''), ((PROCESSES.find(x=>x.id===b.process) || {}).label || '')].filter(Boolean).join(' · ');
         const right = st.rated
@@ -4229,47 +4567,37 @@ function openBeanEditSheet(id){
   renderBeanSheet();
 }
 
-document.getElementById('beanAddBtn').addEventListener('click', ()=>{
-  openBeanAddSheet();
-  track('bean_add_opened');
-});
+
 
 initTelegram();
 loadBeanPrefs();
 buildTempPills();
 buildRecipeSeg();
+buildCupSizes();
+renderSizeSettings();
 setMode('v60');
 Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries);
 
-/* ---- Навигация свайпом между разделами: Зёрна / Калькулятор / Журнал ----
-   Точки вместо табов, подпись всплывает только во время жеста,
-   переключение "залипает" после протяжки за NAV_COMMIT_RATIO ширины
-   экрана — короткий флик откатывается назад. Число страниц не хардкодится —
-   считается по факту .page-элементов, так что новый раздел добавляется
-   просто вставкой ещё одной страницы в разметку (плюс не забыть поправить
-   статические ширины в CSS .pages/.page — см. комментарий там). */
+/* ---- Навигация: стеклянный таб-бар внизу + свайп между разделами ----
+   Зерна / Кофе / Журнал / Еще. Линза таб-бара едет за пальцем непрерывно,
+   переключение "залипает" после протяжки за NAV_COMMIT_RATIO ширины экрана —
+   короткий флик откатывается назад. Число страниц считается по .page,
+   но статические ширины в CSS (.pages/.page, .tabbar/.tab-lens) — правятся руками. */
 const navPages = document.getElementById('navPages');
 const navViewport = document.querySelector('.pages-viewport');
-const navCaption = document.getElementById('navCaption');
 const navPageEls = [...navPages.querySelectorAll('.page')];
 const NAV_COUNT = navPageEls.length;
 const NAV_STEP = 100 / NAV_COUNT; // % ширины .pages на один шаг — должно совпадать с CSS
+const tabbarEl = document.getElementById('tabbar');
+const tabLens = document.getElementById('tabLens');
+const tabEls = [...tabbarEl.querySelectorAll('.tab')];
 
-const navDotZones = [...document.querySelectorAll('.nav-dot-zone')];
-const navItems = navDotZones.map(z=>({
-  zone: z,
-  dot: z.querySelector('.nav-dot'),
-  fill: z.querySelector('.nav-fill'),
-  cap: navCaption.querySelector('.nav-cap[data-i="' + z.dataset.i + '"]')
-}));
-
-let navIndex = 1; // старт по центру — на Калькуляторе
+let navIndex = 1; // старт — раздел Кофе
 let navContainerWidth = navViewport.clientWidth;
 let navStartX = 0, navStartY = 0, navDragging = false, navDecided = false, navDeltaX = 0;
 let navCommitted = false;
 let navCommitTarget = null;
 let navExcluded = false;
-let navHideTimer = null;
 let navLocked = false;
 const NAV_COMMIT_RATIO = 0.4;
 
@@ -4279,18 +4607,16 @@ function navSetTransform(percent, animate){
   navPages.style.transition = animate ? 'transform .32s cubic-bezier(.25,.8,.25,1)' : 'none';
   navPages.style.transform = 'translateX(' + percent + '%)';
 }
-/* position — непрерывная координата в "страницах" (0..NAV_COUNT-1).
-   Активность точки/подписи i — треугольная функция от расстояния до position,
-   поэтому при N=2 это в точности старый кроссфейд, а при N=3+ соседние
-   страницы не начинают предательски мигать, пока их не коснулись. */
+/* position — непрерывная координата в "страницах" (0..NAV_COUNT-1):
+   линза стоит между вкладками, пока палец в пути; активной считается ближайшая. */
 function navUpdateIndicator(position, animate){
-  const t = animate ? 'opacity .28s ease' : 'none';
-  navItems.forEach((it, i)=>{
-    const activation = Math.max(0, 1 - Math.abs(position - i));
-    it.fill.style.transition = t;
-    it.fill.style.opacity = activation;
-    it.cap.style.transition = t;
-    it.cap.style.opacity = activation;
+  tabLens.classList.toggle('anim', !!animate);
+  tabbarEl.style.setProperty('--pos', String(position));
+  const near = Math.round(position);
+  tabEls.forEach((t, i)=>{
+    const on = i === near;
+    t.classList.toggle('on', on);
+    if(on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
   });
 }
 function navHapticTick(){
@@ -4300,32 +4626,22 @@ function navHapticTick(){
     navigator.vibrate(10);
   }
 }
-function navPulseDot(i){
-  const el = navItems[i].dot;
-  el.classList.remove('pulse');
-  void el.offsetWidth;
-  el.classList.add('pulse');
-}
-function navShowCaption(){
-  navCaption.classList.add('show');
-  clearTimeout(navHideTimer);
-}
-function navScheduleHide(delay){
-  clearTimeout(navHideTimer);
-  navHideTimer = setTimeout(()=> navCaption.classList.remove('show'), delay || 900);
-}
 function navGoTo(i, animate){
+  const prev = navIndex;
   navIndex = Math.max(0, Math.min(NAV_COUNT - 1, i));
   navSetTransform(-navIndex * NAV_STEP, animate);
   navUpdateIndicator(navIndex, animate);
+  dockPage = navIndex;
+  updateDock();
+  if(prev !== navIndex && navIndex === 3) track('settings_opened');
 }
 
-navDotZones.forEach(z=>{
-  z.addEventListener('click', ()=>{
+tabEls.forEach(t=>{
+  t.addEventListener('click', ()=>{
     if(navLocked) return;
-    navGoTo(Number(z.dataset.i), true);
-    navShowCaption();
-    navScheduleHide();
+    const i = Number(t.dataset.i);
+    if(i !== navIndex) navHapticTick();
+    navGoTo(i, true);
   });
 });
 
@@ -4354,7 +4670,6 @@ navViewport.addEventListener('touchmove', (e)=>{
   if(!navDragging) return;
 
   e.preventDefault();
-  navShowCaption();
   let ddx = dx;
   if(navIndex === 0 && ddx > 0) ddx *= 0.35;
   if(navIndex === NAV_COUNT - 1 && ddx < 0) ddx *= 0.35;
@@ -4373,7 +4688,6 @@ navViewport.addEventListener('touchmove', (e)=>{
   if(justCrossed){
     navCommitted = true; // залипает: дальше в этом жесте уже не откатится
     navHapticTick();
-    navPulseDot(navCommitTarget);
   }
 }, { passive:false });
 
@@ -4382,11 +4696,9 @@ navViewport.addEventListener('touchend', ()=>{
   if(navCommitted && navCommitTarget !== null) navGoTo(navCommitTarget, true);
   else navGoTo(navIndex, true);
   navDragging = false; navDecided = false; navDeltaX = 0; navCommitted = false; navCommitTarget = null;
-  navScheduleHide();
 });
 
-navGoTo(1, false); // сразу центрируемся на Калькуляторе, без анимации
-setTimeout(()=>{ navShowCaption(); navScheduleHide(1500); }, 600);
+navGoTo(1, false); // сразу на разделе Кофе, без анимации
 </script>
 </body>
 </html>
