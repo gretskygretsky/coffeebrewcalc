@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Калькулятор пропорций</title>
 <style>
@@ -108,7 +108,7 @@
     .glass{ background:var(--glass-solid); -webkit-backdrop-filter:none; backdrop-filter:none; }
     .sheet, .brew-live, .alert-box{ background:var(--card) !important; }
   }
-  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   body{
     margin:0;
     background:var(--bg);
@@ -2538,6 +2538,25 @@ function initTelegram(){
    contentSafeAreaInset — плавающие кнопки Telegram поверх приложения.
    Складываем их и берём максимум с системным env(), чтобы вне полного экрана
    ничего не поменялось. */
+/* ---- Страховка от «уехавшего» интерфейса ----
+   Когда поле получает фокус, браузер подтягивает его в видимую зону и может
+   проскроллить контейнеры с overflow:hidden — листалку страниц вбок, документ вниз.
+   Скроллиться сами по себе им нельзя, поэтому любой такой сдвиг сразу откатываем.
+   После закрытия клавиатуры iOS иногда оставляет документ сдвинутым — тоже откатываем. */
+(function lockStrayScroll(){
+  const vp = document.querySelector('.pages-viewport');
+  if(vp) vp.addEventListener('scroll', ()=>{ if(vp.scrollLeft || vp.scrollTop){ vp.scrollLeft = 0; vp.scrollTop = 0; } });
+  document.querySelectorAll('.page').forEach(p=> p.addEventListener('scroll', ()=>{ if(p.scrollLeft) p.scrollLeft = 0; }));
+  window.addEventListener('scroll', ()=>{ if(window.scrollX) window.scrollTo(0, window.scrollY); });
+  document.addEventListener('focusout', ()=>{
+    setTimeout(()=>{
+      const a = document.activeElement;
+      const typing = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.type !== 'range';
+      if(!typing && (window.scrollX || window.scrollY)) window.scrollTo(0, 0);
+    }, 120);
+  });
+})();
+
 function applySafeArea(){
   const tg = window.Telegram && window.Telegram.WebApp;
   if(!tg) return;
@@ -3229,8 +3248,11 @@ journalList.addEventListener('touchmove', (e)=>{
   content.style.transform = 'translateX(' + pos + 'px)';
 }, { passive:false });
 
-journalList.addEventListener('touchend', ()=>{
+journalList.addEventListener('touchend', (e)=>{
   if(!jSwipeRow) return;
+  // Тап по строке обрабатываем сами — гасим синтетический click, иначе он
+  // долетает до только что открытого скрима и тут же закрывает шторку.
+  if(!jSwipeDragging && e.cancelable) e.preventDefault();
   const row = jSwipeRow;
   // Жест ушёл в вертикаль — это скролл списка, а не тап: ничего не открываем.
   if(jSwipeDecided && !jSwipeDragging){
@@ -3406,6 +3428,7 @@ function showSheet(){
   if(sheetMode !== 'bean-edit'){ sheetStatEl.style.display = 'none'; sheetActionEl.style.display = 'none'; }
   if(sheetMode !== 'saved') sheetSavedMark.style.display = 'none';
   lockPageScroll();
+  sheetOpenedAt = performance.now();
   sheetScrimEl.classList.add('show');
   sheetEl.classList.add('show');
 }
@@ -3650,7 +3673,10 @@ function closeSheetAndMaybeStop(){
 }
 
 /* Закрытие жестом (тап мимо или протяжка за ручку) — одна логика на оба жеста. */
+let sheetOpenedAt = 0;
 function dismissSheet(){
+  // Призрачный click от тапа, который открыл шторку, не должен её же и закрыть
+  if(performance.now() - sheetOpenedAt < 400) return;
   // Из пикера зерна тап мимо возвращает к записи, а не выбрасывает черновик правок.
   if(sheetMode === 'entry-bean-pick'){ renderEditSheet('rate'); return; }
   closeSheetAndMaybeStop();
@@ -4381,8 +4407,9 @@ beansList.addEventListener('touchmove', (e)=>{
   content.style.transform = 'translateX(' + pos + 'px)';
 }, { passive:false });
 
-beansList.addEventListener('touchend', ()=>{
+beansList.addEventListener('touchend', (e)=>{
   if(!bSwipeRow) return;
+  if(!bSwipeDragging && e.cancelable) e.preventDefault(); // см. журнал: без призрачного click по скриму
   const row = bSwipeRow;
   const id = Number(row.dataset.id);
   // Та же ловушка, что в журнале: вертикальный скролл по карточке — не тап.
