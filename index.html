@@ -41,6 +41,7 @@
     --sheet-bg: rgba(255,255,255,0.78);
     --scrim: rgba(0,0,0,0.22);
     --edge-fade: rgba(242,242,247,0.85);
+    --sheet-group: #FFFFFF;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark){
@@ -75,6 +76,7 @@
       --sheet-bg: rgba(30,30,33,0.76);
       --scrim: rgba(0,0,0,0.45);
       --edge-fade: rgba(0,0,0,0.85);
+      --sheet-group: #2C2C2E;
     }
   }
   html, body{ overflow-x:hidden; height:100%; }
@@ -1028,19 +1030,21 @@
   #calcBeanCard{ margin:16px 0; }
   #calcBeanCard .b-row-content{ border-radius:22px; }
   #calcBeanCard.locked{ opacity:.45; pointer-events:none; }
+  .sheet .b-row-content{ background:var(--sheet-group); }
   .pick-none{
     width:100%; min-height:50px; margin-top:10px; padding:0 16px; border:none; border-radius:22px;
-    background:var(--card); font-family:inherit; font-size:16px; font-weight:600; color:var(--label); cursor:pointer;
+    background:var(--sheet-group); font-family:inherit; font-size:16px; font-weight:600; color:var(--label); cursor:pointer;
     display:flex; align-items:center; justify-content:space-between;
   }
   .pick-none.on{ box-shadow:0 0 0 2px var(--blue) inset; color:var(--blue); }
 
   /* ---- Шторка зерна: свои шапка и тело; общие блоки шторки в этом режиме скрыты ---- */
-  .sheet .bs-bar, .sheet #sheetBean{ display:none; }
-  .sheet.bean-mode .bs-bar{ display:flex; }
-  .sheet.bean-mode #sheetBean{ display:block; }
-  .sheet.bean-mode > :not(.bs-bar):not(#sheetBean):not(.sheet-grab){ display:none !important; }
-  .sheet.bean-mode .sheet-grab{ margin-bottom:-6px; }
+  .sheet .bs-bar, .sheet #sheetBean, .sheet #sheetJournal{ display:none; }
+  .sheet.bean-mode .bs-bar, .sheet.journal-mode .bs-bar{ display:flex; }
+  .sheet.bean-mode #sheetBean, .sheet.journal-mode #sheetJournal{ display:block; }
+  .sheet.bean-mode > :not(.bs-bar):not(#sheetBean):not(.sheet-grab),
+  .sheet.journal-mode > :not(.bs-bar):not(#sheetJournal):not(.sheet-grab){ display:none !important; }
+  .sheet.bean-mode .sheet-grab, .sheet.journal-mode .sheet-grab{ margin-bottom:-6px; }
   .bs-bar{ align-items:center; justify-content:space-between; gap:8px; padding:2px 0 8px; }
   .bs-title{ flex:1; min-width:0; text-align:center; font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .bs-round{ width:40px; height:40px; border-radius:50%; flex-shrink:0; border:none; padding:0; cursor:pointer;
@@ -1058,7 +1062,7 @@
   .bs-left b{ color:var(--label); font-weight:700; }
   .bs-left .warn{ color:var(--orange); font-weight:600; }
   .bs-cap{ font-size:13px; font-weight:600; color:var(--label-2); text-transform:uppercase; letter-spacing:.02em; margin:20px 14px 7px; }
-  .bs-group{ background:var(--card); border-radius:20px; overflow:hidden; }
+  .bs-group{ background:var(--sheet-group); border-radius:20px; overflow:hidden; }
   .bs-row{ display:flex; align-items:center; gap:12px; min-height:52px; padding:6px 14px 6px 16px; position:relative; }
   .bs-row + .bs-row::before{ content:""; position:absolute; top:0; left:16px; right:0; height:0.5px; background:var(--separator); }
   .bs-l{ flex:1; min-width:0; }
@@ -1092,9 +1096,103 @@
   .bs-why-text{ font-size:12.5px; line-height:1.45; color:var(--label-2); padding:0 16px 12px; margin-top:-2px; }
   .bs-why-text p{ margin:0; }
   .bs-why-text p + p{ margin-top:6px; }
-  .bs-act{ width:100%; min-height:50px; border:none; background:var(--card); border-radius:20px; font-family:inherit; font-size:16px; font-weight:600; color:var(--blue); cursor:pointer; margin-top:20px; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .bs-act{ width:100%; min-height:50px; border:none; background:var(--sheet-group); border-radius:20px; font-family:inherit; font-size:16px; font-weight:600; color:var(--blue); cursor:pointer; margin-top:20px; display:flex; align-items:center; justify-content:center; gap:8px; }
   .bs-act + .bs-act{ margin-top:10px; }
   .bs-act.danger{ color:var(--red); }
+  /* ---- Журнал: месяцы со своей сводкой ----
+     Заголовок месяца и плашка сводки — обе кнопки, сворачивают и раскрывают одинаково. */
+  .jm-head{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; background:none; padding:0 6px; margin:22px 0 8px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
+  .jm-head:first-child{ margin-top:6px; }
+  .jm-head .t{ font-size:22px; font-weight:700; letter-spacing:-0.02em; }
+  .jm-head .chev{ color:var(--label-3); transition:transform .25s ease; flex-shrink:0; }
+  .jm-head.open .chev{ transform:rotate(90deg); }
+  .jm-sum{ width:100%; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); background:var(--card); border:none; border-radius:22px; padding:0; text-align:left; cursor:pointer; font-family:inherit; color:var(--label); }
+  .jm-head.open + .jm-sum{ border-radius:22px 22px 0 0; }
+  .jm-sum > div{ padding:11px 14px; min-width:0; }
+  .jm-sum > div + div{ border-left:0.5px solid var(--separator); }
+  .jm-sum b{ display:block; font-size:19px; font-weight:700; letter-spacing:-0.02em; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .jm-sum > div > span{ display:block; font-size:12px; color:var(--label-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .jm-sum .st, .jr .st{ color:var(--orange); }
+  .jm-list{ background:var(--card); border-radius:0 0 22px 22px; overflow:hidden; border-top:0.5px solid var(--separator); }
+
+  /* ---- Строка записи + свайп удаления (iOS 26) ----
+     Под строкой — круглая красная кнопка: цвет + корзина + подпись (по скиллу: не только цвет).
+     Длинный свайп растягивает её в капсулу — отпустил, и сразу подтверждение. */
+  .jr-row{ position:relative; overflow:hidden; touch-action:pan-y; }
+  .jr-row + .jr-row .jr::before{ content:""; position:absolute; top:0; left:64px; right:0; height:0.5px; background:var(--separator); }
+  .jr-act{ position:absolute; top:0; right:0; bottom:0; width:var(--w, 84px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    border:none; background:none; color:var(--red); font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; padding:0; }
+  .jr-act .c{ width:44px; height:44px; border-radius:50%; background:var(--red); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px color-mix(in srgb, var(--red) 35%, transparent);
+    transform:scale(var(--s, .6)); opacity:var(--o, 0); transition:transform .3s cubic-bezier(.3,1.5,.5,1), opacity .2s, width .25s ease, border-radius .25s ease; }
+  .jr-act span{ opacity:var(--o, 0); transition:opacity .2s; }
+  .jr-row.full .jr-act .c{ width:calc(100% - 20px); border-radius:999px; }
+  .jr{ width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px 10px 12px; min-height:64px; border:none; background:var(--card); text-align:left; cursor:pointer; position:relative;
+    font-family:inherit; color:var(--label); transform:translateX(var(--x, 0px)); }
+  .jr-row.anim .jr{ transition:transform .35s cubic-bezier(.3,1.15,.5,1); }
+  .jr-day{ width:40px; flex-shrink:0; text-align:center; line-height:1; }
+  .jr-day b{ display:block; font-size:20px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
+  .jr-day span{ display:block; font-size:11px; font-weight:600; color:var(--label-2); text-transform:uppercase; margin-top:3px; }
+  .jr-day.today b, .jr-day.today span{ color:var(--blue); }
+  .jr-day.same b, .jr-day.same span{ visibility:hidden; }
+  .jr-mid{ flex:1; min-width:0; }
+  .jr-name{ font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .jr-name.none{ color:var(--label-2); font-weight:500; }
+  .jr-sub{ font-size:13px; color:var(--label-2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
+  .jr-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:0; }
+  .jr-r{ text-align:right; flex-shrink:0; }
+  .jr-rate{ font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .jr-rate.none{ color:var(--blue); font-weight:600; font-size:13px; }
+  .jr-time{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; margin-top:2px; }
+  .jr-row.removing{ transition:height .3s ease, opacity .25s; }
+
+  /* ---- Шторка записи ---- */
+  .js-hero{ padding:2px 4px 6px; }
+  .js-date{ font-size:13px; font-weight:600; color:var(--label-2); text-transform:uppercase; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+  .js-bean{ display:inline-flex; align-items:center; gap:6px; max-width:100%; border:none; background:none; padding:0; margin-top:2px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
+  .js-bean b{ font-size:24px; font-weight:700; letter-spacing:-0.02em; line-height:1.2; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .js-bean.none b{ color:var(--label-3); }
+  .js-bean .c{ width:22px; height:22px; border-radius:50%; background:var(--fill); color:var(--label-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .js-note-bean{ font-size:12.5px; color:var(--orange); font-weight:600; margin-top:2px; }
+  .js-sub{ font-size:14px; color:var(--label-2); margin-top:3px; }
+  .js-rate{ display:flex; justify-content:center; gap:10px; padding:14px 0 4px; }
+  .js-rate button{ width:42px; height:42px; border:none; background:none; padding:0; cursor:pointer; color:var(--label-3); transition:transform .2s cubic-bezier(.3,1.6,.5,1), color .2s; }
+  .js-rate button.on{ color:var(--orange); }
+  .js-rate button:active{ transform:scale(.85); }
+  .js-rate-l{ text-align:center; font-size:13px; color:var(--label-2); margin-bottom:4px; min-height:17px; }
+  .js-metrics{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); background:var(--sheet-group); border-radius:20px; margin-top:14px; }
+  .js-metrics > div{ padding:11px 12px 12px 14px; min-width:0; }
+  .js-metrics > div + div{ border-left:0.5px solid var(--separator); }
+  .js-metrics b{ display:block; font-size:20px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .js-metrics span{ display:block; font-size:12px; color:var(--label-2); white-space:nowrap; }
+  .js-taste{ padding:12px 16px 14px; }
+  .js-taste-top{ display:flex; justify-content:space-between; font-size:16px; margin-bottom:12px; color:var(--label); }
+  .js-taste-top b{ font-weight:600; }
+  .js-track{ position:relative; display:grid; grid-template-columns:repeat(5,1fr); height:34px; background:var(--fill); border-radius:999px; }
+  .js-track button{ position:relative; z-index:1; border:none; background:none; cursor:pointer; border-radius:999px; }
+  .js-track button::after{ content:""; position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:var(--label-3); }
+  .js-thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / 5); border-radius:999px; background:var(--seg-thumb);
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 8px rgba(0,0,0,0.14); transform:translateX(calc(var(--t,2) * 100%)); transition:transform .4s cubic-bezier(.3,1.35,.5,1); }
+  .js-ends{ display:flex; justify-content:space-between; font-size:12px; color:var(--label-2); margin-top:7px; padding:0 4px; }
+  .js-taste + .bs-row::before{ content:""; position:absolute; top:0; left:16px; right:0; height:0.5px; background:var(--separator); }
+  .js-cap{ display:flex; justify-content:space-between; align-items:baseline; }
+  .js-cap button{ border:none; background:none; color:var(--blue); font-family:inherit; font-size:15px; font-weight:600; text-transform:none; letter-spacing:0; cursor:pointer; padding:0; }
+  .js-chart{ background:var(--sheet-group); border-radius:20px; padding:12px 10px 8px; }
+  .js-chart svg{ display:block; width:100%; height:auto; }
+  .js-chart text{ font-size:10.5px; fill:var(--label-2); font-variant-numeric:tabular-nums; }
+  .js-pours{ margin-top:10px; }
+  .js-pours .bs-l{ display:flex; align-items:center; gap:10px; }
+  .js-pours .tm{ width:40px; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--label); }
+  .js-pours .add{ font-size:13px; color:var(--label-2); }
+  .js-pin{ width:52px; height:34px; border:none; border-radius:12px; background:var(--fill); text-align:center; font-size:16px; font-weight:600; color:var(--label); font-variant-numeric:tabular-nums; padding:0; -moz-appearance:textfield; }
+  .js-pin::-webkit-inner-spin-button, .js-pin::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  .js-pu{ font-size:13px; color:var(--label-2); }
+  .js-note{ display:block; width:100%; min-height:84px; border:none; background:var(--sheet-group); border-radius:20px; padding:14px 16px; font-family:inherit; font-size:16px; line-height:1.4; resize:none; outline:none; color:var(--label); }
+  .js-note::placeholder{ color:var(--label-3); }
+  .js-note-count{ font-size:12px; color:var(--label-3); text-align:right; margin:6px 14px 0; font-variant-numeric:tabular-nums; }
+  .js-note-count.warn{ color:var(--red); }
+  .bs-act:disabled{ color:var(--label-3); cursor:default; }
+
 
   .bean-pick-card{ margin-bottom:10px; cursor:pointer; }
   .bean-pick-card:last-child{ margin-bottom:0; }
@@ -1384,7 +1482,7 @@
       <div class="page" id="pageJournal">
         <p class="eyebrow" style="color:var(--blue);">Журнал</p>
         <h1>История</h1>
-        <div class="card" id="journalListCard" style="margin-bottom:8px; display:none;">
+        <div id="journalListCard" style="margin-bottom:8px; display:none;">
           <div id="journalList"></div>
         </div>
         <div class="tip" id="journalEmpty">
@@ -1487,6 +1585,7 @@
     <button class="bs-round primary" id="beanSheetSave" type="button" aria-label="Сохранить"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></button>
   </div>
   <div id="sheetBean"></div>
+  <div id="sheetJournal"></div>
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-subtitle" id="sheetSubtitle"></div>
   <div class="saved-mark" id="sheetSavedMark" style="display:none;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
@@ -2580,7 +2679,7 @@ const PALETTE = {
     '--glass-bg':'rgba(255,255,255,0.56)', '--glass-solid':'#F9F9FB', '--glass-edge':'rgba(255,255,255,0.75)',
     '--glass-hi':'rgba(255,255,255,0.95)', '--glass-lo':'rgba(0,0,0,0.06)', '--glass-sheen':'rgba(255,255,255,0.55)',
     '--glass-shadow':'rgba(0,0,0,0.14)', '--lens':'rgba(120,120,128,0.14)', '--sheet-bg':'rgba(255,255,255,0.78)',
-    '--scrim':'rgba(0,0,0,0.22)', '--edge-fade':'rgba(242,242,247,0.85)'
+    '--scrim':'rgba(0,0,0,0.22)', '--edge-fade':'rgba(242,242,247,0.85)', '--sheet-group':'#FFFFFF'
   },
   dark: {
     '--bg':'#000000', '--card':'#1C1C1E', '--card-2':'#2C2C2E', '--label':'#FFFFFF',
@@ -2591,7 +2690,7 @@ const PALETTE = {
     '--glass-bg':'rgba(42,42,46,0.5)', '--glass-solid':'#1E1E21', '--glass-edge':'rgba(255,255,255,0.14)',
     '--glass-hi':'rgba(255,255,255,0.22)', '--glass-lo':'rgba(0,0,0,0.5)', '--glass-sheen':'rgba(255,255,255,0.08)',
     '--glass-shadow':'rgba(0,0,0,0.55)', '--lens':'rgba(255,255,255,0.12)', '--sheet-bg':'rgba(30,30,33,0.76)',
-    '--scrim':'rgba(0,0,0,0.45)', '--edge-fade':'rgba(0,0,0,0.85)'
+    '--scrim':'rgba(0,0,0,0.45)', '--edge-fade':'rgba(0,0,0,0.85)', '--sheet-group':'#2C2C2E'
   }
 };
 
@@ -3253,6 +3352,25 @@ function pluralRu(n, one, few, many){
 /* ---- Дневник: список ---- */
 let jSwipeOpenRow = null;
 
+/* ---- Журнал: месяцы со своей сводкой ----
+   Раскрыт самый свежий месяц, прошлые свёрнуты до сводки (заварки · средняя · граммы).
+   Состояние раскрытия живёт в сессии — при следующем открытии снова свежий месяц. */
+let journalOpenMonths = null;
+const JR_WD = ['вс','пн','вт','ср','чт','пт','сб'];
+function journalMonths(){
+  const m = new Map();
+  journalEntries.forEach(e=>{ const d = new Date(e.id), k = d.getFullYear()*12 + d.getMonth(); if(!m.has(k)) m.set(k, []); m.get(k).push(e); });
+  return [...m.entries()].map(([k, list])=> ({ k, y: Math.floor(k/12), mo: k % 12, list }));
+}
+function journalMonthSumHTML(list, k, open){
+  const rated = list.filter(e=> (e.rating || 0) > 0);
+  const avg = rated.length ? rated.reduce((a,e)=> a + e.rating, 0) / rated.length : null;
+  const grams = list.reduce((a,e)=> a + (e.coffee || 0), 0);
+  return '<button class="jm-sum" type="button" data-jm="' + k + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Свернуть месяц' : 'Раскрыть месяц') + '">' +
+    '<div><b>' + list.length + '</b><span>' + pluralRu(list.length, 'заваривание', 'заваривания', 'завариваний') + '</span></div>' +
+    '<div><b>' + (avg ? '<span class="st">★</span> ' + fmt(avg) : '—') + '</b><span>средняя</span></div>' +
+    '<div><b>' + fmt(Math.round(grams)) + ' г</b><span>кофе</span></div></button>';
+}
 function renderJournal(){
   const listCard = document.getElementById('journalListCard');
   const list = document.getElementById('journalList');
@@ -3268,8 +3386,19 @@ function renderJournal(){
   }
   listCard.style.display = 'block';
   empty.style.display = 'none';
-  list.innerHTML = journalEntries.map(journalRowHTML).join('');
+  const months = journalMonths();
+  if(!journalOpenMonths) journalOpenMonths = new Set([months[0].k]);
+  const nowY = new Date().getFullYear();
+  const chev = '<svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+  list.innerHTML = months.map(m=>{
+    const open = journalOpenMonths.has(m.k);
+    return '<button class="jm-head' + (open ? ' open' : '') + '" type="button" data-jm="' + m.k + '" aria-expanded="' + open + '">' +
+        '<span class="t">' + MONTHS_NOM_RU[m.mo] + (m.y !== nowY ? ' ' + m.y : '') + '</span>' + chev + '</button>' +
+      journalMonthSumHTML(m.list, m.k, open) +
+      (open ? '<div class="jm-list">' + m.list.map((e, i)=> journalRowHTML(e, m.list[i-1])).join('') + '</div>' : '');
+  }).join('');
 }
+const MONTHS_NOM_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
 /* Имя зерна записи: по beanId — актуальное название пачки (переименование
    подтягивается), иначе — снимок имени, сохранённый в записи. */
@@ -3280,127 +3409,105 @@ function entryBeanName(e){
 }
 function normId(x){ return (x == null || x === '') ? null : Number(x); }
 
-function journalRowHTML(e){
-  // Звезда — про оценку, поэтому всегда оранжевая; раньше она красилась в цвет
-  // режима, из-за чего список пестрел тремя цветами без всякого смысла.
-  const rated = (e.rating || 0) > 0;
-  const star = rated
-    ? '<span class="j-star" style="color:var(--orange);">★</span>'
-    : '<span class="j-star" style="color:var(--orange); opacity:.35;">☆</span>';
+function journalRowHTML(e, prev){
+  const d = new Date(e.id);
+  const same = prev && sameDay(new Date(prev.id), d);
+  const today = sameDay(d, new Date());
   const beanName = entryBeanName(e);
-  const name = escapeHTML(beanName ? beanName : (fmt(e.water) + ' мл'));
-  return '' +
-    '<div class="j-row" data-id="' + e.id + '">' +
-      '<div class="j-row-action">Удалить</div>' +
-      '<div class="j-row-content">' +
-        '<span class="j-left">' +
-          star +
-          '<span class="j-namegrams">' +
-            '<span class="j-name" title="' + name + '">' + name + '</span>' +
-            '<span class="j-grams">' + fmt(e.coffee) + ' г</span>' +
-          '</span>' +
-        '</span>' +
-        '<span class="j-datetime">' +
-          '<span class="j-date">' + journalDayLabel(e.id) + '</span>' +
-          '<span class="j-time">' + journalTimeLabel(e.id) + '</span>' +
-        '</span>' +
-      '</div>' +
-    '</div>';
+  const water = (e.pours || []).reduce((a,p)=> a + (typeof p === 'number' ? p : (p.add || 0)), 0) || e.water || 0;
+  const rated = (e.rating || 0) > 0;
+  const trash = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  return '<div class="jr-row" data-row="' + e.id + '">' +
+    '<button class="jr-act" type="button" data-jdel="' + e.id + '" tabindex="-1" aria-label="Удалить запись ' + journalDayLabel(e.id) + ' ' + journalTimeLabel(e.id) + '"><span class="c">' + trash + '</span><span>Удалить</span></button>' +
+    '<button class="jr" type="button" data-id="' + e.id + '">' +
+      '<span class="jr-day' + (today ? ' today' : '') + (same ? ' same' : '') + '"><b>' + d.getDate() + '</b><span>' + JR_WD[d.getDay()] + '</span></span>' +
+      '<span class="jr-mid"><div class="jr-name' + (beanName ? '' : ' none') + '">' + (beanName ? escapeHTML(beanName) : 'Без зерна') + '</div>' +
+        '<div class="jr-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
+          fmt(e.coffee || 0) + ' г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + ' мл · 1:' + e.ratio + '</div></span>' +
+      '<span class="jr-r"><div class="jr-rate' + (rated ? '' : ' none') + '">' + (rated ? '<span class="st">★</span>' + e.rating : 'оценить') + '</div>' +
+        '<div class="jr-time">' + journalTimeLabel(e.id) + '</div></span>' +
+    '</button></div>';
 }
 
+/* ---- Свайп удаления (iOS 26 / Liquid Glass) ----
+   Половина кнопки — строка открывается; дальше 55% ширины — длинный свайп: кнопка
+   растягивается в капсулу, отпускание сразу ведёт к подтверждению. Вибрация — ровно
+   в момент, когда отпускание уже не отменит действие. Открыта максимум одна строка.
+   Pointer-события + touch-action: pan-y: вертикальный скролл отдаём браузеру. */
+const J_OPEN = 84;
+let jSw = null;
+function jSetX(row, x, anim){
+  row.classList.toggle('anim', !!anim);
+  row.style.setProperty('--x', x + 'px');
+  const p = Math.min(1, -x / J_OPEN);
+  const act = row.querySelector('.jr-act');
+  act.style.setProperty('--s', (0.6 + 0.4 * p).toFixed(3));
+  act.style.setProperty('--o', p.toFixed(3));
+  act.style.setProperty('--w', Math.max(J_OPEN, -x) + 'px');
+}
 function closeJournalRow(row){
   if(!row) return;
-  const content = row.querySelector('.j-row-content');
-  content.style.transition = 'transform .22s ease';
-  content.style.transform = 'translateX(0)';
-  row.classList.remove('open');
+  row.classList.remove('full');
+  jSetX(row, 0, true);
+  if(jSwipeOpenRow === row) jSwipeOpenRow = null;
 }
-
-const J_ACTION_WIDTH = 84;
-let jSwipeRow = null, jSwipeStartX = 0, jSwipeStartY = 0, jSwipeDragging = false, jSwipeDecided = false;
-let jSwipeBaseOpen = false, jSwipeLastDx = 0, jSwipeTargetIsAction = false;
-
-const journalList = document.getElementById('journalList');
-
-journalList.addEventListener('touchstart', (e)=>{
-  const row = e.target.closest('.j-row');
-  if(!row) return;
-  jSwipeRow = row;
-  jSwipeBaseOpen = row.classList.contains('open');
-  jSwipeTargetIsAction = !!e.target.closest('.j-row-action');
-  const t = e.touches[0];
-  jSwipeStartX = t.clientX; jSwipeStartY = t.clientY;
-  jSwipeDragging = false; jSwipeDecided = false; jSwipeLastDx = 0;
-}, { passive:true });
-
-journalList.addEventListener('touchmove', (e)=>{
-  if(!jSwipeRow) return;
-  const t = e.touches[0];
-  const dx = t.clientX - jSwipeStartX;
-  const dy = t.clientY - jSwipeStartY;
-  if(!jSwipeDecided){
-    if(Math.abs(dx) > 8 || Math.abs(dy) > 8){
-      jSwipeDecided = true;
-      jSwipeDragging = Math.abs(dx) > Math.abs(dy);
-    }
-  }
-  if(!jSwipeDragging) return;
-  e.preventDefault();
-  jSwipeLastDx = dx;
-  let pos = (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + dx;
-  pos = Math.max(-J_ACTION_WIDTH, Math.min(0, pos));
-  const content = jSwipeRow.querySelector('.j-row-content');
-  content.style.transition = 'none';
-  content.style.transform = 'translateX(' + pos + 'px)';
-}, { passive:false });
-
-journalList.addEventListener('touchend', (e)=>{
-  if(!jSwipeRow) return;
-  // Тап по строке обрабатываем сами — гасим синтетический click, иначе он
-  // долетает до только что открытого скрима и тут же закрывает шторку.
-  if(!jSwipeDragging && e.cancelable) e.preventDefault();
-  const row = jSwipeRow;
-  // Жест ушёл в вертикаль — это скролл списка, а не тап: ничего не открываем.
-  if(jSwipeDecided && !jSwipeDragging){
-    jSwipeRow = null; jSwipeDecided = false;
+journalList.addEventListener('pointerdown', (e)=>{
+  const row = e.target.closest('.jr-row');
+  if(!row || e.target.closest('.jr-act')) return;
+  if(jSwipeOpenRow && jSwipeOpenRow !== row) closeJournalRow(jSwipeOpenRow);
+  jSw = { row, x0: e.clientX, y0: e.clientY, base: jSwipeOpenRow === row ? -J_OPEN : 0, decided:false, drag:false, full:false, x:0, id:e.pointerId };
+});
+window.addEventListener('pointermove', (e)=>{
+  if(!jSw || e.pointerId !== jSw.id) return;
+  const dx = e.clientX - jSw.x0, dy = e.clientY - jSw.y0;
+  if(!jSw.decided && (Math.abs(dx) > 8 || Math.abs(dy) > 8)){ jSw.decided = true; jSw.drag = Math.abs(dx) > Math.abs(dy) * 1.2; }
+  if(!jSw.drag) return;
+  const x = Math.min(0, jSw.base + dx);
+  jSw.x = x;
+  const full = -x > jSw.row.clientWidth * 0.55;
+  if(full !== jSw.full){ jSw.full = full; jSw.row.classList.toggle('full', full); if(full) navHapticTick(); }
+  jSetX(jSw.row, x, false);
+});
+function jEndSwipe(e){
+  if(!jSw || (e && e.pointerId !== jSw.id)) return;
+  const s = jSw; jSw = null;
+  if(!s.drag) return;
+  s.row.dataset.justSwiped = '1';
+  setTimeout(()=>{ delete s.row.dataset.justSwiped; }, 80);
+  if(s.full){
+    jSetX(s.row, -s.row.clientWidth, true);
+    jSwipeOpenRow = s.row;
+    openDeleteAlert(Number(s.row.dataset.row), 'journal');
     return;
   }
-  if(jSwipeDragging){
-    const finalPos = Math.max(-J_ACTION_WIDTH, Math.min(0, (jSwipeBaseOpen ? -J_ACTION_WIDTH : 0) + jSwipeLastDx));
-    const willOpen = finalPos < -J_ACTION_WIDTH / 2;
-    const content = row.querySelector('.j-row-content');
-    content.style.transition = 'transform .22s ease';
-    content.style.transform = willOpen ? 'translateX(-' + J_ACTION_WIDTH + 'px)' : 'translateX(0)';
-    row.classList.toggle('open', willOpen);
-    if(willOpen){
-      if(jSwipeOpenRow && jSwipeOpenRow !== row) closeJournalRow(jSwipeOpenRow);
-      jSwipeOpenRow = row;
-      navHapticTick();
-    } else if(jSwipeOpenRow === row){
-      jSwipeOpenRow = null;
-    }
-  } else {
-    // пальцем почти не двигали — это тап
-    if(row.classList.contains('open')){
-      if(jSwipeTargetIsAction){
-        openDeleteAlert(Number(row.dataset.id));
-      } else {
-        closeJournalRow(row);
-        if(jSwipeOpenRow === row) jSwipeOpenRow = null;
-      }
-    } else {
-      openEditSheet(Number(row.dataset.id));
-    }
+  if(-s.x > J_OPEN / 2){ jSetX(s.row, -J_OPEN, true); jSwipeOpenRow = s.row; navHapticTick(); }
+  else closeJournalRow(s.row);
+}
+window.addEventListener('pointerup', jEndSwipe);
+window.addEventListener('pointercancel', jEndSwipe);
+
+journalList.addEventListener('click', (e)=>{
+  const del = e.target.closest('[data-jdel]');
+  if(del){ jSwipeOpenRow = del.closest('.jr-row'); openDeleteAlert(Number(del.dataset.jdel), 'journal'); return; }
+  const r = e.target.closest('.jr');
+  if(r){
+    const row = r.closest('.jr-row');
+    if(row.dataset.justSwiped) return;
+    if(jSwipeOpenRow){ closeJournalRow(jSwipeOpenRow); return; } // тап при открытом свайпе — закрыть, а не открыть запись
+    openEditSheet(Number(r.dataset.id));
+    return;
   }
-  jSwipeRow = null; jSwipeDragging = false; jSwipeDecided = false;
-});
-// iOS отдаёт жест скроллу через touchcancel вместо touchend — сбрасываем состояние.
-journalList.addEventListener('touchcancel', ()=>{
-  jSwipeRow = null; jSwipeDragging = false; jSwipeDecided = false;
+  const m = e.target.closest('[data-jm]');
+  if(m){
+    const k = Number(m.dataset.jm);
+    if(journalOpenMonths.has(k)) journalOpenMonths.delete(k); else journalOpenMonths.add(k);
+    navHapticTick();
+    renderJournal();
+  }
 });
 
 document.addEventListener('touchstart', (e)=>{
-  if(jSwipeOpenRow && !e.target.closest('.j-row')){
+  if(jSwipeOpenRow && !e.target.closest('.jr-row') && !alertBoxEl.classList.contains('show')){
     closeJournalRow(jSwipeOpenRow);
     jSwipeOpenRow = null;
   }
@@ -3534,6 +3641,7 @@ function showSheet(){
   if(sheetMode !== 'bean-edit'){ sheetStatEl.style.display = 'none'; sheetActionEl.style.display = 'none'; }
   if(sheetMode !== 'saved') sheetSavedMark.style.display = 'none';
   sheetEl.classList.toggle('bean-mode', sheetMode === 'bean-add' || sheetMode === 'bean-edit');
+  sheetEl.classList.toggle('journal-mode', sheetMode === 'edit');
   // В пикере зерна выбор сам закрывает шторку — кнопка «Готово» там лишняя
   sheetPrimaryBtn.style.display = sheetMode === 'bean-pick' ? 'none' : '';
   lockPageScroll();
@@ -3639,90 +3747,206 @@ function openEditSheet(id){
   sheetEntry.pours = (sheetEntry.pours || []).map((p, i)=> typeof p === 'number'
     ? { time: legacyPourTime(i), add: p }
     : { time: p.time || 0, add: p.add || 0 });
+  jsPoursEdit = false;
   renderEditSheet('rate');
 }
 
-/* Шторка записи рисуется из sheetEntry (черновика), а не из сохранённой записи —
-   так после выбора зерна в пикере возвращаемся к ней, не теряя правок. */
-function renderEditSheet(tab){
-  sheetMode = 'edit';
-  document.getElementById('sheetPills').style.display = 'none';
-  document.getElementById('sheetBeanPickList').style.display = 'none';
-  sheetTitleEl.textContent = formatEntryDate(sheetEntry.id);
-  sheetSubtitleEl.textContent = (sheetEntry.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + sheetEntry.ratio +
-    (sheetEntry.ice ? ' · лёд ' + fmt(sheetEntry.ice) + ' г' : '');
-
-  sheetTabSeg.style.display = 'flex';
-  setSheetTab(tab || 'rate');
-  setSheetRating(sheetEntry.rating);
-  sheetTasteRange.value = sheetEntry.taste;
-  sheetTasteLabel.textContent = TASTE_LABELS[sheetEntry.taste + 2];
-  sheetGrindInput.value = sheetEntry.grind;
-  sheetGrindUnit.textContent = pluralRu(sheetEntry.grind, 'клик', 'клика', 'кликов');
-  updateSheetBeanPick();
-  sheetNoteInput.value = sheetEntry.note;
-  sheetNoteCount.textContent = NOTE_MAX - sheetEntry.note.length;
-  sheetNoteCount.classList.toggle('warn', NOTE_MAX - sheetEntry.note.length <= 10);
-
-  sheetFieldsEl.style.display = 'block';
-  sheetFieldsEl.innerHTML = '';
-  const pourTotalEls = [];
-  sheetEntry.pours.forEach((p, i)=>{
-    const row = document.createElement('div');
-    row.className = 'sheet-field';
-    const label = document.createElement('span');
-    label.className = 'sheet-field-label';
-    label.textContent = i === 0 ? 'Блум' : ('Пролив ' + i);
-
-    const timeInput = document.createElement('input');
-    timeInput.type = 'number'; timeInput.className = 'sheet-field-time';
-    timeInput.inputMode = 'numeric'; timeInput.min = '0'; timeInput.step = '1';
-    timeInput.value = p.time;
-    timeInput.addEventListener('input', ()=>{
-      sheetEntry.pours[i].time = parseInt(timeInput.value, 10) || 0;
-    });
-    const timeUnit = document.createElement('span');
-    timeUnit.className = 'unit'; timeUnit.textContent = 'с';
-
-    // Итог на весах (нарастающий, сверху) + добавка на этом шаге (мельче, снизу,
-    // по-прежнему редактируемая) — как в графике пролива Калькулятора.
-    const amounts = document.createElement('div');
-    amounts.className = 'sheet-field-amounts';
-    const totalEl = document.createElement('div');
-    totalEl.className = 'sheet-field-total';
-    pourTotalEls.push(totalEl);
-
-    const addWrap = document.createElement('div');
-    addWrap.className = 'sheet-field-add-wrap';
-    const plus = document.createElement('span'); plus.textContent = '+';
-    const gramsInput = document.createElement('input');
-    gramsInput.type = 'number'; gramsInput.inputMode = 'decimal'; gramsInput.min = '0'; gramsInput.step = '1';
-    gramsInput.value = p.add;
-    gramsInput.addEventListener('input', ()=>{
-      sheetEntry.pours[i].add = parseFloat(gramsInput.value) || 0;
-      updatePourTotals();
-    });
-    const gUnit = document.createElement('span'); gUnit.textContent = 'г';
-    addWrap.appendChild(plus); addWrap.appendChild(gramsInput); addWrap.appendChild(gUnit);
-    amounts.appendChild(totalEl); amounts.appendChild(addWrap);
-
-    row.appendChild(label); row.appendChild(timeInput); row.appendChild(timeUnit); row.appendChild(amounts);
-    sheetFieldsEl.appendChild(row);
+/* ---- Шторка записи журнала ----
+   Рисуется из sheetEntry (черновика), а не из сохранённой записи — после выбора зерна
+   в пикере возвращаемся к ней, не теряя правок. Тот же язык, что шторка зерна:
+   шапка «× / ✓», герой (дата, зерно — оно же кнопка выбора), iOS-ячейки.
+   Помол и зерно — по одному месту, без дублей. */
+const JS_RATE_LABELS = ['', 'Не понравилось', 'Так себе', 'Нормально', 'Хорошо', 'Отлично'];
+let jsPoursEdit = false;
+function jsDuration(e){
+  const last = (e.pours || []).length ? e.pours[e.pours.length - 1].time : 0;
+  return e.duration > 0 ? e.duration : last + 30;
+}
+function jsWater(e){ return (e.pours || []).reduce((a,p)=> a + (p.add || 0), 0); }
+function journalChartSVG(e){
+  const W = 340, H = 150, L = 34, R = 10, T = 12, B = 22, w = W-L-R, h = H-T-B;
+  const pours = e.pours || [];
+  const end = Math.max(jsDuration(e), pours.length ? pours[pours.length-1].time + 20 : 60, 1);
+  const max = Math.max(1, jsWater(e));
+  const col = accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60');
+  const X = t => L + Math.max(0, Math.min(end, t)) / end * w, Y = v => T + h - v / max * h;
+  let cum = 0, path = 'M' + X(0) + ',' + Y(0), dots = '';
+  pours.forEach(p=>{
+    path += ' L' + X(p.time).toFixed(1) + ',' + Y(cum).toFixed(1);
+    cum += (p.add || 0);
+    path += ' L' + (X(p.time) + 6).toFixed(1) + ',' + Y(cum).toFixed(1);
+    dots += '<circle cx="' + (X(p.time) + 6).toFixed(1) + '" cy="' + Y(cum).toFixed(1) + '" r="3.5" fill="' + col + '"/>';
   });
-  function updatePourTotals(){
-    let running = 0;
-    sheetEntry.pours.forEach((p, i)=>{
-      running += (p.add || 0);
-      if(pourTotalEls[i]) pourTotalEls[i].textContent = fmt(running) + ' г';
-    });
-  }
-  updatePourTotals();
+  path += ' L' + X(end).toFixed(1) + ',' + Y(cum).toFixed(1);
+  const grid = [0, 0.5, 1].map(f=> '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + Y(max*f).toFixed(1) + '" y2="' + Y(max*f).toFixed(1) + '" stroke="var(--separator)" stroke-width="0.5"/>' +
+    '<text x="' + (L-6) + '" y="' + (Y(max*f)+3.5).toFixed(1) + '" text-anchor="end">' + Math.round(max*f) + '</text>').join('');
+  const mid = Math.round(end / 2 / 30) * 30;
+  const ticks = [[0,'start'], [mid,'middle'], [end,'end']].map(([t,a])=> '<text x="' + X(t).toFixed(1) + '" y="' + (H-6) + '" text-anchor="' + a + '">' + fmtTime(t) + '</text>').join('');
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Профиль пролива: ' + fmt(jsWater(e)) + ' мл за ' + fmtTime(end) + '">' + grid + ticks +
+    '<path d="' + path + ' L' + X(end).toFixed(1) + ',' + Y(0).toFixed(1) + ' Z" fill="' + col + '" opacity=".12"/>' +
+    '<path d="' + path + '" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linejoin="round"/>' + dots + '</svg>';
+}
+function jsPoursHTML(e){
+  let run = 0;
+  return (e.pours || []).map((p, i)=>{
+    run += (p.add || 0);
+    const label = i === 0 ? 'Блум' : 'Пролив ' + i;
+    if(jsPoursEdit){
+      return '<div class="bs-row"><span class="bs-l"><span class="t">' + label + '</span></span>' +
+        '<input class="js-pin" type="number" inputmode="numeric" min="0" step="1" data-jpt="' + i + '" value="' + (p.time || 0) + '" aria-label="' + label + ': секунда"><span class="js-pu">с</span>' +
+        '<input class="js-pin" type="number" inputmode="decimal" min="0" step="1" data-jpa="' + i + '" value="' + (p.add || 0) + '" aria-label="' + label + ': граммы"><span class="js-pu">г</span></div>';
+    }
+    return '<div class="bs-row"><span class="bs-l"><span class="tm">' + fmtTime(p.time || 0) + '</span><span class="t">' + label + '</span></span>' +
+      '<span class="bs-v"><b>' + fmt(run) + ' мл</b> <span class="add">+' + fmt(p.add || 0) + '</span></span></div>';
+  }).join('');
+}
+function renderEditSheet(){
+  sheetMode = 'edit';
+  const e = sheetEntry;
+  document.getElementById('beanSheetTitle').textContent = '';
+  document.getElementById('beanSheetSave').disabled = false;
+  const id = normId(e.beanId);
+  const b = id != null ? beans.find(x=> x.id === id) : null;
+  const beanName = b ? (b.name || 'Без названия') : (e.bean || '');
+  const orphan = !b && !!e.bean;
+  const star = '<svg viewBox="0 0 24 24" width="42" height="42" fill="currentColor"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>';
+  const trash = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  const repeatIcon = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>';
+  const water = jsWater(e);
+  const noteLeft = NOTE_MAX - (e.note || '').length;
 
-  sheetPrimaryBtn.textContent = 'Сохранить';
-  sheetGhostBtn.textContent = 'Отмена';
-  sheetGhostBtn.style.display = '';
+  document.getElementById('sheetJournal').innerHTML =
+    '<div class="js-hero">' +
+      '<div class="js-date">' + escapeHTML(formatEntryDate(e.id)) + '</div>' +
+      '<button class="js-bean' + (beanName ? '' : ' none') + '" type="button" data-jbean aria-label="Зерно: ' + escapeHTML(beanName || 'не выбрано') + '. Изменить">' +
+        '<b>' + escapeHTML(beanName || 'Выбрать зерно') + '</b>' +
+        '<span class="c"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></span></button>' +
+      (orphan ? '<div class="js-note-bean">' + (id != null ? 'зерно удалено' : 'не привязано к зерну') + '</div>' : '') +
+      '<div class="js-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
+        (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + e.ratio + (e.ice ? ' · лёд ' + fmt(e.ice) + ' г' : '') + '</div>' +
+    '</div>' +
+    '<div class="js-rate" id="jsRate">' + [1,2,3,4,5].map(i=> '<button type="button" class="' + (i <= e.rating ? 'on' : '') + '" data-jstar="' + i + '" aria-label="' + i + ' из 5">' + star + '</button>').join('') + '</div>' +
+    '<div class="js-rate-l" id="jsRateL">' + (e.rating ? JS_RATE_LABELS[e.rating] : 'Как получилось?') + '</div>' +
+    '<div class="js-metrics">' +
+      '<div><b>' + fmt(e.coffee || 0) + ' г</b><span>кофе</span></div>' +
+      '<div><b id="jsWaterVal">' + fmt(water) + ' мл</b><span>вода</span></div>' +
+      '<div><b>' + fmtTime(jsDuration(e)) + '</b><span>время</span></div>' +
+    '</div>' +
+
+    '<div class="bs-cap">Вкус и помол</div><div class="bs-group">' +
+      '<div class="js-taste"><div class="js-taste-top"><span>Баланс</span><b id="jsTasteL">' + TASTE_LABELS[e.taste + 2] + '</b></div>' +
+        '<div class="js-track" id="jsTaste" style="--t:' + (e.taste + 2) + '"><div class="js-thumb"></div>' +
+          [0,1,2,3,4].map(i=> '<button type="button" data-jtaste="' + (i-2) + '" aria-label="' + TASTE_LABELS[i] + '"></button>').join('') + '</div>' +
+        '<div class="js-ends"><span>Кисло</span><span>Горько</span></div></div>' +
+      '<div class="bs-row"><span class="bs-l"><span class="t">Помол, клики</span></span>' +
+        '<span class="bs-step"><button type="button" data-jgrind="-1" aria-label="Помол: меньше">−</button>' +
+        '<input type="number" inputmode="numeric" data-jgrindin value="' + (e.grind || 0) + '" aria-label="Помол, клики">' +
+        '<button type="button" data-jgrind="1" aria-label="Помол: больше">+</button></span></div>' +
+    '</div>' +
+
+    '<div class="bs-cap js-cap"><span>Пролив</span><button type="button" data-jpedit>' + (jsPoursEdit ? 'Готово' : 'Изменить') + '</button></div>' +
+    '<div class="js-chart" id="jsChart">' + journalChartSVG(e) + '</div>' +
+    '<div class="bs-group js-pours" id="jsPours">' + jsPoursHTML(e) + '</div>' +
+
+    '<div class="bs-cap">Заметка</div>' +
+    '<textarea class="js-note" data-jnote maxlength="' + NOTE_MAX + '" placeholder="Ощущения от чашки…" aria-label="Заметка"></textarea>' +
+    '<div class="js-note-count' + (noteLeft <= 10 ? ' warn' : '') + '" id="jsNoteCount">' + noteLeft + '</div>' +
+
+    '<button class="bs-act" type="button" data-jrepeat' + (brewPhase !== 'idle' ? ' disabled' : '') + '>' + repeatIcon + 'Повторить рецепт</button>' +
+    '<button class="bs-act danger" type="button" data-jdelete>' + trash + 'Удалить запись</button>';
+  document.querySelector('#sheetJournal [data-jnote]').value = e.note || '';
   showSheet();
 }
+
+/* «Повторить рецепт»: режим, пропорция, объём, зерно и график пролива записи —
+   в Калькулятор. График кладётся в «Кастом» (доли воды + паузы), граммы
+   подстраиваются под текущую порцию сами. */
+function repeatEntryRecipe(e){
+  if(brewPhase !== 'idle' || !e || !(e.pours || []).length) return;
+  const mode = e.mode === 'v60ice' ? 'v60ice' : 'v60';
+  const hot = jsWater(e);
+  const cupTotal = Math.round(mode === 'v60ice' ? hot / (1 - ICE_SHARE) : hot);
+  cup.size = matchCupSize(cupTotal);
+  if(cup.size === 'custom') cup.custom = Math.max(CUP_MIN, Math.min(CUP_MAX, cupTotal));
+  saveCupPrefs();
+  const p = e.pours, coffee = e.coffee || (hot / (e.ratio || 16));
+  const steps = [{ kind:'bloom', mult: coffee > 0 ? p[0].add / coffee : 2, wait: p[1] ? Math.max(1, p[1].time - p[0].time) : 40 }];
+  for(let i = 1; i < p.length; i++){
+    steps.push({ kind:'pour', frac: hot > 0 ? p[i].add / hot : 0, wait: p[i+1] ? Math.max(1, p[i+1].time - p[i].time) : Math.max(15, jsDuration(e) - p[i].time) });
+  }
+  if(steps.length < 2) steps.push({ kind:'pour', frac:0, wait:45 });
+  state.custom = { steps: steps.slice(0, CUSTOM_MAX_POURS + 1) };
+  saveCustom();
+  state.recipe = 'custom';
+  const id = normId(e.beanId);
+  const bean = id != null ? beans.find(b=> b.id === id && !b.archived && !b.finishedAt) : null;
+  closeSheet();
+  setMode(mode);
+  state.ratio = e.ratio || state.ratio;
+  state.inputType = 'water'; state.value = cupWater();
+  renderPills(); renderRecipeSeg(); compute();
+  if(bean && bean.id !== activeBeanId) setActiveBean(bean.id);
+  navGoTo(1, true);
+  track('journal_recipe_repeated');
+}
+
+(function wireJournalSheet(){
+  const body = document.getElementById('sheetJournal');
+  body.addEventListener('click', (ev)=>{
+    const e = sheetEntry;
+    if(sheetMode !== 'edit' || !e) return;
+    const st = ev.target.closest('[data-jstar]');
+    if(st){
+      e.rating = Number(st.dataset.jstar);
+      body.querySelectorAll('[data-jstar]').forEach(x=> x.classList.toggle('on', Number(x.dataset.jstar) <= e.rating));
+      document.getElementById('jsRateL').textContent = JS_RATE_LABELS[e.rating];
+      navHapticTick();
+      return;
+    }
+    const ta = ev.target.closest('[data-jtaste]');
+    if(ta){
+      e.taste = Number(ta.dataset.jtaste);
+      document.getElementById('jsTaste').style.setProperty('--t', e.taste + 2);
+      document.getElementById('jsTasteL').textContent = TASTE_LABELS[e.taste + 2];
+      navHapticTick();
+      return;
+    }
+    const g = ev.target.closest('[data-jgrind]');
+    if(g){
+      e.grind = Math.max(0, (e.grind || 0) + Number(g.dataset.jgrind));
+      body.querySelector('[data-jgrindin]').value = e.grind;
+      navHapticTick();
+      return;
+    }
+    if(ev.target.closest('[data-jbean]')){ openEntryBeanPick(); return; }
+    if(ev.target.closest('[data-jpedit]')){
+      jsPoursEdit = !jsPoursEdit;
+      ev.target.closest('[data-jpedit]').textContent = jsPoursEdit ? 'Готово' : 'Изменить';
+      document.getElementById('jsPours').innerHTML = jsPoursHTML(e);
+      return;
+    }
+    if(ev.target.closest('[data-jrepeat]')){ const src = JSON.parse(JSON.stringify(e)); repeatEntryRecipe(src); return; }
+    if(ev.target.closest('[data-jdelete]')){ const id = e.id; closeSheet(); openDeleteAlert(id, 'journal'); }
+  });
+  body.addEventListener('input', (ev)=>{
+    const t = ev.target, e = sheetEntry;
+    if(sheetMode !== 'edit' || !e) return;
+    if('jgrindin' in t.dataset){ e.grind = Math.max(0, parseInt(t.value, 10) || 0); return; }
+    if('jnote' in t.dataset){
+      e.note = t.value.slice(0, NOTE_MAX);
+      const left = NOTE_MAX - e.note.length, c = document.getElementById('jsNoteCount');
+      c.textContent = left; c.classList.toggle('warn', left <= 10);
+      return;
+    }
+    if(t.dataset.jpt != null || t.dataset.jpa != null){
+      const i = Number(t.dataset.jpt != null ? t.dataset.jpt : t.dataset.jpa);
+      if(t.dataset.jpt != null) e.pours[i].time = Math.max(0, parseInt(t.value, 10) || 0);
+      else e.pours[i].add = Math.max(0, parseFloat(t.value) || 0);
+      document.getElementById('jsChart').innerHTML = journalChartSVG(e);
+      document.getElementById('jsWaterVal').textContent = fmt(jsWater(e)) + ' мл';
+    }
+  });
+})();
 
 function updateSheetBeanPick(){
   const id = normId(sheetEntry.beanId);
@@ -3999,6 +4223,8 @@ function openArchiveAlert(id){
 function closeDeleteAlert(){
   alertScrimEl.classList.remove('show');
   alertBoxEl.classList.remove('show');
+  // Отмена после свайпа — строка возвращается на место
+  if(jSwipeOpenRow && typeof closeJournalRow === 'function') closeJournalRow(jSwipeOpenRow);
   alertDeleteId = null;
   if(!sheetEl.classList.contains('show')) unlockPageScroll();
 }
@@ -4012,6 +4238,8 @@ document.getElementById('alertCancelBtn').addEventListener('click', closeDeleteA
 document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
   const id = alertDeleteId;
   const kind = alertDeleteKind;
+  // Строку, которую удаляем, не закрываем обратно — она схлопнется ниже
+  if(kind === 'journal') jSwipeOpenRow = null;
   closeDeleteAlert();
   if(kind === 'archive'){
     await archiveBean(id);
@@ -4021,6 +4249,14 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
     renderBeans();
   } else {
     jSwipeOpenRow = null;
+    // Строка схлопывается по высоте, потом список перерисовывается
+    const rowEl = document.querySelector('.jr-row[data-row="' + id + '"]');
+    if(rowEl){
+      rowEl.style.height = rowEl.offsetHeight + 'px';
+      rowEl.classList.add('removing');
+      requestAnimationFrame(()=>{ rowEl.style.height = '0px'; rowEl.style.opacity = '0'; });
+      await new Promise(r=> setTimeout(r, 280));
+    }
     // Удалённое заваривание возвращает граммы своему зерну.
     const e = journalEntries.find(x=> x.id === id);
     await journalDeleteEntry(id);
@@ -4669,7 +4905,7 @@ function refreshBeanHero(){
   });
   document.getElementById('beanSheetSave').addEventListener('click', ()=>{
     if(document.getElementById('beanSheetSave').disabled) return;
-    if(sheetEntry && !(sheetEntry.name || '').trim()) sheetEntry.name = '';
+    if((sheetMode === 'bean-add' || sheetMode === 'bean-edit') && sheetEntry && !(sheetEntry.name || '').trim()) sheetEntry.name = '';
     sheetPrimaryBtn.click(); // общий путь сохранения bean-add / bean-edit
   });
   document.getElementById('beanSheetClose').addEventListener('click', closeSheetAndMaybeStop);
@@ -4812,7 +5048,7 @@ tabEls.forEach(t=>{
 navViewport.addEventListener('touchstart', (e)=>{
   // Пока открыта шторка или алерт, страницы под ними не листаются ни при каком жесте.
   const overlayOpen = sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
-  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.b-row');
+  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.jr-row') || !!e.target.closest('.b-row');
   if(navExcluded) return;
   const t = e.touches[0];
   navStartX = t.clientX; navStartY = t.clientY;
