@@ -160,7 +160,7 @@
     background:var(--seg-thumb);
     border-radius:999px;
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 8px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.04);
-    transition: transform .42s cubic-bezier(.3,1.35,.5,1), width .32s cubic-bezier(.34,1.3,.64,1);
+    transition: transform .24s var(--ease-out); /* ширина — без анимации: это раскладка */
     z-index:0;
   }
   .seg-btn{
@@ -209,9 +209,9 @@
     background:var(--pill-off);
     color:var(--pill-text);
     cursor:pointer;
-    transition: all .18s ease;
+    transition: transform .16s var(--ease-out), background-color .16s ease, color .16s ease, box-shadow .16s ease;
   }
-  .pill:active{ transform:scale(0.94); }
+  .pill:active{ transform:scale(0.97); }
   .pill.active{ background:var(--accent, var(--orange)); color:#fff; box-shadow:inset 0 1px 0 rgba(255,255,255,0.35); }
 
   .ratio-hint{
@@ -426,7 +426,7 @@
   .pour-toggle-chevron{
     color:var(--label-3);
     flex-shrink:0;
-    transition: transform .25s ease;
+    transition: transform .2s var(--ease-in-out);
   }
   .pour-toggle-card.open .pour-toggle-chevron{ transform:rotate(180deg); }
 
@@ -533,7 +533,7 @@
   .temp-chevron{
     color:var(--label-3);
     flex-shrink:0;
-    transition: transform .25s ease;
+    transition: transform .2s var(--ease-in-out);
   }
   .temp-card.open .temp-chevron{ transform:rotate(180deg); }
   .temp-detail{ display:none; padding:2px 16px 14px; }
@@ -582,15 +582,15 @@
     transform:translateX(calc(var(--pos,1) * 100%)); border-radius:999px; background:var(--lens);
     box-shadow: inset 0 1px 0 var(--glass-hi);
   }
-  .tab-lens.anim{ transition:transform .36s cubic-bezier(.3,1.35,.5,1); }
+  .tab-lens.anim{ transition:transform .26s var(--ease-out); }
   .tab{
     position:relative; z-index:1; border:none; background:none; cursor:pointer; border-radius:999px; min-width:0;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     color:var(--label); font-size:10.5px; font-weight:600; font-family:inherit; letter-spacing:0;
-    transition:color .2s, transform .15s;
+    transition:color .2s ease, transform .16s var(--ease-out);
   }
   .tab span{ max-width:100%; white-space:nowrap; }
-  .tab:active{ transform:scale(.94); }
+  .tab:active{ transform:scale(.97); }
   .tab.on{ color:var(--blue); }
   .tab:focus-visible{ outline:2px solid var(--blue); outline-offset:-3px; }
 
@@ -602,9 +602,9 @@
     --tone:var(--accent, var(--orange));
     width:64px; height:64px; border-radius:50%; cursor:pointer; padding:0;
     display:flex; align-items:center; justify-content:center;
-    transition:transform .3s cubic-bezier(.3,1.35,.5,1), background .35s, color .3s, box-shadow .35s, border-color .35s;
+    transition:transform .2s var(--ease-out), background .3s ease, color .3s ease, box-shadow .3s ease, border-color .3s ease;
   }
-  .action:active{ transform:scale(.92); }
+  .action:active{ transform:scale(.97); }
   .action.add{ --tone:var(--blue); }
   .action.play, .action.add{
     color:#fff; border-color:rgba(255,255,255,0.35);
@@ -617,7 +617,7 @@
   .action.off:active{ transform:none; }
   .action svg{
     position:absolute; opacity:0; transform:scale(.4) rotate(-90deg);
-    transition:opacity .22s ease, transform .4s cubic-bezier(.3,1.35,.5,1);
+    transition:opacity .2s var(--ease-out), transform .24s var(--ease-out);
   }
   .action.play .i-play, .action.off .i-play, .action.add .i-plus, .action.stop .i-stop{ opacity:1; transform:none; }
 
@@ -644,7 +644,7 @@
   /* ---- Шторка: и предложение сохранить, и правка записи — один компонент ---- */
   .sheet-scrim{
     position:fixed; inset:0; background:var(--scrim);
-    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:40;
+    opacity:0; pointer-events:none; transition:opacity .24s var(--ease-out); z-index:40;
   }
   .sheet-scrim.show{ opacity:1; pointer-events:auto; }
   /* Шторка всегда синяя — задаём --accent прямо здесь, а не из JS при каждом
@@ -659,14 +659,15 @@
     background:var(--sheet-bg) !important; border-radius:34px;
     padding:10px 18px 18px;
     transform:translate(-50%, calc(100% + 40px));
-    transition:transform .38s cubic-bezier(.25,1.1,.4,1);
+    transition:transform .38s var(--ease-drawer);
     z-index:41;
     max-height:calc(88vh - 16px); overflow-y:auto; -webkit-overflow-scrolling:touch;
     overscroll-behavior:contain; /* скролл шторки не «протекает» на страницу под ней */
   }
   .sheet.show{ transform:translate(-50%, 0); }
   /* Спрятанная шторка не должна выглядывать снизу, даже если вьюпорт выше видимой области */
-  .sheet:not(.show){ visibility:hidden; transition:transform .38s cubic-bezier(.25,1.1,.4,1), visibility 0s .38s; }
+  /* Закрытие — ответ системы: быстрее открытия */
+  .sheet:not(.show){ visibility:hidden; transition:transform .26s var(--ease-out), visibility 0s .26s; }
   .sheet-handle{ width:36px; height:5px; background:var(--track); border-radius:2px; margin:0 auto; }
   /* Зона захвата «ручки»: сама полоска 32×4 — слишком мелкая цель для пальца,
      поэтому тянуть можно за всю верхнюю полосу шторки. touch-action:none —
@@ -732,14 +733,14 @@
   /* ---- Алерт удаления — единственный паттерн, без вариантов ---- */
   .alert-scrim{
     position:fixed; inset:0; background:var(--scrim);
-    opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:50;
+    opacity:0; pointer-events:none; transition:opacity .2s var(--ease-out); z-index:50;
   }
   .alert-scrim.show{ opacity:1; pointer-events:auto; }
   .alert-box{
     position:fixed; top:50%; left:50%; width:260px; max-width:80vw;
     background:var(--sheet-bg); border-radius:26px; padding:20px 16px 16px; text-align:center;
-    transform:translate(-50%,-50%) scale(0.92); opacity:0; pointer-events:none;
-    transition:transform .2s ease, opacity .2s ease; z-index:51;
+    transform:translate(-50%,-50%) scale(0.95); opacity:0; pointer-events:none;
+    transition:transform .2s var(--ease-out), opacity .16s var(--ease-out); z-index:51;
   }
   .alert-box.show{ transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
   .alert-title{ font-size:15px; font-weight:700; margin-bottom:4px; }
@@ -782,7 +783,7 @@
 
   /* ---- Шторка: вкладка «Оценка» — рейтинг, вкус, помол, заметка ---- */
   .stars{ display:flex; justify-content:center; gap:10px; padding:6px 0 10px; }
-  .star{ width:28px; height:28px; cursor:pointer; color:var(--label-3); transition:transform .12s ease; }
+  .star{ width:28px; height:28px; cursor:pointer; color:var(--label-3); transition:transform .12s var(--ease-out); }
   .star:active{ transform:scale(.85); }
   /* Звёзды — всегда тёплый оранжевый, независимо от поверхности и режима:
      это оценка, а не элемент интерфейса и не признак способа заваривания. */
@@ -880,7 +881,7 @@
   }
   .arch-toggle .section-header{ margin:0; display:inline; }
   .arch-count{ font-size:13px; color:var(--label-3); font-weight:600; margin-left:4px; }
-  .arch-chev{ color:var(--label-3); transition:transform .2s ease; }
+  .arch-chev{ color:var(--label-3); transition:transform .2s var(--ease-in-out); }
   .arch-toggle.open .arch-chev{ transform:rotate(180deg); }
   .arch-hint{ font-size:12px; color:var(--label-3); margin:0 4px 8px; }
   .a-row{
@@ -908,7 +909,7 @@
      Выбранность есть только в пикере: обводка + «Выбрано» под кольцом. */
   .b-row-content.bc{
     display:grid; grid-template-columns:auto minmax(0,1fr) auto; column-gap:14px; row-gap:9px; align-items:center;
-    padding:14px 16px 14px 14px; cursor:pointer; transition:box-shadow .25s ease, transform .15s ease;
+    padding:14px 16px 14px 14px; cursor:pointer; transition:box-shadow .2s ease, transform .16s var(--ease-out);
   }
   .bc:active{ transform:scale(.985); }
   .bc.on{ box-shadow:0 0 0 2px var(--blue) inset; }
@@ -998,7 +999,7 @@
   .bs-sw{ position:relative; width:51px; height:31px; flex-shrink:0; }
   .bs-sw input{ position:absolute; inset:0; width:100%; height:100%; opacity:0; margin:0; cursor:pointer; z-index:1; }
   .bs-sw i{ position:absolute; inset:0; border-radius:999px; background:var(--track); transition:background .25s; }
-  .bs-sw i::after{ content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:transform .3s cubic-bezier(.3,1.35,.5,1); }
+  .bs-sw i::after{ content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:transform .22s var(--ease-out); }
   .bs-sw input:checked + i{ background:var(--blue); } /* без нового цвета в палитре: тинт приложения */
   .bs-sw input:checked + i::after{ transform:translateX(20px); }
   .bs-sw input:focus-visible + i{ outline:2px solid var(--blue); outline-offset:2px; }
@@ -1014,7 +1015,7 @@
   .jm-head{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; background:none; padding:0 6px; margin:22px 0 8px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
   .jm-head:first-child{ margin-top:6px; }
   .jm-head .t{ font-size:22px; font-weight:700; letter-spacing:-0.02em; }
-  .jm-head .chev{ color:var(--label-3); transition:transform .25s ease; flex-shrink:0; }
+  .jm-head .chev{ color:var(--label-3); transition:transform .2s var(--ease-in-out); flex-shrink:0; }
   .jm-head.open .chev{ transform:rotate(90deg); }
   .jm-sum{ width:100%; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); background:var(--card); border:none; border-radius:22px; padding:0; text-align:left; cursor:pointer; font-family:inherit; color:var(--label); }
   .jm-head.open + .jm-sum{ border-radius:22px 22px 0 0; }
@@ -1030,16 +1031,21 @@
      Длинный свайп растягивает её в капсулу — отпустил, и сразу подтверждение. */
   .jr-row{ position:relative; overflow:hidden; touch-action:pan-y; }
   .jr-row + .jr-row .jr::before{ content:""; position:absolute; top:0; left:64px; right:0; height:0.5px; background:var(--separator); }
-  .jr-act{ position:absolute; top:0; right:0; bottom:0; width:var(--w, 84px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-    border:none; background:none; color:var(--red); font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; padding:0; }
+  /* Кнопка под строкой — во всю ширину, но видна только открытая часть. Кружок
+     держится по центру открытой зоны (transform), длинный свайп — красная капсула
+     раскрывается через clip-path. Ни ширины, ни CSS-переменных на родителе. */
+  .jr-act{ position:absolute; inset:0; border:none; background:none; color:var(--red); font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; padding:0; }
+  .jr-act .ai{ position:absolute; top:0; bottom:0; right:0; width:84px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; will-change:transform; }
   .jr-act .c{ width:44px; height:44px; border-radius:50%; background:var(--red); color:#fff; display:flex; align-items:center; justify-content:center;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px color-mix(in srgb, var(--red) 35%, transparent);
-    transform:scale(var(--s, .6)); opacity:var(--o, 0); transition:transform .3s cubic-bezier(.3,1.5,.5,1), opacity .2s, width .25s ease, border-radius .25s ease; }
-  .jr-act span{ opacity:var(--o, 0); transition:opacity .2s; }
-  .jr-row.full .jr-act .c{ width:calc(100% - 20px); border-radius:999px; }
+    transform:scale(.6); opacity:0; }
+  .jr-act .lb{ opacity:0; }
+  .jr-act .pill{ position:absolute; left:10px; right:10px; top:calc(50% - 30.5px); height:44px; border-radius:22px; background:var(--red);
+    clip-path:inset(0 0 0 100% round 22px); transition:clip-path .2s var(--ease-out); }
+  .jr-row.anim .jr-act .ai, .jr-row.anim .jr-act .c, .jr-row.anim .jr-act .lb{ transition:transform .3s var(--ease-out), opacity .2s var(--ease-out); }
   .jr{ width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px 10px 12px; min-height:64px; border:none; background:var(--card); text-align:left; cursor:pointer; position:relative;
-    font-family:inherit; color:var(--label); transform:translateX(var(--x, 0px)); }
-  .jr-row.anim .jr{ transition:transform .35s cubic-bezier(.3,1.15,.5,1); }
+    font-family:inherit; color:var(--label); will-change:transform; z-index:1; }
+  .jr-row.anim .jr{ transition:transform .3s var(--ease-out); }
   .jr-day{ width:40px; flex-shrink:0; text-align:center; line-height:1; }
   .jr-day b{ display:block; font-size:20px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
   .jr-day span{ display:block; font-size:11px; font-weight:600; color:var(--label-2); text-transform:uppercase; margin-top:3px; }
@@ -1054,7 +1060,7 @@
   .jr-rate{ font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
   .jr-rate.none{ color:var(--blue); font-weight:600; font-size:13px; }
   .jr-time{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; margin-top:2px; }
-  .jr-row.removing{ transition:height .3s ease, opacity .25s; }
+
 
   /* ---- Шторка записи ---- */
   .js-hero{ padding:2px 4px 6px; }
@@ -1066,7 +1072,7 @@
   .js-note-bean{ font-size:12.5px; color:var(--orange); font-weight:600; margin-top:2px; }
   .js-sub{ font-size:14px; color:var(--label-2); margin-top:3px; }
   .js-rate{ display:flex; justify-content:center; gap:10px; padding:14px 0 4px; }
-  .js-rate button{ width:42px; height:42px; border:none; background:none; padding:0; cursor:pointer; color:var(--label-3); transition:transform .2s cubic-bezier(.3,1.6,.5,1), color .2s; }
+  .js-rate button{ width:42px; height:42px; border:none; background:none; padding:0; cursor:pointer; color:var(--label-3); transition:transform .16s var(--ease-out), color .16s ease; }
   .js-rate button.on{ color:var(--orange); }
   .js-rate button:active{ transform:scale(.85); }
   .js-rate-l{ text-align:center; font-size:13px; color:var(--label-2); margin-bottom:4px; min-height:17px; }
@@ -1082,7 +1088,7 @@
   .js-track button{ position:relative; z-index:1; border:none; background:none; cursor:pointer; border-radius:999px; }
   .js-track button::after{ content:""; position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:var(--label-3); }
   .js-thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / 5); border-radius:999px; background:var(--seg-thumb);
-    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 8px rgba(0,0,0,0.14); transform:translateX(calc(var(--t,2) * 100%)); transition:transform .4s cubic-bezier(.3,1.35,.5,1); }
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 8px rgba(0,0,0,0.14); transform:translateX(calc(var(--t,2) * 100%)); transition:transform .24s var(--ease-out); }
   .js-ends{ display:flex; justify-content:space-between; font-size:12px; color:var(--label-2); margin-top:7px; padding:0 4px; }
   .js-taste + .bs-row::before{ content:""; position:absolute; top:0; left:16px; right:0; height:0.5px; background:var(--separator); }
   .js-cap{ display:flex; justify-content:space-between; align-items:baseline; }
@@ -1137,22 +1143,21 @@
   .size{
     border:none; background:none; cursor:pointer; border-radius:16px; padding:10px 2px 9px; min-width:0;
     display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--label); font-family:inherit;
-    transition:background .25s, transform .15s;
+    transition:background .2s ease, transform .16s var(--ease-out);
   }
-  .size:active{ transform:scale(.95); }
+  .size:active{ transform:scale(.97); }
   .size .art{ height:42px; display:flex; align-items:flex-end; justify-content:center; margin-bottom:3px; }
   .size .art svg{ display:block; }
   .size .letter{ font-size:15px; font-weight:700; line-height:1.1; }
   .size .ml{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .size .liquid{ opacity:0; transition:opacity .25s; }
+  .size .liquid{ opacity:0; transition:opacity .2s var(--ease-out); }
   .size.on{ background:var(--fill); }
   .size.on .letter{ color:var(--accent, var(--orange)); }
   .size.on .liquid{ opacity:.85; }
   .size.on .knob{ fill:var(--accent, var(--orange)); }
   .size.on .rail-on{ stroke:var(--accent, var(--orange)); }
   .size:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
-  .custom-row{ animation:rowIn .35s cubic-bezier(.3,1.25,.5,1); }
-  @keyframes rowIn{ from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+  .custom-row{ transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
 
   /* Подсказка про лёд — тонирована в цвет режима: это шаг подготовки, а не справка */
   .tip.ice{ margin:0 0 12px; color:var(--label); background:color-mix(in srgb, var(--accent, var(--teal)) 14%, transparent); }
@@ -1177,7 +1182,13 @@
      .smooth для перестройки контента (карточка, складки), .snappy для
      мгновенной обратной связи. Линейно — только прогресс времени. */
   :root{
-    --ease-bouncy: cubic-bezier(.3,1.35,.5,1);
+    /* Кривые из стандартов: ease-out для входа/выхода и отклика, ease-in-out для
+       движения на месте, drawer — для шторок. Перелёт (bouncy) оставлен только
+       пружине возвращения ▶ в JS, в CSS его больше нет. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-bouncy: var(--ease-out);
     --ease-smooth: cubic-bezier(.32,.72,0,1);
     --ease-snappy: cubic-bezier(.2,.9,.3,1);
   }
@@ -1185,8 +1196,7 @@
   .rc{ position:relative; }
   .rc-face{ position:relative; z-index:1; }
   .rc-face[hidden]{ display:none; }
-  .rc-face.face-in{ animation:faceIn .3s var(--ease-smooth) both; }
-  @keyframes faceIn{ from{ opacity:0; transform:translateY(6px) scale(.985); } to{ opacity:1; transform:none; } }
+  /* Лицо карточки проявляется переходом из JS (faceIn) — его можно прервать, keyframes нельзя */
   /* Подложка-призрак: держит старую высоту фона, пока карточка сжимается */
   .rc-ghost{ display:none; position:absolute; top:0; left:0; right:0; z-index:0; border-radius:26px; background:var(--card); pointer-events:none; }
   .rc.ghosting{ overflow:visible; background:transparent; }
@@ -1200,7 +1210,7 @@
   .tf-tot{ font-size:14px; color:var(--label-2); white-space:nowrap; }
   .tf-tot b{ color:var(--label); font-weight:600; }
   .tf-ice{ margin-top:12px; padding:9px 12px; border-radius:14px; font-size:13.5px; line-height:1.35;
-    background:color-mix(in srgb, var(--accent, var(--teal)) 14%, transparent); animation:faceIn .28s var(--ease-smooth) both; }
+    background:color-mix(in srgb, var(--accent, var(--teal)) 14%, transparent); transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
   .tf-ice[hidden]{ display:none; }
   /* Подписи «налить до» и «до пролива N» на одной линии; число и кольцо — по общему центру */
   .tf-grid{ display:grid; grid-template-columns:minmax(0,1fr) 96px; column-gap:12px; row-gap:12px; align-items:center; margin-top:12px; }
@@ -1210,7 +1220,7 @@
   .tf-n{ font-size:clamp(44px, 13.5vw, 54px); font-weight:700; letter-spacing:-0.035em; line-height:1; white-space:nowrap; }
   .tf-n small{ font-size:18px; color:var(--label-2); font-weight:600; margin-left:4px; letter-spacing:0; }
   .tf-n span{ display:inline-block; }
-  .tf-n span.bump{ animation:numIn .26s var(--ease-snappy); }
+  .tf-n span.bump{ animation:numIn .24s var(--ease-out); }
   @keyframes numIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
   .tf-a{ font-size:15px; font-weight:600; color:var(--accent, var(--orange)); white-space:nowrap; min-height:20px; }
   .tf-ring{ position:relative; width:96px; height:96px; }
@@ -1220,23 +1230,21 @@
   .tf-trk{ display:flex; gap:4px; margin-top:14px; }
   .tf-tk{ display:flex; flex-direction:column; gap:6px; min-width:0; }
   .tf-tk .bar{ position:relative; height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
-  .tf-tk .bar i{ position:absolute; inset:0; border-radius:inherit; background:var(--accent, var(--orange)); transform-origin:left; transform:scaleX(0); transition:opacity .3s; }
+  .tf-tk .bar i{ position:absolute; inset:0; border-radius:inherit; background:var(--accent, var(--orange)); transform-origin:left; transform:scaleX(0); transition:opacity .24s ease; }
   .tf-tk.past .bar i{ opacity:.45; }
-  .tf-tk .lb{ font-size:11.5px; font-weight:600; color:var(--label-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s; }
+  .tf-tk .lb{ font-size:11.5px; font-weight:600; color:var(--label-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .24s ease; }
   .tf-tk.cur .lb{ color:var(--accent, var(--orange)); }
   .tf-tk.past .lb{ color:var(--label-2); }
-  .tf-done{ display:flex; gap:8px; margin-top:16px; animation:faceIn .28s var(--ease-smooth) both; }
+  .tf-done{ display:flex; gap:8px; margin-top:16px; transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
   .tf-done[hidden]{ display:none; }
-  .tf-btn{ flex:1; height:46px; border-radius:999px; border:none; background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; transition:transform .2s var(--ease-snappy); }
-  .tf-btn:active{ transform:scale(.96); }
+  .tf-btn{ flex:1; height:46px; border-radius:999px; border:none; background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; transition:transform .16s var(--ease-out); }
+  .tf-btn:active{ transform:scale(.97); }
   .tf-btn.pri{ background:var(--accent, var(--orange)); color:#fff; }
 
   /* На время брю зерно, подсказки и заголовок «Кофе» складываются — шаги встают под таймер */
-  .fold{ transition:opacity .12s ease; }
+  .fold{ transition:opacity .12s var(--ease-out); }
   body.brew-fading .fold{ opacity:0; pointer-events:none; }
   body.brew-card .fold{ display:none; }
-  .fold.fold-in{ animation:foldIn .3s var(--ease-smooth) .1s both; }
-  @keyframes foldIn{ from{ opacity:0; } to{ opacity:1; } }
   body.brew-card #eyebrow{ margin-bottom:10px; }
   body.brew-card .pour-cap .cap-tools{ display:none; }
   body.brew-card .pour-cap{ margin-top:16px; }
@@ -1255,48 +1263,39 @@
 
   /* Шаги во время брю: номер → галочка, текущий подсвечен */
   .pour-ck{ display:none; width:24px; height:24px; border-radius:50%; flex-shrink:0; align-items:center; justify-content:center;
-    background:var(--fill); color:var(--label-2); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; transition:background .3s var(--ease-smooth), color .3s, transform .35s var(--ease-bouncy); }
+    background:var(--fill); color:var(--label-2); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; transition:background .24s var(--ease-out), color .24s ease, transform .24s var(--ease-out); }
   .pour-ck svg{ display:block; }
   body.brew-card .pour-ck{ display:flex; }
   body.brew-card .pour-dot{ display:none; }
   body.brew-card .pour-row{ padding-top:8px; padding-bottom:8px; }
-  .pour-row{ transition:background .26s var(--ease-smooth); }
+  .pour-row{ transition:background .24s var(--ease-out); }
   .pour-row.active{ background:color-mix(in srgb, var(--accent, var(--orange)) 10%, transparent); }
   .pour-row.active .pour-ck{ background:var(--accent, var(--orange)); color:#fff; transform:scale(1.08); }
   .pour-row.active .pour-action{ font-weight:600; }
   .pour-row.done .pour-time, .pour-row.done .pour-action, .pour-row.done .pour-total{ color:var(--label-3); }
   .pour-row.done .pour-ck{ background:color-mix(in srgb, var(--accent, var(--orange)) 16%, transparent); color:var(--accent, var(--orange)); }
 
-  /* ===== Хореография дока =====
-     Стекло с backdrop-filter в WebKit плавно двигается только через transform и
-     opacity: анимация clip-path на нём перерисовывает размытие каждый кадр и
-     даёт рывки. Поэтому таб-бар и капсула не «режутся», а меняются местами:
-     таб-бар уплывает вниз и гаснет, капсула всплывает на его место (и наоборот),
-     ▶ уступает ей место. Все три слоя — отдельные композитные слои (will-change). */
+  /* ===== Док: таб-бар, ▶ и капсула брю =====
+     Движение ведут пружины в JS (dockMotion): прерываемые, всегда от текущего
+     значения на экране, только transform и opacity — стекло с backdrop-filter
+     двигается без пересчёта размытия. CSS отвечает лишь за кликабельность. */
   .dock .tabbar, .dock-inner > .brew-bar, .action-wrap{ will-change:transform, opacity; }
-  /* возврат из брю: таб-бар всплывает с лёгкой пружиной, чуть после ухода капсулы */
-  .dock .tabbar{ transform:none; opacity:1;
-    transition:transform .42s var(--ease-bouncy) .08s, opacity .24s ease .08s; }
-  .dock.brewing .tabbar{ transform:translateY(22px) scale(.94); opacity:0; pointer-events:none;
-    transition:transform .3s var(--ease-smooth), opacity .18s ease; }
-
+  .dock.brewing .tabbar{ pointer-events:none; }
   .dock-inner > .brew-bar{ position:absolute; right:0; bottom:0; height:64px; width:100%; border-radius:32px; padding:4px; gap:4px;
-    display:flex; align-items:center; overflow:hidden;
-    opacity:0; transform:translateY(22px) scale(.94); pointer-events:none;
-    transition:transform .3s var(--ease-smooth), opacity .18s ease; }
-  .dock.brewing .dock-inner > .brew-bar{ opacity:1; transform:none; pointer-events:auto;
-    transition:transform .42s var(--ease-bouncy) .08s, opacity .24s ease .08s; }
-
-  /* ▶ — на старте сжимается и гаснет, на возврате проступает с упругим «чпоком» */
-  .action-wrap{ transition:opacity .22s ease .1s, transform .42s var(--ease-bouncy) .1s; }
-  .dock.brewing .action-wrap{ opacity:0; transform:scale(.8); pointer-events:none; transition:opacity .14s ease, transform .26s var(--ease-smooth); }
-  .bb-mute{ width:56px; height:56px; flex-shrink:0; border:none; border-radius:50%; background:none; color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:transform .2s var(--ease-snappy), background .2s; }
+    display:flex; align-items:center; overflow:hidden; opacity:0; pointer-events:none;
+    /* капсула растёт из ▶ — точка опоры в центре кнопки */
+    transform-origin:calc(100% - 32px) 50%; }
+  .dock.brewing .dock-inner > .brew-bar{ pointer-events:auto; }
+  .dock.brewing .action-wrap{ pointer-events:none; }
+  /* Нажатие — мгновенно, на касании, а не на отпускании */
+  .action:active, .action.pressed{ transform:scale(.97); transition:transform .12s var(--ease-out); }
+  .bb-mute{ width:56px; height:56px; flex-shrink:0; border:none; border-radius:50%; background:none; color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:transform .16s var(--ease-out), background .16s ease; }
   .bb-mute.muted{ color:var(--accent, var(--orange)); }
   .bb-mute.muted .mute-wave{ display:none; }
   .bb-mute:not(.muted) .mute-x{ display:none; }
   .bb-stop{ flex:1; min-width:0; height:56px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600;
-    display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; white-space:nowrap; overflow:hidden; transition:transform .2s var(--ease-snappy), background .2s; }
-  .bb-mute:active, .bb-stop:active{ transform:scale(.96); background:var(--track); }
+    display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; white-space:nowrap; overflow:hidden; transition:transform .16s var(--ease-out), background .16s ease; }
+  .bb-mute:active, .bb-stop:active{ transform:scale(.97); background:var(--track); }
 
   /* ---------- Калькулятор: карточка рецепта (режим → объём → итог) ---------- */
   .rc{ background:var(--card); border-radius:26px; overflow:hidden; }
@@ -1313,12 +1312,11 @@
   /* Подсказка «Почему столько?» — до первого открытия температуры, сама гаснет через 6 с */
   .hint-tip.glass{ position:absolute; right:0; top:calc(100% + 10px); z-index:5; white-space:nowrap; font-size:13px; font-weight:600; color:var(--label); padding:8px 12px; border-radius:14px; pointer-events:none;
     background:color-mix(in srgb, var(--glass-solid) 86%, transparent);
-    animation:tipIn .4s cubic-bezier(.3,1.35,.5,1) .3s both, tipBob 1.2s ease-in-out .8s 3, tipOut .4s ease 6s forwards; }
+    animation:tipIn .24s var(--ease-out) .3s both, tipOut .2s var(--ease-out) 6s forwards; }
   .hint-tip::after{ content:""; position:absolute; right:22px; top:-6px; width:12px; height:12px; background:inherit; transform:rotate(45deg); border-left:0.5px solid var(--glass-edge); border-top:0.5px solid var(--glass-edge); border-radius:3px 0 0 0; }
-  @keyframes tipIn{ from{ opacity:0; transform:translateY(-4px) scale(.9); } to{ opacity:1; transform:none; } }
-  @keyframes tipBob{ 50%{ transform:translateY(2px); } }
+  @keyframes tipIn{ from{ opacity:0; transform:translateY(-4px) scale(.95); } to{ opacity:1; transform:none; } }
   @keyframes tipOut{ to{ opacity:0; transform:translateY(-4px) scale(.95); } }
-  .rc .temp-detail{ display:block; margin:8px 14px 4px; padding:2px 12px 12px; background:var(--fill); border-radius:16px; animation:rowIn .3s cubic-bezier(.3,1.25,.5,1); }
+  .rc .temp-detail{ display:block; margin:8px 14px 4px; padding:2px 12px 12px; background:var(--fill); border-radius:16px; transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
   .rc .temp-detail[hidden]{ display:none; }
   .rc .temp-detail .pills{ margin:0 -12px; padding:0 12px 2px; }
   .rc .temp-detail .pill.active{ background:var(--accent, var(--orange)); }
@@ -1327,8 +1325,7 @@
   .temp-src:empty{ display:none; }
   .rc .sizes{ border-bottom:none; }
   /* pan-y: вертикально — прокрутка страницы, горизонтально — только ползунок */
-  .slider-row{ touch-action:pan-y; display:flex; align-items:center; gap:10px; padding:10px 14px 10px 8px; min-height:88px; animation:morph .28s cubic-bezier(.3,1.25,.5,1); }
-  @keyframes morph{ from{ opacity:0; transform:scale(.97); } to{ opacity:1; transform:none; } }
+  .slider-row{ touch-action:pan-y; display:flex; align-items:center; gap:10px; padding:10px 14px 10px 8px; min-height:88px; transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
   .vol-back{ width:40px; height:40px; border-radius:50%; border:none; background:var(--fill); color:var(--accent, var(--orange)); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
   .slider-body{ flex:1; min-width:0; }
   .slider-top{ display:flex; justify-content:space-between; align-items:baseline; }
@@ -1361,12 +1358,19 @@
   /* ---------- Пролив: таблица всегда, график — по иконке, схема — меню ---------- */
   .pour-cap{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin:22px 4px 8px; font-size:13px; font-weight:600; color:var(--label-2); text-transform:uppercase; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
   .cap-tools{ display:flex; gap:6px; align-items:center; text-transform:none; letter-spacing:0; }
-  .chart-tg{ width:30px; height:30px; border-radius:50%; border:none; background:var(--fill); color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s, color .2s; }
+  .chart-tg{ width:30px; height:30px; border-radius:50%; border:none; background:var(--fill); color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .16s ease, color .16s ease; }
   .chart-tg.on{ background:color-mix(in srgb, var(--accent, var(--orange)) 16%, transparent); color:var(--accent, var(--orange)); }
   .pill-menu{ display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 11px; border-radius:999px; border:none; background:var(--fill); color:var(--label); font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
   .pill-menu svg{ color:var(--label-3); }
   .pill-menu:disabled{ opacity:.5; }
-  .chart-in{ background:var(--card); border-radius:22px; padding:12px 10px 8px; margin-bottom:10px; animation:morph .3s cubic-bezier(.3,1.25,.5,1); }
+  .chart-in{ background:var(--card); border-radius:22px; padding:12px 10px 8px; margin-bottom:10px; transform-origin:top right; transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
+  /* Появление из display:none — переходом от стартового состояния (прерываемо, без keyframes) */
+  @starting-style{
+    .chart-in{ opacity:0; transform:translateY(-4px) scale(.97); }
+    .slider-row, .custom-row{ opacity:0; transform:scale(.97); }
+    .rc .temp-detail{ opacity:0; transform:translateY(-4px); }
+    .tf-ice, .tf-done{ opacity:0; transform:translateY(4px); }
+  }
   .chart-in svg{ display:block; width:100%; height:auto; }
   .chart-in text{ font-size:10.5px; fill:var(--label-2); font-variant-numeric:tabular-nums; }
   #pourHeader + .chart-in + .pour-toggle-card + .pour-card, .pour-cap ~ .pour-card{ margin-top:0; }
@@ -1376,7 +1380,7 @@
   .pop-scrim.show{ display:block; }
   .pop-menu.glass{ position:fixed; z-index:81; min-width:230px; width:max-content; max-width:min(320px, calc(100vw - 32px)); border-radius:22px; padding:6px;
     background:color-mix(in srgb, var(--glass-solid) 84%, transparent);
-    transform-origin:top left; transform:scale(.6); opacity:0; pointer-events:none; transition:transform .27s cubic-bezier(.3,1.35,.5,1), opacity .15s; }
+    transform-origin:top left; transform:scale(.95); opacity:0; pointer-events:none; transition:transform .18s var(--ease-out), opacity .15s var(--ease-out); }
   .pop-menu.show{ transform:none; opacity:1; pointer-events:auto; }
   .pop-menu.right{ transform-origin:top right; }
   .mi{ width:100%; display:flex; align-items:center; gap:12px; border:none; background:none; padding:10px 12px; border-radius:16px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
@@ -1397,10 +1401,16 @@
 
   @media (prefers-reduced-motion: reduce){
     .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
-    .fold, #recipeCard, .brew-bar, .brew-bar *, .pour-row, .tf-trk i, .dock .tabbar, .action-wrap{ transition:none !important; }
-    .fold.fold-in{ animation:none !important; }
+    .fold, #recipeCard, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
+    .stage-pill i{ animation:none; }
+    .sheet, .sheet:not(.show){ transition:opacity .2s ease, visibility 0s .2s !important; }
+    .sheet:not(.show){ opacity:0; }
+    .alert-box{ transition:opacity .16s ease !important; transform:translate(-50%,-50%) !important; }
+    .jr-row.anim .jr, .jr-row.anim .jr-act .ai, .jr-row.anim .jr-act .c, .jr-row.anim .jr-act .lb, .jr-act .pill{ transition:none !important; }
+    .segmented .thumb, .js-track button::after, .bs-sw i::after, .chart-in, .slider-row, .custom-row, .rc .temp-detail, .tf-ice, .tf-done{ transition:none !important; }
+    .pill, .tab, .size, .tf-btn, .bb-mute, .bb-stop, .action, .action svg{ transition:none !important; }
     .hint-tip.glass{ animation:none; }
-    .pop-menu.glass{ transition:none; }
+    .pop-menu.glass{ transition:opacity .15s ease; transform:none !important; }
     .tab-lens.anim, .action, .action svg, .tabbar{ transition:none; }
   }
 </style>
@@ -3071,7 +3081,6 @@ function keepNextStepVisible(idx){
    — карточка растёт «шторкой» clip-path, а сжимается за счёт подложки-призрака;
    — складки (зерно, подсказки, заголовок) сначала гаснут opacity, потом уходят. */
 const pageCalcEl = document.getElementById('pageCalc');
-const FLIP_MS = 380;
 function flipFinish(){
   clearTimeout(flipCalc.t);
   const card = document.getElementById('recipeCard'), ghost = document.getElementById('rcGhost');
@@ -3079,13 +3088,28 @@ function flipFinish(){
   card.style.clipPath = ''; card.classList.remove('ghosting');
   ghost.style.transition = ''; ghost.style.clipPath = ''; ghost.style.height = '';
 }
-function flipCalc(change){
+// Сколько от нижнего края сейчас срезано clip-path (в px) — для продолжения с середины
+function clipBottom(el){
+  const m = (getComputedStyle(el).clipPath || '').match(/inset\(\s*[-\d.]+px\s+[-\d.]+px\s+([-\d.]+)px/);
+  return m ? Math.max(0, parseFloat(m[1])) : 0;
+}
+// Высота фона карточки, какой её видно прямо сейчас (с учётом идущей анимации)
+function visualCardHeight(card){
+  const ghost = document.getElementById('rcGhost');
+  if(card.classList.contains('ghosting')) return ghost.getBoundingClientRect().height - clipBottom(ghost);
+  return card.offsetHeight - clipBottom(card);
+}
+/* ms — длительность: старт брю 320 мс (объясняет, что произошло), возврат 260 мс.
+   Прерываемо: позиции и высоту снимаем с того, что на экране сейчас, а не с конца
+   прошлой анимации, — быстрое «▶ → Отменить» разворачивает движение без прыжка. */
+function flipCalc(change, ms){
+  ms = ms || 300;
   const card = document.getElementById('recipeCard');
-  if(reduceMotion() || !card.offsetHeight){ change(); return; }
-  flipFinish();
+  if(reduceMotion() || !card.offsetHeight){ flipFinish(); change(); return; }
   const before = new Map();
   [...pageCalcEl.children].forEach(el=>{ if(el.offsetParent !== null) before.set(el, el.getBoundingClientRect().top); });
-  const h0 = card.offsetHeight;
+  const h0 = visualCardHeight(card);
+  flipFinish();
   change();
   const h1 = card.offsetHeight;
   const moved = [];
@@ -3094,31 +3118,40 @@ function flipCalc(change){
     const dy = before.get(el) - el.getBoundingClientRect().top;
     if(Math.abs(dy) < 0.5) return;
     el.style.transition = 'none'; el.style.willChange = 'transform';
-    el.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
+    el.style.transform = 'translate3d(0,' + dy.toFixed(1) + 'px,0)';
     moved.push(el);
   });
   const ghost = document.getElementById('rcGhost');
   const grow = h1 > h0 + 1, shrink = h0 > h1 + 1;
-  if(grow){ card.style.clipPath = 'inset(0 0 ' + (h1 - h0) + 'px 0 round 26px)'; }
+  if(grow){ card.style.clipPath = 'inset(0 0 ' + (h1 - h0).toFixed(1) + 'px 0 round 26px)'; }
   if(shrink){
     card.classList.add('ghosting');
-    ghost.style.transition = 'none'; ghost.style.height = h0 + 'px'; ghost.style.clipPath = 'inset(0 0 0 0 round 26px)';
+    ghost.style.transition = 'none'; ghost.style.height = h0.toFixed(1) + 'px'; ghost.style.clipPath = 'inset(0 0 0 0 round 26px)';
   }
   void pageCalcEl.offsetHeight;
-  const ease = ' ' + FLIP_MS + 'ms var(--ease-smooth)';
+  const ease = ' ' + ms + 'ms var(--ease-drawer)';
   requestAnimationFrame(()=>{
     moved.forEach(el=>{ el.style.transition = 'transform' + ease; el.style.transform = ''; });
     if(grow){ card.style.transition = 'transform' + ease + ', clip-path' + ease; card.style.clipPath = 'inset(0 0 0 0 round 26px)'; }
-    if(shrink){ ghost.style.transition = 'clip-path' + ease; ghost.style.clipPath = 'inset(0 0 ' + (h0 - h1) + 'px 0 round 26px)'; }
+    if(shrink){ ghost.style.transition = 'clip-path' + ease; ghost.style.clipPath = 'inset(0 0 ' + (h0 - h1).toFixed(1) + 'px 0 round 26px)'; }
   });
-  flipCalc.t = setTimeout(flipFinish, FLIP_MS + 60);
+  flipCalc.t = setTimeout(flipFinish, ms + 60);
 }
-// Новое лицо карточки проявляется (только opacity/transform — без blur, он дорог на iOS)
-function faceIn(el){
+/* Появление элемента переходом (а не keyframes): стартует с текущего вида,
+   поэтому повторное нажатие не перезапускает его с нуля */
+function fadeInEl(el, opt){
   if(reduceMotion()) return;
-  el.classList.remove('face-in'); void el.offsetWidth; el.classList.add('face-in');
-  clearTimeout(faceIn.t); faceIn.t = setTimeout(()=> el.classList.remove('face-in'), 360);
+  opt = opt || {};
+  const from = opt.from || 'translate3d(0,6px,0) scale(.985)';
+  el.style.transition = 'none';
+  el.style.opacity = '0'; el.style.transform = from;
+  void el.offsetWidth;
+  el.style.transition = 'opacity ' + (opt.fade || 200) + 'ms var(--ease-out), transform ' + (opt.move || 260) + 'ms var(--ease-out)';
+  el.style.opacity = ''; el.style.transform = '';
+  clearTimeout(el._fadeT);
+  el._fadeT = setTimeout(()=>{ el.style.transition = ''; }, Math.max(opt.fade || 200, opt.move || 260) + 40);
 }
+function faceIn(el){ fadeInEl(el); }
 function swapFaces(toTimer){
   const from = document.getElementById(toTimer ? 'recipeFace' : 'timerFace');
   const to = document.getElementById(toTimer ? 'timerFace' : 'recipeFace');
@@ -3139,7 +3172,7 @@ function showBrewCard(show){
       body.classList.add('brew-card');
       if(swapFaces(true)) faceIn(document.getElementById('timerFace'));
       pageCalcEl.scrollTop = 0; // таймер — наверху; FLIP сгладит и прокрутку
-    });
+    }, 320);
     if(reduceMotion() || !document.getElementById('recipeCard').offsetHeight){ apply(); return; }
     body.classList.add('brew-fading');
     showBrewCard.t = setTimeout(apply, 120);
@@ -3148,8 +3181,9 @@ function showBrewCard(show){
     flipCalc(()=>{
       body.classList.remove('brew-card');
       if(swapFaces(false)) faceIn(document.getElementById('recipeFace'));
-    });
-    if(!reduceMotion()) document.querySelectorAll('#pageCalc > .fold').forEach(f=>{ f.classList.remove('fold-in'); void f.offsetWidth; f.classList.add('fold-in'); });
+    }, 260);
+    // Складки возвращаются коротким проявлением, без задержки
+    document.querySelectorAll('#pageCalc > .fold').forEach(f=> fadeInEl(f, { from:'none', fade:200, move:0 }));
     paintRows(-1, false);
     document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('done', 'active'));
   }
@@ -3159,7 +3193,83 @@ function setDockBrewing(on){
   document.getElementById('dock').classList.toggle('brewing', on);
   document.body.classList.toggle('brewing', on);
   document.getElementById('brewBar').setAttribute('aria-hidden', String(!on));
+  dockMotion(on);
 }
+
+/* ================= Пружины (по докладу Apple «Designing Fluid Interfaces») =================
+   Параметры как у Apple: damping (1 — без перелёта) и response (сек, «скорость»).
+   Пружина прерываема: новая цель — просто новая точка притяжения, движение
+   продолжается от текущего значения и с текущей скоростью, без рывка. */
+function Spring(value, onFrame){
+  this.x = value; this.v = 0; this.target = value; this.onFrame = onFrame;
+  this.k = 0; this.c = 0; this.raf = 0; this.last = 0;
+  onFrame(value);
+}
+Spring.prototype.to = function(target, opt){
+  opt = opt || {};
+  const response = opt.response || 0.35, damping = opt.damping == null ? 1 : opt.damping;
+  this.k = Math.pow(2 * Math.PI / response, 2);   // жёсткость при массе 1
+  this.c = 4 * Math.PI * damping / response;       // вязкость
+  this.target = target;
+  if(reduceMotion()){ cancelAnimationFrame(this.raf); this.raf = 0; this.x = target; this.v = 0; this.onFrame(target); return; }
+  if(this.raf) return; // уже летим — просто сменили цель
+  this.last = performance.now();
+  const tick = now=>{
+    let dt = Math.min(1 / 30, (now - this.last) / 1000); this.last = now;
+    const n = 4, h = dt / n; // мелкие шаги — устойчиво при любом FPS
+    for(let i = 0; i < n; i++){
+      const a = -this.k * (this.x - this.target) - this.c * this.v;
+      this.v += a * h; this.x += this.v * h;
+    }
+    if(Math.abs(this.x - this.target) < 0.0005 && Math.abs(this.v) < 0.005){
+      this.x = this.target; this.v = 0; this.raf = 0; this.onFrame(this.x); return;
+    }
+    this.onFrame(this.x);
+    this.raf = requestAnimationFrame(tick);
+  };
+  this.raf = requestAnimationFrame(tick);
+};
+
+/* Док: ▶ ⇄ капсула «звук · Остановить», таб-бар уступает место.
+   Пространственная последовательность: капсула растёт из ▶ и в него же
+   возвращается; таб-бар уходит вниз и тем же путём поднимается обратно. */
+const dockEls = {
+  tab: document.getElementById('tabbar'),
+  bar: document.getElementById('brewBar'),
+  act: document.querySelector('.action-wrap')
+};
+const clamp01 = v=> Math.max(0, Math.min(1, v));
+// 0 — на месте, 1 — ушёл вниз
+const tabSpring = new Spring(0, p=>{
+  dockEls.tab.style.transform = 'translate3d(0,' + (20 * p).toFixed(2) + 'px,0) scale(' + (1 - 0.05 * p).toFixed(4) + ')';
+  dockEls.tab.style.opacity = clamp01(1 - p * 1.25).toFixed(3);
+});
+// 0 — спрятана в ▶, 1 — во всю ширину
+const barSpring = new Spring(0, q=>{
+  dockEls.bar.style.transform = 'scale(' + (0.42 + 0.58 * q).toFixed(4) + ')';
+  dockEls.bar.style.opacity = clamp01(q * 1.6).toFixed(3);
+});
+// 1 — ▶ на месте, 0 — сжался внутрь капсулы
+const actSpring = new Spring(1, r=>{
+  dockEls.act.style.transform = 'scale(' + (0.7 + 0.3 * r).toFixed(4) + ')';
+  dockEls.act.style.opacity = clamp01(r * 1.4 - 0.4).toFixed(3);
+});
+let dockSeq = 0;
+function dockMotion(on){
+  const seq = ++dockSeq; // новое нажатие отменяет хвост прошлой последовательности
+  // Старт — осознанное действие: чуть дольше; стоп — ответ системы: быстрее (асимметрия)
+  if(on){
+    actSpring.to(0, { response:0.18 });
+    barSpring.to(1, { response:0.32 });
+    tabSpring.to(1, { response:0.26 });
+  } else {
+    barSpring.to(0, { response:0.24 });
+    setTimeout(()=>{ if(seq === dockSeq) tabSpring.to(0, { response:0.3 }); }, 40);
+    // ▶ проступает, когда капсула почти вернулась в него; лёгкий перелёт — это «живой» элемент
+    setTimeout(()=>{ if(seq === dockSeq) actSpring.to(1, { response:0.28, damping:0.85 }); }, 90);
+  }
+}
+
 
 function ruStepsWord(n){
   const mod10 = n % 10, mod100 = n % 100;
@@ -3403,6 +3513,9 @@ function renderSizeSettings(){
    остальное — приглушённый play без действия; во время брю — стоп. */
 var dockPage = 1; // var, а не let: updateDock() зовётся из setMode() раньше секции навигации
 const actionBtn = document.getElementById('actionBtn');
+// iOS включает :active только при наличии touch-слушателя; дублируем классом на касании
+actionBtn.addEventListener('pointerdown', ()=> actionBtn.classList.add('pressed'));
+['pointerup','pointercancel','pointerleave'].forEach(t=> actionBtn.addEventListener(t, ()=> actionBtn.classList.remove('pressed')));
 const ACTION_LABEL = {
   play: 'Начать заваривание',
   add: 'Добавить зерно',
@@ -3641,7 +3754,7 @@ function journalRowHTML(e, prev){
   const rated = (e.rating || 0) > 0;
   const trash = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
   return '<div class="jr-row" data-row="' + e.id + '">' +
-    '<button class="jr-act" type="button" data-jdel="' + e.id + '" tabindex="-1" aria-label="Удалить запись ' + journalDayLabel(e.id) + ' ' + journalTimeLabel(e.id) + '"><span class="c">' + trash + '</span><span>Удалить</span></button>' +
+    '<button class="jr-act" type="button" data-jdel="' + e.id + '" tabindex="-1" aria-label="Удалить запись ' + journalDayLabel(e.id) + ' ' + journalTimeLabel(e.id) + '"><span class="pill"></span><span class="ai"><span class="c">' + trash + '</span><span class="lb">Удалить</span></span></button>' +
     '<button class="jr" type="button" data-id="' + e.id + '">' +
       '<span class="jr-day' + (today ? ' today' : '') + (same ? ' same' : '') + '"><b>' + d.getDate() + '</b><span>' + JR_WD[d.getDay()] + '</span></span>' +
       '<span class="jr-mid"><div class="jr-name' + (beanName ? '' : ' none') + '">' + (beanName ? escapeHTML(beanName) : 'Без зерна') + '</div>' +
@@ -3660,13 +3773,19 @@ function journalRowHTML(e, prev){
 const J_OPEN = 84;
 let jSw = null;
 function jSetX(row, x, anim){
-  row.classList.toggle('anim', !!anim);
-  row.style.setProperty('--x', x + 'px');
+  row.classList.toggle('anim', !!anim && !reduceMotion());
+  // transform пишем прямо в элементы — CSS-переменная на строке пересчитывала бы стили всех детей
+  row.querySelector('.jr').style.transform = 'translate3d(' + x + 'px,0,0)';
   const p = Math.min(1, -x / J_OPEN);
-  const act = row.querySelector('.jr-act');
-  act.style.setProperty('--s', (0.6 + 0.4 * p).toFixed(3));
-  act.style.setProperty('--o', p.toFixed(3));
-  act.style.setProperty('--w', Math.max(J_OPEN, -x) + 'px');
+  const reveal = Math.max(J_OPEN, -x);
+  const ai = row.querySelector('.jr-act .ai'), c = row.querySelector('.jr-act .c'), lb = row.querySelector('.jr-act .lb');
+  ai.style.transform = 'translate3d(' + (-(reveal - J_OPEN) / 2).toFixed(1) + 'px,0,0)';
+  c.style.transform = 'scale(' + (0.6 + 0.4 * p).toFixed(3) + ')';
+  c.style.opacity = lb.style.opacity = p.toFixed(3);
+  // Длинный свайп: капсула раскрывается ровно по открытой зоне
+  const pill = row.querySelector('.jr-act .pill');
+  const w = row.clientWidth - 20;
+  pill.style.clipPath = row.classList.contains('full') ? 'inset(0 0 0 ' + Math.max(0, w - (reveal - 20)).toFixed(1) + 'px round 22px)' : 'inset(0 0 0 100% round 22px)';
 }
 function closeJournalRow(row){
   if(!row) return;
@@ -3678,15 +3797,18 @@ journalList.addEventListener('pointerdown', (e)=>{
   const row = e.target.closest('.jr-row');
   if(!row || e.target.closest('.jr-act')) return;
   if(jSwipeOpenRow && jSwipeOpenRow !== row) closeJournalRow(jSwipeOpenRow);
-  jSw = { row, x0: e.clientX, y0: e.clientY, base: jSwipeOpenRow === row ? -J_OPEN : 0, decided:false, drag:false, full:false, x:0, id:e.pointerId };
+  jSw = { row, x0: e.clientX, y0: e.clientY, base: jSwipeOpenRow === row ? -J_OPEN : 0, decided:false, drag:false, full:false, x:0, id:e.pointerId, hist:[] };
 });
 window.addEventListener('pointermove', (e)=>{
   if(!jSw || e.pointerId !== jSw.id) return;
   const dx = e.clientX - jSw.x0, dy = e.clientY - jSw.y0;
   if(!jSw.decided && (Math.abs(dx) > 8 || Math.abs(dy) > 8)){ jSw.decided = true; jSw.drag = Math.abs(dx) > Math.abs(dy) * 1.2; }
   if(!jSw.drag) return;
-  const x = Math.min(0, jSw.base + dx);
+  // Вправо за край — мягкое сопротивление (rubber-band), а не жёсткая стенка
+  const raw = jSw.base + dx;
+  const x = raw > 0 ? rubberband(raw, jSw.row.clientWidth) : raw;
   jSw.x = x;
+  jSw.hist.push([performance.now(), x]); if(jSw.hist.length > 6) jSw.hist.shift();
   const full = -x > jSw.row.clientWidth * 0.55;
   if(full !== jSw.full){ jSw.full = full; jSw.row.classList.toggle('full', full); if(full) navHapticTick(); }
   jSetX(jSw.row, x, false);
@@ -3703,9 +3825,15 @@ function jEndSwipe(e){
     openDeleteAlert(Number(s.row.dataset.row), 'journal');
     return;
   }
-  if(-s.x > J_OPEN / 2){ jSetX(s.row, -J_OPEN, true); jSwipeOpenRow = s.row; navHapticTick(); }
+  // Решаем по тому, куда строка «летит», а не где её отпустили: проекция импульса
+  const h = s.hist, v = h.length > 1 ? (h[h.length-1][1] - h[0][1]) / Math.max(1, h[h.length-1][0] - h[0][0]) * 1000 : 0;
+  const projected = s.x + projectMomentum(v);
+  if(-projected > J_OPEN / 2){ jSetX(s.row, -J_OPEN, true); jSwipeOpenRow = s.row; navHapticTick(); }
   else closeJournalRow(s.row);
 }
+// Проекция и резинка — формулы из «Designing Fluid Interfaces» (WWDC 2018)
+function projectMomentum(v, rate){ rate = rate || 0.99; return (v / 1000) * rate / (1 - rate); }
+function rubberband(over, dim, k){ k = k || 0.55; return (over * dim * k) / (dim + k * Math.abs(over)); }
 window.addEventListener('pointerup', jEndSwipe);
 window.addEventListener('pointercancel', jEndSwipe);
 
@@ -4474,12 +4602,7 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
     jSwipeOpenRow = null;
     // Строка схлопывается по высоте, потом список перерисовывается
     const rowEl = document.querySelector('.jr-row[data-row="' + id + '"]');
-    if(rowEl){
-      rowEl.style.height = rowEl.offsetHeight + 'px';
-      rowEl.classList.add('removing');
-      requestAnimationFrame(()=>{ rowEl.style.height = '0px'; rowEl.style.opacity = '0'; });
-      await new Promise(r=> setTimeout(r, 280));
-    }
+    if(rowEl) await collapseJournalRow(rowEl);
     // Удалённое заваривание возвращает граммы своему зерну.
     const e = journalEntries.find(x=> x.id === id);
     await journalDeleteEntry(id);
@@ -4488,6 +4611,24 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
     updateBeanPickRow();
   }
 });
+
+/* Удаление строки журнала без анимации высоты: строка гаснет, следующие строки
+   и месяцы поднимаются transform-ом, карточка месяца подрезает низ clip-path. */
+async function collapseJournalRow(rowEl){
+  if(reduceMotion()){ return; }
+  const wait = ms=> new Promise(r=> setTimeout(r, ms));
+  const h = rowEl.offsetHeight, list = rowEl.parentElement;
+  rowEl.style.transition = 'opacity .14s var(--ease-out), transform .14s var(--ease-out)';
+  rowEl.style.opacity = '0'; rowEl.style.transform = 'scale(.98)';
+  await wait(120);
+  const movers = [];
+  for(let n = rowEl.nextElementSibling; n; n = n.nextElementSibling) movers.push(n);
+  for(let n = list.nextElementSibling; n; n = n.nextElementSibling) movers.push(n);
+  movers.forEach(el=>{ el.style.transition = 'transform .26s var(--ease-out)'; el.style.transform = 'translate3d(0,' + (-h) + 'px,0)'; });
+  list.style.transition = 'clip-path .26s var(--ease-out)';
+  list.style.clipPath = 'inset(0 0 ' + h + 'px 0 round 0 0 22px 22px)';
+  await wait(270);
+}
 
 /* ---- Зёрна: хранилище ----
    Та же схема, что дневник: индекс + запись по id, id = Date.now() в момент
@@ -5229,7 +5370,14 @@ const NAV_COMMIT_RATIO = 0.4;
 window.addEventListener('resize', ()=>{ navContainerWidth = navViewport.clientWidth; });
 
 function navSetTransform(percent, animate){
-  navPages.style.transition = animate ? 'transform .28s cubic-bezier(.25,.8,.25,1)' : 'none';
+  if(animate && reduceMotion()){
+    // Уменьшение движения: вместо сдвига — короткое растворение
+    navPages.style.transition = 'none';
+    navPages.style.transform = 'translateX(' + percent + '%)';
+    try{ navPages.animate([{ opacity:.4 }, { opacity:1 }], { duration:180, easing:'ease-out' }); }catch(e){}
+    return;
+  }
+  navPages.style.transition = animate ? 'transform .28s var(--ease-out)' : 'none';
   navPages.style.transform = 'translateX(' + percent + '%)';
 }
 /* position — непрерывная координата в "страницах" (0..NAV_COUNT-1):
