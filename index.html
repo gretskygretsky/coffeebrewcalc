@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Калькулятор пропорций</title>
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <style>
   :root{
     color-scheme: light dark;
@@ -135,6 +137,7 @@
     letter-spacing:.02em;
     margin:0 0 2px 4px;
   }
+  h1, .bs-title, .sheet-title, .alert-title{ text-wrap:balance; }
   h1{
     font-size:34px;
     font-weight:700;
@@ -746,9 +749,14 @@
   .alert-title{ font-size:15px; font-weight:700; margin-bottom:4px; }
   .alert-text{ font-size:12.5px; color:var(--label-2); margin-bottom:16px; line-height:1.4; }
   .alert-actions{ display:flex; gap:8px; }
-  .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:999px; padding:12px 0; background:var(--fill); color:var(--label); }
+  .alert-btn{ flex:1; text-align:center; font-size:14px; font-weight:600; border-radius:999px; padding:12px 0; background:var(--fill); color:var(--label); border:none; font-family:inherit; cursor:pointer; }
   .alert-btn.danger{ background:var(--red); color:#fff; }
   .alert-btn.primary{ background:var(--blue); color:#fff; }
+  /* Видимый фокус с клавиатуры (на тапе не появляется) */
+  :focus-visible:not(input):not(textarea):not(select){ outline:2px solid var(--blue); outline-offset:2px; }
+  .sheet:focus, .alert-box:focus{ outline:none; } /* сам контейнер диалога — только точка входа фокуса */
+  .bs-name:focus-visible, .bs-roaster:focus-visible, .bs-step input:focus-visible, .js-note:focus-visible{
+    outline:none; box-shadow:0 0 0 2px color-mix(in srgb, var(--blue) 55%, transparent); border-radius:8px; }
 
   /* ---- Строки журнала: свайп открывает только удаление ----
      Высоту строки задаёт то, что есть у записи всегда (граммы + зерно/мл),
@@ -1399,6 +1407,19 @@
   .ratio-set .pills{ margin:0 -16px; padding:0 16px 2px; }
   .ratio-set .pill{ font-size:13px; padding:7px 12px; }
 
+  /* Hover — только там, где есть настоящий курсор (Telegram Desktop, браузер).
+     На тач-экране :hover «залипает» после тапа, поэтому гейтим медиазапросом. */
+  @media (hover: hover) and (pointer: fine){
+    .tab:hover:not(.on), .size:hover:not(.on), .mi:hover, .jr:hover, .a-row:hover, .jm-head:hover, .arch-toggle:hover,
+    .bb-mute:hover, .chart-tg:hover:not(.on), .temp-btn:hover, .vol-back:hover, .pick-none:hover{ background-color:var(--fill); }
+    .pill:hover:not(.active), .pill-menu:hover, .tf-btn:not(.pri):hover, .bb-stop:hover, .alert-btn:not(.danger):not(.primary):hover,
+    .bs-act:hover, .ce-add:hover, .str button:hover, .stepper button:hover, .vstep button:hover{ background-color:var(--track); }
+    .action.play:hover, .action.add:hover, .tf-btn.pri:hover, .alert-btn.danger:hover, .alert-btn.primary:hover,
+    .mode-pill:hover{ filter:brightness(1.06); }
+    .b-row-content.bc:hover, #calcBeanCard:hover > *{ box-shadow:0 0 0 1px var(--separator); }
+    .tab, .size, .mi, .a-row, .jm-head, .arch-toggle, .bb-mute, .chart-tg, .temp-btn, .vol-back, .pick-none,
+    .pill-menu, .bs-act, .ce-add, .str button, .stepper button, .vstep button, .alert-btn, .mode-pill{ transition-property:transform, background-color, color, filter, box-shadow; transition-duration:.16s; }
+  }
   @media (prefers-reduced-motion: reduce){
     .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
     .fold, #recipeCard, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
@@ -1453,7 +1474,7 @@
         </div>
 
         <div class="tip" id="beansEmpty">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
           <span>Пока пусто. Нажми «+» внизу и добавь зерно — обжарка, дата и остаток будут под рукой при каждом заваривании.</span>
         </div>
 
@@ -1470,7 +1491,7 @@
    <div class="rc-ghost" id="rcGhost" aria-hidden="true"></div>
    <div class="rc-face" id="recipeFace">
     <div class="rc-top">
-      <button class="mode-pill" id="modeBtn" type="button" aria-haspopup="menu" aria-label="Режим заваривания"><span id="modeLabel">V60</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
+      <button class="mode-pill" id="modeBtn" type="button" aria-haspopup="menu" aria-label="Режим заваривания"><span id="modeLabel">V60</span><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
       <span class="temp-wrap">
         <button class="temp-btn" id="tempToggle" type="button" aria-expanded="false" aria-controls="tempDetail" aria-describedby="tempTip">вода <b id="tempValue">93 °C</b><svg class="i" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg></button>
         <span class="hint-tip glass" id="tempTip" role="tooltip" hidden>Почему столько? Нажмите</span>
@@ -1491,7 +1512,7 @@
     <div id="cupInput">
       <div class="sizes" id="cupSizes" role="radiogroup" aria-label="Размер порции"></div>
       <div class="slider-row" id="cupCustomRow" style="display:none;">
-        <button class="vol-back" id="cupBackBtn" type="button" aria-label="Вернуться к порциям S, M, L"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button class="vol-back" id="cupBackBtn" type="button" aria-label="Вернуться к порциям S, M, L"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
         <div class="slider-body">
           <div class="slider-top"><span>Свой объём</span><b id="sliderVolVal">300 мл</b></div>
           <input type="range" id="volSlider" min="100" max="600" step="1" value="300" aria-label="Свой объём воды">
@@ -1506,11 +1527,11 @@
         <span class="row-label" id="classicWaterLabel">Вода</span>
         <div class="stepper-field">
           <div class="stepper">
-            <button id="classicWaterStepDown">−</button>
+            <button id="classicWaterStepDown" type="button" aria-label="Меньше воды">−</button>
             <div class="divider"></div>
-            <button id="classicWaterStepUp">+</button>
+            <button id="classicWaterStepUp" type="button" aria-label="Больше воды">+</button>
           </div>
-          <input type="number" id="classicWaterInput" value="1000">
+          <input type="number" id="classicWaterInput" name="coldWater" inputmode="numeric" autocomplete="off" aria-label="Вода, мл" value="1000">
           <span class="unit">мл</span>
         </div>
       </div>
@@ -1554,15 +1575,15 @@
 
   <div class="fold"><div>
   <div class="tip ice" id="iceTip" style="display:none; margin-top:22px;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
     <span id="iceTipText"></span>
   </div>
   </div></div>
   <div class="pour-cap" id="pourHeader" style="display:none;">
     <span id="pourCapText">Пролив</span>
     <span class="cap-tools">
-      <button class="chart-tg" id="chartToggle" type="button" aria-pressed="false" aria-label="Показать график"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16l4-5 4 2 4-6 4 3"/></svg></button>
-      <button class="pill-menu" id="schemeBtn" type="button" aria-haspopup="menu" aria-label="Схема пролива"><span id="schemeLabel">Каскад</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
+      <button class="chart-tg" id="chartToggle" type="button" aria-pressed="false" aria-label="Показать график"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16l4-5 4 2 4-6 4 3"/></svg></button>
+      <button class="pill-menu" id="schemeBtn" type="button" aria-haspopup="menu" aria-label="Схема пролива"><span id="schemeLabel">Каскад</span><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
     </span>
   </div>
   <div class="chart-in" id="pourChart" style="display:none;"></div>
@@ -1593,7 +1614,7 @@
 
   <div class="fold"><div>
   <div class="tip" id="notes">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
     <span id="notesText"></span>
   </div>
   </div></div>
@@ -1606,7 +1627,7 @@
           <div id="journalList"></div>
         </div>
         <div class="tip" id="journalEmpty">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
           <span>Пока пусто. Здесь появятся твои записи — дата, пропорция и проливы каждой чашки.</span>
         </div>
       </div>
@@ -1637,19 +1658,19 @@
     <nav class="tabbar glass" id="tabbar" style="--pos:1;" aria-label="Разделы">
       <div class="tab-lens" id="tabLens"></div>
       <button class="tab" data-i="0" type="button">
-        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><ellipse cx="12" cy="12" rx="6.5" ry="9" transform="rotate(30 12 12)"/><path d="M9 5.5c3 3 3 9.5 6 13"/></svg>
+        <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><ellipse cx="12" cy="12" rx="6.5" ry="9" transform="rotate(30 12 12)"/><path d="M9 5.5c3 3 3 9.5 6 13"/></svg>
         <span>Зерна</span>
       </button>
       <button class="tab on" data-i="1" type="button">
-        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6 8h-5z"/><path d="M9.5 13v2h5v-2M7 19h10"/></svg>
+        <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6 8h-5z"/><path d="M9.5 13v2h5v-2M7 19h10"/></svg>
         <span>Кофе</span>
       </button>
       <button class="tab" data-i="2" type="button">
-        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>
+        <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>
         <span>Журнал</span>
       </button>
       <button class="tab" data-i="3" type="button">
-        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
+        <svg aria-hidden="true" width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
         <span>Еще</span>
       </button>
     </nav>
@@ -1657,7 +1678,7 @@
          таб-бар уходит под неё -->
     <div class="brew-bar glass" id="brewBar">
       <button class="bb-mute" id="musicMuteBtn" type="button" aria-label="Выключить музыку" aria-pressed="false">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/>
         <path class="mute-wave" d="M16 8a5 5 0 010 8"/>
         <path class="mute-wave" d="M18.7 5.3a9 9 0 010 13.4"/>
@@ -1668,28 +1689,28 @@
     </div>
     <div class="action-wrap">
       <button class="action play glass" id="actionBtn" type="button" aria-label="Начать заваривание">
-        <svg class="i-play" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.6-6.8c.6-.4.6-1.3 0-1.7L9.6 4.3C8.9 3.9 8 4.4 8 5.2z"/></svg>
-        <svg class="i-stop" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>
-        <svg class="i-plus" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <svg aria-hidden="true" class="i-play" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.6-6.8c.6-.4.6-1.3 0-1.7L9.6 4.3C8.9 3.9 8 4.4 8 5.2z"/></svg>
+        <svg aria-hidden="true" class="i-stop" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>
+        <svg aria-hidden="true" class="i-plus" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       </button>
     </div>
   </div>
 </div>
 
 <div class="sheet-scrim" id="sheetScrim"></div>
-<div class="sheet glass" id="sheet">
+<div class="sheet glass" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle beanSheetTitle" tabindex="-1">
   <div class="sheet-grab" id="sheetGrab"><div class="sheet-handle"></div></div>
   <!-- Шапка шторки зерна (iOS 26): «×» и «✓» по краям. Видна только в bean-mode. -->
   <div class="bs-bar">
-    <button class="bs-round" id="beanSheetClose" type="button" aria-label="Отмена"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button class="bs-round" id="beanSheetClose" type="button" aria-label="Отмена"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="bs-title" id="beanSheetTitle"></div>
-    <button class="bs-round primary" id="beanSheetSave" type="button" aria-label="Сохранить"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></button>
+    <button class="bs-round primary" id="beanSheetSave" type="button" aria-label="Сохранить"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></button>
   </div>
   <div id="sheetBean"></div>
   <div id="sheetJournal"></div>
   <div class="sheet-title" id="sheetTitle"></div>
   <div class="sheet-subtitle" id="sheetSubtitle"></div>
-  <div class="saved-mark" id="sheetSavedMark" style="display:none;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
+  <div class="saved-mark" id="sheetSavedMark" style="display:none;"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div>
   <div class="sheet-stat" id="sheetStat" style="display:none;"></div>
   <div class="sheet-pills" id="sheetPills" style="display:none;"></div>
 
@@ -1701,26 +1722,26 @@
 
   <div id="sheetTabRate" style="display:none;">
     <div class="stars" id="sheetStars">
-      <svg class="star" data-i="1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
-      <svg class="star" data-i="2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
-      <svg class="star" data-i="3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
-      <svg class="star" data-i="4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
-      <svg class="star" data-i="5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg aria-hidden="true" class="star" data-i="1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg aria-hidden="true" class="star" data-i="2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg aria-hidden="true" class="star" data-i="3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg aria-hidden="true" class="star" data-i="4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
+      <svg aria-hidden="true" class="star" data-i="5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>
     </div>
     <div class="taste-block">
       <div class="taste-label" id="sheetTasteLabel">Сбалансировано</div>
-      <input type="range" id="sheetTasteRange" min="-2" max="2" step="1" value="0">
+      <input type="range" id="sheetTasteRange" name="taste" min="-2" max="2" step="1" value="0" aria-label="Вкус" aria-describedby="sheetTasteLabel">
       <div class="taste-ends"><span>Кисло</span><span>Горько</span></div>
     </div>
     <div class="row" style="border-bottom:none;">
       <span class="row-label">Помол</span>
       <div class="stepper-field">
         <div class="stepper">
-          <button id="sheetGrindDown">−</button>
+          <button id="sheetGrindDown" type="button" aria-label="Помол мельче">−</button>
           <div class="divider"></div>
-          <button id="sheetGrindUp">+</button>
+          <button id="sheetGrindUp" type="button" aria-label="Помол крупнее">+</button>
         </div>
-        <input type="number" id="sheetGrindInput" value="0">
+        <input type="number" id="sheetGrindInput" name="grind" inputmode="numeric" autocomplete="off" aria-label="Помол, клики" value="0">
         <span class="unit" id="sheetGrindUnit" style="width:auto; white-space:nowrap;">кликов</span>
       </div>
     </div>
@@ -1731,7 +1752,7 @@
           <span class="sheet-pick-name" id="sheetBeanPickName">Не выбрано</span>
           <span class="sheet-pick-note" id="sheetBeanPickNote" style="display:none;">не привязано</span>
         </span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--label-3)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </span>
     </button>
     <div class="note-wrap">
@@ -1751,12 +1772,12 @@
 </div>
 
 <div class="alert-scrim" id="alertScrim"></div>
-<div class="alert-box glass" id="alertBox">
+<div class="alert-box glass" id="alertBox" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle" aria-describedby="alertText" tabindex="-1">
   <div class="alert-title" id="alertTitle">Удалить запись?</div>
   <div class="alert-text" id="alertText">Это действие нельзя отменить.</div>
   <div class="alert-actions">
-    <div class="alert-btn" id="alertCancelBtn">Отмена</div>
-    <div class="alert-btn danger" id="alertDeleteBtn">Удалить</div>
+    <button class="alert-btn" id="alertCancelBtn" type="button">Отмена</button>
+    <button class="alert-btn danger" id="alertDeleteBtn" type="button">Удалить</button>
   </div>
 </div>
 
@@ -1816,9 +1837,9 @@ const ratioPref = Object.assign({}, DEFAULT_RATIO);
 })();
 function saveRatioPrefs(){ try{ localStorage.setItem('ratioDefaults', JSON.stringify(ratioPref)); }catch(e){} }
 const MODE_META = {
-  v60:    { t:'V60', d:'Горячий пролив', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6 8h-5z"/><path d="M9.5 13v2h5v-2M7 19h10"/></svg>' },
-  v60ice: { t:'Iced V60', d:'Пролив на лёд', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>' },
-  cold:   { t:'Cold brew', d:'Настой 12–24 часа', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="15" rx="3"/><path d="M8 3h8v3H8z"/></svg>' }
+  v60:    { t:'V60', d:'Горячий пролив', icon:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6 8h-5z"/><path d="M9.5 13v2h5v-2M7 19h10"/></svg>' },
+  v60ice: { t:'Iced V60', d:'Пролив на лёд', icon:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>' },
+  cold:   { t:'Cold brew', d:'Настой 12–24 часа', icon:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="15" rx="3"/><path d="M8 3h8v3H8z"/></svg>' }
 };
 const SCHEME_DESC = { cascade:'Блум и проливы по убывающей. Подходит почти всегда', equal:'Одинаковые проливы — ровный ритм', custom:'Свои объёмы и паузы' };
 let coldWater = 1000;
@@ -2241,7 +2262,7 @@ document.getElementById('resRatio').addEventListener('click', e=>{
 
 /* ---- Выпадающее меню: режим и схема пролива ---- */
 const popMenu = document.getElementById('popMenu'), popScrim = document.getElementById('popScrim');
-const POP_TICK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+const POP_TICK = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
 function openPopMenu(kind, anchor){
   if(brewPhase !== 'idle') return;
   const items = kind === 'mode'
@@ -3036,7 +3057,7 @@ const tf = {
   k: document.getElementById('tfK'), ck: document.getElementById('tfCdk'), n: document.getElementById('tfN'), a: document.getElementById('tfA'),
   cd: document.getElementById('tfCd'), trk: document.getElementById('tfTrk'), done: document.getElementById('tfDone')
 };
-const CHECK_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+const CHECK_SVG = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
 const reduceMotion = ()=> !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 function setArc(pct){
@@ -3665,11 +3686,19 @@ async function journalDeleteEntry(id){
 
 /* ---- Дневник: форматирование ---- */
 const MONTHS_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+/* Даты и время — через Intl.DateTimeFormat (ru-RU), а не ручную сборку */
+const DTF_TIME = new Intl.DateTimeFormat('ru-RU', { hour:'2-digit', minute:'2-digit' });
+const DTF_DAY_SHORT = new Intl.DateTimeFormat('ru-RU', { day:'numeric', month:'short' });
+const DTF_DAY_LONG = new Intl.DateTimeFormat('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+const DTF_MONTH = new Intl.DateTimeFormat('ru-RU', { month:'long' });
+// «14 окт» — без точки сокращения, как было в интерфейсе
+function fmtDayShort(d){ return DTF_DAY_SHORT.formatToParts(d).map(p=> p.type === 'month' ? p.value.replace(/\.$/, '') : p.value).join(''); }
+// «14 октября 2026» — без «г.»
+function fmtDayLong(d){ return DTF_DAY_LONG.formatToParts(d).filter(p=> p.type === 'day' || p.type === 'month' || p.type === 'year' || (p.type === 'literal' && p.value.trim() === '')).map(p=> p.value).join('').trim(); }
+function fmtMonthName(d){ const m = DTF_MONTH.format(d); return m.charAt(0).toUpperCase() + m.slice(1); }
 function formatEntryDate(id){
   const d = new Date(id);
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  return d.getDate() + ' ' + MONTHS_RU[d.getMonth()] + ', ' + hh + ':' + mm;
+  return fmtDayShort(d) + ', ' + DTF_TIME.format(d);
 }
 // Для строки списка дата и время показаны раздельно (дата над временем) —
 // formatEntryDate() выше остаётся как есть для заголовка шторки при правке записи.
@@ -3680,11 +3709,10 @@ function journalDayLabel(id){
   if(sameDay(d, now)) return 'Сегодня';
   const yesterday = new Date(now.getTime() - 86400000);
   if(sameDay(d, yesterday)) return 'Вчера';
-  return d.getDate() + ' ' + MONTHS_RU[d.getMonth()];
+  return fmtDayShort(d);
 }
 function journalTimeLabel(id){
-  const d = new Date(id);
-  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return DTF_TIME.format(new Date(id));
 }
 const TASTE_LABELS = ['Слишком кисло', 'Кисло', 'Сбалансировано', 'Горько', 'Слишком горько'];
 
@@ -3746,11 +3774,11 @@ function renderJournal(){
   const months = journalMonths();
   if(!journalOpenMonths) journalOpenMonths = new Set([months[0].k]);
   const nowY = new Date().getFullYear();
-  const chev = '<svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+  const chev = '<svg aria-hidden="true" class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
   list.innerHTML = months.map(m=>{
     const open = journalOpenMonths.has(m.k);
     return '<button class="jm-head' + (open ? ' open' : '') + '" type="button" data-jm="' + m.k + '" aria-expanded="' + open + '">' +
-        '<span class="t">' + MONTHS_NOM_RU[m.mo] + (m.y !== nowY ? ' ' + m.y : '') + '</span>' + chev + '</button>' +
+        '<span class="t">' + fmtMonthName(new Date(m.y, m.mo, 1)) + (m.y !== nowY ? ' ' + m.y : '') + '</span>' + chev + '</button>' +
       journalMonthSumHTML(m.list, m.k, open) +
       (open ? '<div class="jm-list">' + m.list.map((e, i)=> journalRowHTML(e, m.list[i-1])).join('') + '</div>' : '');
   }).join('');
@@ -3773,7 +3801,7 @@ function journalRowHTML(e, prev){
   const beanName = entryBeanName(e);
   const water = (e.pours || []).reduce((a,p)=> a + (typeof p === 'number' ? p : (p.add || 0)), 0) || e.water || 0;
   const rated = (e.rating || 0) > 0;
-  const trash = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  const trash = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
   return '<div class="jr-row" data-row="' + e.id + '">' +
     '<button class="jr-act" type="button" data-jdel="' + e.id + '" tabindex="-1" aria-label="Удалить запись ' + journalDayLabel(e.id) + ' ' + journalTimeLabel(e.id) + '"><span class="pill"></span><span class="ai"><span class="c">' + trash + '</span><span class="lb">Удалить</span></span></button>' +
     '<button class="jr" type="button" data-id="' + e.id + '">' +
@@ -4006,6 +4034,42 @@ function unlockPageScroll(){
   });
 }
 
+/* Фокус в диалогах: при открытии — внутрь (на первую кнопку или сам диалог),
+   Tab ходит по кругу внутри, при закрытии — назад на то, что его открыло.
+   Esc закрывает верхний диалог. */
+const dialogFocus = {
+  stack: [],
+  open(el, first){
+    const prev = document.activeElement;
+    this.stack = this.stack.filter(d=> d.el !== el);
+    this.stack.push({ el, prev: prev && prev !== document.body ? prev : null });
+    requestAnimationFrame(()=>{ try{ (first || el).focus({ preventScroll:true }); }catch(e){} });
+  },
+  close(el){
+    const i = this.stack.findIndex(d=> d.el === el);
+    if(i < 0) return;
+    const d = this.stack.splice(i, 1)[0];
+    if(d.prev && document.contains(d.prev) && d.prev.offsetParent !== null){ try{ d.prev.focus({ preventScroll:true }); }catch(e){} }
+  },
+  top(){ return this.stack.length ? this.stack[this.stack.length - 1].el : null; }
+};
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+document.addEventListener('keydown', e=>{
+  const top = dialogFocus.top();
+  if(!top) return;
+  if(e.key === 'Escape'){
+    e.preventDefault();
+    if(top.id === 'alertBox') closeDeleteAlert(); else dismissSheet();
+    return;
+  }
+  if(e.key === 'Tab'){
+    const items = [...top.querySelectorAll(FOCUSABLE)].filter(x=> x.offsetParent !== null);
+    if(!items.length){ e.preventDefault(); top.focus(); return; }
+    const first = items[0], last = items[items.length - 1];
+    if(e.shiftKey && (document.activeElement === first || document.activeElement === top)){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+});
 function showSheet(){
   // Доп. блоки шторки принадлежат конкретным режимам — прячем централизованно,
   // чтобы ни одна шторка не открылась с хвостом от предыдущей.
@@ -4017,6 +4081,7 @@ function showSheet(){
   sheetPrimaryBtn.style.display = sheetMode === 'bean-pick' ? 'none' : '';
   lockPageScroll();
   sheetOpenedAt = performance.now();
+  if(!sheetEl.classList.contains('show')) dialogFocus.open(sheetEl);
   sheetScrimEl.classList.add('show');
   sheetEl.classList.add('show');
 }
@@ -4025,9 +4090,11 @@ function closeSheet(){
   if(document.scrollingElement && document.scrollingElement.scrollLeft) document.scrollingElement.scrollLeft = 0;
   const vp = document.querySelector('.pages-viewport');
   if(vp && vp.scrollLeft) vp.scrollLeft = 0;
+  const wasOpen = sheetEl.classList.contains('show');
   sheetScrimEl.classList.remove('show');
   sheetEl.classList.remove('show');
   sheetMode = null; sheetEntry = null;
+  if(wasOpen) dialogFocus.close(sheetEl);
   if(!alertBoxEl.classList.contains('show')) unlockPageScroll();
 }
 
@@ -4164,8 +4231,8 @@ function jsPoursHTML(e){
     const label = i === 0 ? 'Блум' : 'Пролив ' + i;
     if(jsPoursEdit){
       return '<div class="bs-row"><span class="bs-l"><span class="t">' + label + '</span></span>' +
-        '<input class="js-pin" type="number" inputmode="numeric" min="0" step="1" data-jpt="' + i + '" value="' + (p.time || 0) + '" aria-label="' + label + ': секунда"><span class="js-pu">с</span>' +
-        '<input class="js-pin" type="number" inputmode="decimal" min="0" step="1" data-jpa="' + i + '" value="' + (p.add || 0) + '" aria-label="' + label + ': граммы"><span class="js-pu">г</span></div>';
+        '<input class="js-pin" type="number" inputmode="numeric" name="pourTime' + i + '" autocomplete="off" min="0" step="1" data-jpt="' + i + '" value="' + (p.time || 0) + '" aria-label="' + label + ': секунда"><span class="js-pu">с</span>' +
+        '<input class="js-pin" type="number" inputmode="decimal" name="pourAdd' + i + '" autocomplete="off" min="0" step="1" data-jpa="' + i + '" value="' + (p.add || 0) + '" aria-label="' + label + ': граммы"><span class="js-pu">г</span></div>';
     }
     return '<div class="bs-row"><span class="bs-l"><span class="tm">' + fmtTime(p.time || 0) + '</span><span class="t">' + label + '</span></span>' +
       '<span class="bs-v"><b>' + fmt(run) + ' мл</b> <span class="add">+' + fmt(p.add || 0) + '</span></span></div>';
@@ -4180,9 +4247,9 @@ function renderEditSheet(){
   const b = id != null ? beans.find(x=> x.id === id) : null;
   const beanName = b ? (b.name || 'Без названия') : (e.bean || '');
   const orphan = !b && !!e.bean;
-  const star = '<svg viewBox="0 0 24 24" width="42" height="42" fill="currentColor"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>';
-  const trash = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
-  const repeatIcon = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>';
+  const star = '<svg aria-hidden="true" viewBox="0 0 24 24" width="42" height="42" fill="currentColor"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>';
+  const trash = '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  const repeatIcon = '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>';
   const water = jsWater(e);
   const noteLeft = NOTE_MAX - (e.note || '').length;
 
@@ -4191,7 +4258,7 @@ function renderEditSheet(){
       '<div class="js-date">' + escapeHTML(formatEntryDate(e.id)) + '</div>' +
       '<button class="js-bean' + (beanName ? '' : ' none') + '" type="button" data-jbean aria-label="Зерно: ' + escapeHTML(beanName || 'не выбрано') + '. Изменить">' +
         '<b>' + escapeHTML(beanName || 'Выбрать зерно') + '</b>' +
-        '<span class="c"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></span></button>' +
+        '<span class="c"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></span></button>' +
       (orphan ? '<div class="js-note-bean">' + (id != null ? 'зерно удалено' : 'не привязано к зерну') + '</div>' : '') +
       '<div class="js-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
         (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + e.ratio + (e.ice ? ' · лёд ' + fmt(e.ice) + ' г' : '') + '</div>' +
@@ -4211,7 +4278,7 @@ function renderEditSheet(){
         '<div class="js-ends"><span>Кисло</span><span>Горько</span></div></div>' +
       '<div class="bs-row"><span class="bs-l"><span class="t">Помол, клики</span></span>' +
         '<span class="bs-step"><button type="button" data-jgrind="-1" aria-label="Помол: меньше">−</button>' +
-        '<input type="number" inputmode="numeric" data-jgrindin value="' + (e.grind || 0) + '" aria-label="Помол, клики">' +
+        '<input type="number" inputmode="numeric" name="grind" autocomplete="off" data-jgrindin value="' + (e.grind || 0) + '" aria-label="Помол, клики">' +
         '<button type="button" data-jgrind="1" aria-label="Помол: больше">+</button></span></div>' +
     '</div>' +
 
@@ -4579,6 +4646,7 @@ function openDeleteAlert(id, kind){
   lockPageScroll();
   alertScrimEl.classList.add('show');
   alertBoxEl.classList.add('show');
+  dialogFocus.open(alertBoxEl, alertCancelBtn);
 }
 /* Тот же алерт, но не деструктивный: основное действие синее, не красное. */
 function openArchiveAlert(id){
@@ -4592,10 +4660,13 @@ function openArchiveAlert(id){
   lockPageScroll();
   alertScrimEl.classList.add('show');
   alertBoxEl.classList.add('show');
+  dialogFocus.open(alertBoxEl, alertCancelBtn);
 }
 function closeDeleteAlert(){
+  const wasOpen = alertBoxEl.classList.contains('show');
   alertScrimEl.classList.remove('show');
   alertBoxEl.classList.remove('show');
+  if(wasOpen) dialogFocus.close(alertBoxEl);
   // Отмена после свайпа — строка возвращается на место
   if(jSwipeOpenRow && typeof closeJournalRow === 'function') closeJournalRow(jSwipeOpenRow);
   alertDeleteId = null;
@@ -4861,7 +4932,7 @@ function beanNumbers(b){
 function beanRingSVG(pct, low, finished, size, stroke){
   const r = size/2 - stroke/2 - 0.5, C = 2 * Math.PI * r, c = size/2;
   return '<div class="bc-ring" aria-hidden="true" style="width:' + size + 'px;height:' + size + 'px">' +
-    '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '">' +
+    '<svg aria-hidden="true" viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '">' +
       '<circle cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="var(--track)" stroke-width="' + stroke + '"' + (finished || pct <= 0 ? ' stroke-dasharray="2 4"' : '') + '/>' +
       (pct > 0 ? '<circle class="arc" cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="' + (low ? 'var(--orange)' : 'var(--brown)') + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - pct)).toFixed(1) + '"/>' : '') +
     '</svg></div>';
@@ -4921,7 +4992,7 @@ function openBeanPickSheet(){
   const listEl = document.getElementById('sheetBeanPickList');
   listEl.style.display = 'block';
   const sorted = sortCurrentBeans(pickable, activeBeanId);
-  const tick = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  const tick = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
   listEl.innerHTML = sorted.map(b=> beanPickCardHTML(b)).join('') +
     '<button class="pick-none' + (activeBeanId == null ? ' on' : '') + '" type="button" id="pickNoneBtn">Без зерна' + (activeBeanId == null ? tick : '') + '</button>';
   // Подсветка успевает переехать на выбранное — потом шторка закрывается
@@ -4976,10 +5047,10 @@ function escapeHTML(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function checkIconSVG(){
-  return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  return '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
 }
 function infoIconSVG(){
-  return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>';
+  return '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>';
 }
 /* Тот же текст, что в «Почему такая температура» Калькулятора — только без
    TEMP_ICE_NOTE (он про лёд в чашке, к конкретной пачке отношения не имеет). */
@@ -4995,7 +5066,7 @@ function beanBagSVG(pct, id){
     ' Q' + bodyRight + ',' + bodyBottom + ' ' + (bodyRight-corner) + ',' + bodyBottom +
     ' H' + (bodyLeft+corner) + ' Q' + bodyLeft + ',' + bodyBottom + ' ' + bodyLeft + ',' + (bodyBottom-corner) + ' Z';
   const clipId = 'bagclip' + id;
-  return '<svg viewBox="0 0 40 50" width="32" height="40">' +
+  return '<svg aria-hidden="true" viewBox="0 0 40 50" width="32" height="40">' +
       '<path d="M4,15 L8,5 H32 L36,15 Z" fill="none" stroke="var(--label-3)" stroke-width="1.6" stroke-linejoin="round"/>' +
       '<path d="' + bodyPath + '" fill="none" stroke="var(--label-3)" stroke-width="1.6" stroke-linejoin="round"/>' +
       '<clipPath id="' + clipId + '"><path d="' + bodyPath + '"/></clipPath>' +
@@ -5070,7 +5141,7 @@ function renderBeansArchive(list){
     if(ay == null) return -1;
     return (ay - ax) || (y.st.rated - x.st.rated);
   });
-  const chev = '<svg class="arch-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  const chev = '<svg aria-hidden="true" class="arch-chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
   el.innerHTML =
     '<button class="arch-toggle' + (beansArchiveOpen ? ' open' : '') + '" type="button" aria-expanded="' + beansArchiveOpen + '">' +
       '<span><span class="section-header">Архив</span><span class="arch-count">' + list.length + '</span></span>' + chev +
@@ -5137,7 +5208,7 @@ const BEAN_MONTHS = ['января','февраля','марта','апреля'
 function beanFullDate(iso){
   if(!iso) return '';
   const d = new Date(iso + 'T00:00:00');
-  return isNaN(d) ? '' : d.getDate() + ' ' + BEAN_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  return isNaN(d) ? '' : fmtDayLong(d);
 }
 function beanAgoLabel(days){
   if(days == null) return '';
@@ -5146,7 +5217,7 @@ function beanAgoLabel(days){
   return days + ' ' + pluralRu(days, 'день', 'дня', 'дней') + ' назад';
 }
 let beanWhyOpen = false;
-const beanChevronSVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg>';
+const beanChevronSVG = '<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg>';
 
 function beanHeroLeftHTML(e){
   const n = beanNumbers(e);
@@ -5156,7 +5227,7 @@ function beanHeroLeftHTML(e){
 function beanStepRow(label, key, step){
   return '<div class="bs-row"><span class="bs-l"><span class="t">' + label + '</span></span>' +
     '<span class="bs-step"><button type="button" data-bstep="' + key + '" data-d="' + (-step) + '" aria-label="' + label + ': меньше">−</button>' +
-    '<input type="number" inputmode="numeric" data-bnum="' + key + '" value="' + Math.max(0, Math.round(sheetEntry[key] || 0)) + '" aria-label="' + label + '">' +
+    '<input type="number" inputmode="numeric" name="' + key + '" autocomplete="off" data-bnum="' + key + '" value="' + Math.max(0, Math.round(sheetEntry[key] || 0)) + '" aria-label="' + label + '">' +
     '<button type="button" data-bstep="' + key + '" data-d="' + step + '" aria-label="' + label + ': больше">+</button></span></div>';
 }
 function beanDateRow(label, key, warnAt){
@@ -5181,7 +5252,7 @@ function renderBeanSheet(){
   document.getElementById('beanSheetTitle').textContent = isAdd ? 'Новое зерно' : '';
   const temp = computeBrewTemp(e.roast, e.process);
   const st = isAdd ? null : beanStats(e.id);
-  const trash = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+  const trash = '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 
   document.getElementById('sheetBean').innerHTML =
     '<div class="bs-hero">' + beanRingSVG(n.pct, n.low, n.finished, 60, 6) +
