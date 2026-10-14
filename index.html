@@ -1048,8 +1048,15 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px color-mix(in srgb, var(--red) 35%, transparent);
     transform:scale(.6); opacity:0; }
   .jr-act .lb{ opacity:0; }
+  /* Капсула длинного свайпа вырастает из кружка: вне длинного свайпа она обрезана ровно
+     по кружку и невидима; на пороге становится видимой и раскрывается на всю открытую зону.
+     Переход включается только на сам момент смены (pill-morph) и при отпускании (anim) —
+     пока палец тянет, капсула идёт за ним без запаздывания. */
   .jr-act .pill{ position:absolute; left:10px; right:10px; top:calc(50% - 30.5px); height:44px; border-radius:22px; background:var(--red);
-    clip-path:inset(0 0 0 100% round 22px); transition:clip-path .2s var(--ease-out); }
+    clip-path:inset(0 0 0 100% round 22px); opacity:0; }
+  .jr-row.pill-morph .jr-act .pill{ transition:clip-path .22s var(--ease-out), opacity 0s linear .22s; }
+  .jr-row.anim .jr-act .pill{ transition:clip-path .3s var(--ease-out), opacity 0s linear .3s; }
+  .jr-row.full.pill-morph .jr-act .pill, .jr-row.full.anim .jr-act .pill{ transition-property:clip-path; }
   .jr-row.anim .jr-act .ai, .jr-row.anim .jr-act .c, .jr-row.anim .jr-act .lb{ transition:transform .3s var(--ease-out), opacity .2s var(--ease-out); }
   .jr{ width:100%; display:flex; align-items:center; gap:12px; padding:10px 16px 10px 12px; min-height:64px; border:none; background:var(--card); text-align:left; cursor:pointer; position:relative;
     font-family:inherit; color:var(--label); will-change:transform; z-index:1; }
@@ -3831,10 +3838,18 @@ function jSetX(row, x, anim){
   ai.style.transform = 'translate3d(' + (-(reveal - J_OPEN) / 2).toFixed(1) + 'px,0,0)';
   c.style.transform = 'scale(' + (0.6 + 0.4 * p).toFixed(3) + ')';
   c.style.opacity = lb.style.opacity = p.toFixed(3);
-  // Длинный свайп: капсула раскрывается ровно по открытой зоне
+  // Длинный свайп: капсула раскрывается из кружка ровно по открытой зоне
   const pill = row.querySelector('.jr-act .pill');
-  const w = row.clientWidth - 20;
-  pill.style.clipPath = row.classList.contains('full') ? 'inset(0 0 0 ' + Math.max(0, w - (reveal - 20)).toFixed(1) + 'px round 22px)' : 'inset(0 0 0 100% round 22px)';
+  const W = row.clientWidth, w = W - 20;
+  const full = row.classList.contains('full');
+  let l, r;
+  if(full){ l = Math.max(0, w - (reveal - 20)); r = 0; }
+  else {
+    const cx = W - reveal / 2 - 10, rad = 22 * (0.6 + 0.4 * p); // центр и радиус кружка в координатах капсулы
+    l = Math.max(0, cx - rad); r = Math.max(0, w - (cx + rad));
+  }
+  pill.style.clipPath = 'inset(0 ' + r.toFixed(1) + 'px 0 ' + l.toFixed(1) + 'px round 22px)';
+  pill.style.opacity = full ? '1' : '0';
 }
 function closeJournalRow(row){
   if(!row) return;
@@ -3859,7 +3874,12 @@ window.addEventListener('pointermove', (e)=>{
   jSw.x = x;
   jSw.hist.push([performance.now(), x]); if(jSw.hist.length > 6) jSw.hist.shift();
   const full = -x > jSw.row.clientWidth * 0.55;
-  if(full !== jSw.full){ jSw.full = full; jSw.row.classList.toggle('full', full); if(full) haptics('warning'); }
+  if(full !== jSw.full){
+    jSw.full = full; jSw.row.classList.toggle('full', full); if(full) haptics('warning');
+    const row = jSw.row;
+    row.classList.add('pill-morph');
+    clearTimeout(row._pillT); row._pillT = setTimeout(()=> row.classList.remove('pill-morph'), 240);
+  }
   jSetX(jSw.row, x, false);
 });
 function jEndSwipe(e){
@@ -4912,7 +4932,9 @@ function updateBeanPickRow(){
       '<div class="bc-ringcol">' + beanRingSVG(0, false, false, 44, 5) + '</div>' +
       '<div class="bc-t"><div class="bc-name">' + (any ? 'Выбрать зерно' : 'Добавить зерно') + '</div>' +
       '<div class="bc-sub">' + (any ? 'или заваривать без него' : 'чтобы считать остаток и оценки') + '</div></div>' +
-      '<div class="bc-g"></div></div>';
+      '<div class="bc-g" aria-hidden="true"><b>&nbsp;</b><span>&nbsp;</span></div>' +
+      // Ряд чипов-заглушек держит высоту обычной плитки: при выборе зерна и «Без зерна» ничего ниже не прыгает
+      '<div class="bc-chips" aria-hidden="true"><span class="bc-chip muted">остаток —</span><span class="bc-chip muted"><span class="s">★</span>—</span></div></div>';
     el.setAttribute('aria-label', any ? 'Выбрать зерно' : 'Добавить зерно');
   }
 }
@@ -4995,32 +5017,141 @@ function openBeanPickSheet(){
   const tick = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
   listEl.innerHTML = sorted.map(b=> beanPickCardHTML(b)).join('') +
     '<button class="pick-none' + (activeBeanId == null ? ' on' : '') + '" type="button" id="pickNoneBtn">Без зерна' + (activeBeanId == null ? tick : '') + '</button>';
-  // Подсветка успевает переехать на выбранное — потом шторка закрывается
-  const pickAndClose = async (id)=>{
+  // Подсветка переезжает на выбранное сразу (ответ на тап), затем шторка уходит,
+  // а выбранная плитка перелетает на своё место в Калькуляторе (beanPickLand).
+  let picking = false;
+  const pickAndClose = (id, cardEl)=>{
+    if(picking) return;
+    const changed = id !== activeBeanId;
+    // Повторный тап по уже выбранному ничего не меняет — и не вибрирует
+    if(!changed){ setTimeout(()=>{ if(sheetMode === 'bean-pick') closeSheet(); }, 160); return; }
+    picking = true;
     navHapticTick();
-    // setActiveBean — тумблер: повторный вызов с тем же id снимает выбор
-    if(id == null){ if(activeBeanId != null) await setActiveBean(activeBeanId); }
-    else if(id !== activeBeanId) await setActiveBean(id);
     listEl.querySelectorAll('.bean-pick-card').forEach(c=>{
-      const on = Number(c.dataset.id) === activeBeanId;
+      const on = Number(c.dataset.id) === id;
       c.classList.toggle('on', on);
       const col = c.querySelector('.bc-ringcol .bc-lbl');
       if(on && !col) c.querySelector('.bc-ringcol').insertAdjacentHTML('beforeend', '<span class="bc-lbl">Выбрано</span>');
       if(!on && col) col.remove();
     });
     const none = document.getElementById('pickNoneBtn');
-    none.classList.toggle('on', activeBeanId == null);
-    setTimeout(()=>{ if(sheetMode === 'bean-pick') closeSheet(); }, 220);
+    none.classList.toggle('on', id == null);
+    none.innerHTML = 'Без зерна' + (id == null ? tick : '');
+    beanPickLand(id);
   };
   listEl.querySelectorAll('.bean-pick-card').forEach(card=>{
-    card.addEventListener('click', ()=> pickAndClose(Number(card.dataset.id)));
+    card.addEventListener('click', ()=> pickAndClose(Number(card.dataset.id), card));
   });
-  document.getElementById('pickNoneBtn').addEventListener('click', ()=> pickAndClose(null));
+  document.getElementById('pickNoneBtn').addEventListener('click', ()=> pickAndClose(null, null));
+  beanPickLand.onEnd = ()=>{ picking = false; };
 
   sheetPrimaryBtn.textContent = 'Готово';
   sheetGhostBtn.style.display = 'none';
   showSheet();
 }
+/* ---- Выбор зерна: смена на месте, кольцо — как загрузчик ----
+   Плитка не двигается и не меняет высоту. Шторка уходит, старый текст растворяется
+   в лёгкий blur, кольцо стягивается в ноль; затем новое кольцо рисуется с нуля до
+   остатка, а текст нового зерна проявляется следом. Температура досчитывает.
+   «Без зерна» — то же самое, просто рисовать нечего: кольцо остаётся пустым.
+   Хаптик один — selection на тап (подсветка переехала). Без движения (reduce) —
+   только смена прозрачности; плитки не видно — просто меняем данные.
+   Тайминги (apple-design + review-animations: ответ без лишних ожиданий, UI ≤ 300 мс,
+   уход быстрее появления, ease-out на вход/выход, ease-in-out на движение по экрану):
+   подсветка в шторке 100 мс → шторка уходит → через 40 мс текст гаснет 120 мс,
+   кольцо стягивается 160 мс → кольцо рисуется 340 мс (индикатор остатка: дуга до
+   полного круга, чуть дольше 300 мс), текст проявляется 200 мс с задержкой 40 мс,
+   температура досчитывает 340 мс. От тапа до готовой плитки ≈ 0,65 с. */
+const canAnimate = el=> !!el && typeof el.animate === 'function';
+const BEAN_BLUR_OUT = [{ opacity:1, filter:'blur(0px)', transform:'scale(1)' }, { opacity:0, filter:'blur(2px)', transform:'scale(.98)' }];
+const BEAN_BLUR_IN = [BEAN_BLUR_OUT[1], BEAN_BLUR_OUT[0]];
+const BEAN_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
+function beanTempNow(){
+  const t = parseInt(document.getElementById('tempValue').textContent, 10);
+  return isNaN(t) ? null : t;
+}
+async function commitBeanPick(id){
+  // setActiveBean — тумблер: повторный вызов с текущим id снимает выбор
+  if(id == null){ if(activeBeanId != null) await setActiveBean(activeBeanId); }
+  else if(id !== activeBeanId) await setActiveBean(id);
+}
+// Температура досчитывает до нового значения; любая другая запись в поле прерывает счёт
+function countTemp(from){
+  const el = document.getElementById('tempValue');
+  const to = beanTempNow();
+  if(from == null || to == null || from === to || reduceMotion()) return;
+  const t0 = performance.now(), d = 340; // в такт с кольцом
+  let shown = from + ' °C';
+  el.textContent = shown;
+  const f = now=>{
+    if(el.textContent !== shown) return;
+    const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3);
+    shown = Math.round(from + (to - from) * e) + ' °C';
+    el.textContent = shown;
+    if(p < 1) requestAnimationFrame(f);
+  };
+  requestAnimationFrame(f);
+}
+// Растворить содержимое плитки, не трогая её фон — иначе фон мигнёт
+function fadeTileKids(tile, frames, ms){
+  if(!canAnimate(tile)) return Promise.resolve();
+  return Promise.all([...tile.children].map(c=>
+    c.animate(frames, { duration:ms, easing:BEAN_EASE, fill:'forwards' }).finished.catch(()=>{})));
+}
+function beanPickLand(id){
+  const end = ()=>{ beanPickLand.onEnd && beanPickLand.onEnd(); };
+  const slot = document.getElementById('calcBeanCard');
+  const fromTemp = beanTempNow();
+  setTimeout(()=>{
+    if(sheetMode === 'bean-pick') closeSheet();
+    setTimeout(async ()=>{
+      const tile = slot.firstElementChild;
+      const r = slot.getBoundingClientRect();
+      const visible = r.height > 0 && r.bottom > 0 && r.top < window.innerHeight;
+      if(!visible || !canAnimate(tile)){ await commitBeanPick(id); countTemp(fromTemp); end(); return; }
+      const calm = reduceMotion();
+      const text = el=> [...el.children].filter(c=> !c.classList.contains('bc-ringcol'));
+      // 1. Старый текст растворяется, кольцо стягивается в ноль — плитка «перезаряжается»
+      const outs = text(tile).map(c=> c.animate(calm ? [{opacity:1},{opacity:0}] : BEAN_BLUR_OUT,
+        { duration:120, easing:BEAN_EASE, fill:'forwards' }).finished.catch(()=>{}));
+      const oldArc = tile.querySelector('.arc');
+      if(oldArc && !calm){
+        outs.push(oldArc.animate([
+          { strokeDashoffset:oldArc.getAttribute('stroke-dashoffset'), opacity:1 },
+          { strokeDashoffset:oldArc.getAttribute('stroke-dasharray'), opacity:1, offset:0.9 },
+          { strokeDashoffset:oldArc.getAttribute('stroke-dasharray'), opacity:0 }
+        ], { duration:160, easing:'cubic-bezier(0.77, 0, 0.175, 1)', fill:'forwards' }).finished.catch(()=>{}));
+      } else if(oldArc){
+        outs.push(oldArc.animate([{opacity:1},{opacity:0}], { duration:120, fill:'forwards' }).finished.catch(()=>{}));
+      }
+      const wasEmpty = tile.classList.contains('empty');
+      await Promise.all(outs);
+      // 2. Новое зерно: кольцо рисуется с нуля до остатка, текст проявляется следом
+      await commitBeanPick(id);
+      const nt = slot.firstElementChild;
+      if(canAnimate(nt)){
+        text(nt).forEach(c=> c.animate(calm ? [{opacity:0},{opacity:1}] : BEAN_BLUR_IN,
+          { duration:200, delay:calm ? 0 : 40, easing:BEAN_EASE, fill:'backwards' }));
+        const arc = nt.querySelector('.arc');
+        if(arc && !calm){
+          const C = parseFloat(arc.getAttribute('stroke-dasharray'));
+          arc.animate([
+            { strokeDashoffset:C, opacity:0 }, { strokeDashoffset:C * 0.97, opacity:1, offset:0.06 },
+            { strokeDashoffset:arc.getAttribute('stroke-dashoffset'), opacity:1 }
+          ], { duration:340, easing:BEAN_EASE });
+        }
+        // Пунктир пустого кольца и сплошная дорожка сменяют друг друга мягко
+        if(wasEmpty !== nt.classList.contains('empty')){
+          const rc = nt.querySelector('.bc-ringcol');
+          if(rc) rc.animate([{ opacity:.3 }, { opacity:1 }], { duration:200, easing:BEAN_EASE });
+        }
+      }
+      countTemp(fromTemp);
+      end();
+    }, 40);
+  }, 100);
+}
+
 document.getElementById('calcBeanCard').addEventListener('click', openBeanPickSheet);
 document.getElementById('calcBeanCard').addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openBeanPickSheet(); } });
 
