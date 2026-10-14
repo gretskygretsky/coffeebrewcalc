@@ -1174,11 +1174,16 @@
     --ease-smooth: cubic-bezier(.32,.72,0,1);
     --ease-snappy: cubic-bezier(.2,.9,.3,1);
   }
-  /* Высота карточки перетекает между рецептом и таймером (morphCard) */
-  #recipeCard{ transition:height .36s var(--ease-smooth); }
+  /* Смена лица карточки: раскладка мгновенно, движение — transform/clip-path (flipCalc) */
+  .rc{ position:relative; }
+  .rc-face{ position:relative; z-index:1; }
   .rc-face[hidden]{ display:none; }
   .rc-face.face-in{ animation:faceIn .3s var(--ease-smooth) both; }
-  @keyframes faceIn{ from{ opacity:0; transform:scale(.97); filter:blur(6px); } to{ opacity:1; transform:none; filter:none; } }
+  @keyframes faceIn{ from{ opacity:0; transform:translateY(6px) scale(.985); } to{ opacity:1; transform:none; } }
+  /* Подложка-призрак: держит старую высоту фона, пока карточка сжимается */
+  .rc-ghost{ display:none; position:absolute; top:0; left:0; right:0; z-index:0; border-radius:26px; background:var(--card); pointer-events:none; }
+  .rc.ghosting{ overflow:visible; background:transparent; }
+  .rc.ghosting .rc-ghost{ display:block; }
   .timer-face{ padding:16px; }
   .tf-hd{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
   .stage-pill{ display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 13px; border-radius:999px; font-size:15px; font-weight:700; white-space:nowrap; max-width:100%; overflow:hidden;
@@ -1220,9 +1225,11 @@
   .tf-btn.pri{ background:var(--accent, var(--orange)); color:#fff; }
 
   /* На время брю зерно, подсказки и заголовок «Кофе» складываются — шаги встают под таймер */
-  .fold{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .36s var(--ease-smooth), opacity .22s ease; }
-  .fold > div{ min-height:0; overflow:hidden; }
-  body.brew-card .fold{ grid-template-rows:0fr; opacity:0; pointer-events:none; }
+  .fold{ transition:opacity .12s ease; }
+  body.brew-fading .fold{ opacity:0; pointer-events:none; }
+  body.brew-card .fold{ display:none; }
+  .fold.fold-in{ animation:foldIn .3s var(--ease-smooth) .1s both; }
+  @keyframes foldIn{ from{ opacity:0; } to{ opacity:1; } }
   body.brew-card #eyebrow{ margin-bottom:10px; }
   body.brew-card .pour-cap .cap-tools{ display:none; }
   body.brew-card .pour-cap{ margin-top:16px; }
@@ -1255,10 +1262,15 @@
 
   /* Капсула дока: вырастает из ▶ справа налево (bouncy), таб-бар уходит под неё */
   .dock.brewing .tabbar{ transform:translateY(18px) scale(.92); opacity:0; pointer-events:none; transition:transform .34s var(--ease-bouncy), opacity .18s ease; }
-  .dock-inner > .brew-bar{ position:absolute; right:0; bottom:0; height:64px; width:64px; border-radius:32px; padding:4px; gap:4px;
-    display:flex; align-items:center; overflow:hidden; opacity:0; transform:scale(.92); pointer-events:none;
-    transition:width .42s var(--ease-bouncy), opacity .18s ease, transform .34s var(--ease-bouncy); }
-  .dock.brewing .dock-inner > .brew-bar{ width:100%; opacity:1; transform:none; pointer-events:auto; }
+  /* Ширину не анимируем (это пересчёт раскладки под blur) — капсула всегда во всю
+     ширину, а «вырастает» из кнопки через clip-path */
+  .dock-inner > .brew-bar{ position:absolute; right:0; bottom:0; height:64px; width:100%; border-radius:32px; padding:4px; gap:4px;
+    display:flex; align-items:center; overflow:hidden; opacity:0; pointer-events:none;
+    clip-path:inset(0 0 0 calc(100% - 64px) round 32px);
+    transition:clip-path .4s cubic-bezier(.3,1.12,.5,1), opacity .16s ease; }
+  .dock.brewing .dock-inner > .brew-bar{ clip-path:inset(0 0 0 0 round 32px); opacity:1; pointer-events:auto; }
+  .brew-bar > *{ opacity:0; transition:opacity .2s ease; }
+  .dock.brewing .brew-bar > *{ opacity:1; transition-delay:.08s; }
   .dock.brewing .action-wrap{ opacity:0; transform:scale(.7); pointer-events:none; }
   .action-wrap{ transition:opacity .18s ease, transform .34s var(--ease-bouncy); }
   .bb-mute{ width:56px; height:56px; flex-shrink:0; border:none; border-radius:50%; background:none; color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:transform .2s var(--ease-snappy), background .2s; }
@@ -1368,6 +1380,7 @@
   @media (prefers-reduced-motion: reduce){
     .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
     .fold, #recipeCard, .brew-bar, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
+    .fold.fold-in{ animation:none !important; }
     .hint-tip.glass{ animation:none; }
     .pop-menu.glass{ transition:none; }
     .tab-lens.anim, .action, .action svg, .tabbar{ transition:none; }
@@ -1426,6 +1439,7 @@
   <!-- Карточка рецепта: режим → объём → итог. Пропорция по умолчанию — в «Еще»,
        здесь её только подстраивают «мягче / крепче». -->
   <div class="rc" id="recipeCard">
+   <div class="rc-ghost" id="rcGhost" aria-hidden="true"></div>
    <div class="rc-face" id="recipeFace">
     <div class="rc-top">
       <button class="mode-pill" id="modeBtn" type="button" aria-haspopup="menu" aria-label="Режим заваривания"><span id="modeLabel">V60</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
@@ -2987,52 +3001,96 @@ function keepNextStepVisible(idx){
   }
 }
 
-/* Высота h0 → новая. Новую меряем при height:auto (scrollHeight при заданной высоте
-   не меньше её самой — из-за этого раньше карточка сначала стояла высокой и потом
-   резко схлопывалась), затем фиксируем h0 и в следующем кадре едем к h1. */
-function animateCardHeight(card, h0){
-  clearTimeout(animateCardHeight.t);
-  card.style.transition = 'none';
-  card.style.height = 'auto';
-  const h1 = card.offsetHeight;
-  card.style.height = h0 + 'px';
-  void card.offsetHeight;
-  card.style.transition = '';
-  if(Math.abs(h1 - h0) < 1){ card.style.height = ''; return; }
-  requestAnimationFrame(()=>{ card.style.height = h1 + 'px'; });
-  const done = e=>{ if(e && e.target !== card) return; card.removeEventListener('transitionend', done); clearTimeout(animateCardHeight.t); card.style.height = ''; };
-  card.addEventListener('transitionend', done);
-  animateCardHeight.t = setTimeout(done, 520);
+/* ================= Плавная перестройка экрана Кофе (FLIP) =================
+   На iOS анимация высоты и grid-rows пересчитывает раскладку каждый кадр под
+   стеклянным доком — отсюда рывки. Поэтому раскладку меняем мгновенно, а движение
+   показываем только transform и clip-path:
+   — блоки страницы едут со старых мест на новые (translateY → 0);
+   — карточка растёт «шторкой» clip-path, а сжимается за счёт подложки-призрака;
+   — складки (зерно, подсказки, заголовок) сначала гаснут opacity, потом уходят. */
+const pageCalcEl = document.getElementById('pageCalc');
+const FLIP_MS = 380;
+function flipFinish(){
+  clearTimeout(flipCalc.t);
+  const card = document.getElementById('recipeCard'), ghost = document.getElementById('rcGhost');
+  [...pageCalcEl.children].forEach(el=>{ el.style.transition = ''; el.style.transform = ''; el.style.willChange = ''; });
+  card.style.clipPath = ''; card.classList.remove('ghosting');
+  ghost.style.transition = ''; ghost.style.clipPath = ''; ghost.style.height = '';
 }
-
-/* Высота карточки перетекает между рецептом и таймером, лицо проявляется */
-function morphCard(toTimer){
+function flipCalc(change){
   const card = document.getElementById('recipeCard');
-  const from = document.getElementById(toTimer ? 'recipeFace' : 'timerFace');
-  const to = document.getElementById(toTimer ? 'timerFace' : 'recipeFace');
-  if(from.hidden && !to.hidden) return; // уже в нужном состоянии
-  const h0 = card.offsetHeight;
-  from.hidden = true; to.hidden = false;
-  if(reduceMotion() || !h0){ card.style.height = ''; return; }
-  animateCardHeight(card, h0);
-  to.classList.remove('face-in'); void to.offsetWidth; to.classList.add('face-in');
-  clearTimeout(morphCard.f);
-  morphCard.f = setTimeout(()=> to.classList.remove('face-in'), 420);
-}
-// Плавно подстроить высоту, когда внутри таймера что-то появилось/исчезло
-function settleCardHeight(change){
-  const card = document.getElementById('recipeCard');
+  if(reduceMotion() || !card.offsetHeight){ change(); return; }
+  flipFinish();
+  const before = new Map();
+  [...pageCalcEl.children].forEach(el=>{ if(el.offsetParent !== null) before.set(el, el.getBoundingClientRect().top); });
   const h0 = card.offsetHeight;
   change();
-  if(reduceMotion() || !h0) return;
-  animateCardHeight(card, h0);
+  const h1 = card.offsetHeight;
+  const moved = [];
+  [...pageCalcEl.children].forEach(el=>{
+    if(!before.has(el) || el.offsetParent === null) return;
+    const dy = before.get(el) - el.getBoundingClientRect().top;
+    if(Math.abs(dy) < 0.5) return;
+    el.style.transition = 'none'; el.style.willChange = 'transform';
+    el.style.transform = 'translateY(' + dy.toFixed(1) + 'px)';
+    moved.push(el);
+  });
+  const ghost = document.getElementById('rcGhost');
+  const grow = h1 > h0 + 1, shrink = h0 > h1 + 1;
+  if(grow){ card.style.clipPath = 'inset(0 0 ' + (h1 - h0) + 'px 0 round 26px)'; }
+  if(shrink){
+    card.classList.add('ghosting');
+    ghost.style.transition = 'none'; ghost.style.height = h0 + 'px'; ghost.style.clipPath = 'inset(0 0 0 0 round 26px)';
+  }
+  void pageCalcEl.offsetHeight;
+  const ease = ' ' + FLIP_MS + 'ms var(--ease-smooth)';
+  requestAnimationFrame(()=>{
+    moved.forEach(el=>{ el.style.transition = 'transform' + ease; el.style.transform = ''; });
+    if(grow){ card.style.transition = 'transform' + ease + ', clip-path' + ease; card.style.clipPath = 'inset(0 0 0 0 round 26px)'; }
+    if(shrink){ ghost.style.transition = 'clip-path' + ease; ghost.style.clipPath = 'inset(0 0 ' + (h0 - h1) + 'px 0 round 26px)'; }
+  });
+  flipCalc.t = setTimeout(flipFinish, FLIP_MS + 60);
 }
+// Новое лицо карточки проявляется (только opacity/transform — без blur, он дорог на iOS)
+function faceIn(el){
+  if(reduceMotion()) return;
+  el.classList.remove('face-in'); void el.offsetWidth; el.classList.add('face-in');
+  clearTimeout(faceIn.t); faceIn.t = setTimeout(()=> el.classList.remove('face-in'), 360);
+}
+function swapFaces(toTimer){
+  const from = document.getElementById(toTimer ? 'recipeFace' : 'timerFace');
+  const to = document.getElementById(toTimer ? 'timerFace' : 'recipeFace');
+  if(from.hidden && !to.hidden) return false;
+  from.hidden = true; to.hidden = false;
+  return true;
+}
+// Плавно подстроить карточку, когда внутри таймера что-то появилось/исчезло
+function settleCardHeight(change){ flipCalc(change); }
 
-// Карточка-таймер (count/run/done): складки, номера шагов, лицо карточки
+// Карточка-таймер (count/run/done): складки гаснут, затем экран перестраивается
 function showBrewCard(show){
-  document.body.classList.toggle('brew-card', show);
-  morphCard(show);
-  if(!show){ paintRows(-1, false); document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('done', 'active')); }
+  const body = document.body;
+  clearTimeout(showBrewCard.t);
+  if(show){
+    const apply = ()=> flipCalc(()=>{
+      body.classList.remove('brew-fading');
+      body.classList.add('brew-card');
+      if(swapFaces(true)) faceIn(document.getElementById('timerFace'));
+      pageCalcEl.scrollTop = 0; // таймер — наверху; FLIP сгладит и прокрутку
+    });
+    if(reduceMotion() || !document.getElementById('recipeCard').offsetHeight){ apply(); return; }
+    body.classList.add('brew-fading');
+    showBrewCard.t = setTimeout(apply, 120);
+  } else {
+    body.classList.remove('brew-fading');
+    flipCalc(()=>{
+      body.classList.remove('brew-card');
+      if(swapFaces(false)) faceIn(document.getElementById('recipeFace'));
+    });
+    if(!reduceMotion()) document.querySelectorAll('#pageCalc > .fold').forEach(f=>{ f.classList.remove('fold-in'); void f.offsetWidth; f.classList.add('fold-in'); });
+    paintRows(-1, false);
+    document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('done', 'active'));
+  }
 }
 // Док: ▶ вырастает в капсулу «звук · Остановить», таб-бар уходит под неё
 function setDockBrewing(on){
@@ -3100,9 +3158,6 @@ function beginCountdown(){
   paintRows(-1, false);
   showBrewCard(true);
   setDockBrewing(true);
-  // Таймер — вверху карточки: экран мягко подъезжает к нему
-  const page = document.getElementById('pageCalc');
-  try{ page.scrollTo({ top:0, behavior: reduceMotion() ? 'auto' : 'smooth' }); }catch(e){ page.scrollTop = 0; }
   lockControls(true);
   requestWakeLock();
   tickCountdown();
@@ -3230,7 +3285,7 @@ function closeBrew(silent){
   try{ brewMusic.currentTime = 0; }catch(e){}
   setDockBrewing(false);
   if(!silent) showBrewCard(false);
-  else { document.body.classList.remove('brew-card'); document.getElementById('timerFace').hidden = true; document.getElementById('recipeFace').hidden = false; }
+  else { clearTimeout(showBrewCard.t); document.body.classList.remove('brew-card', 'brew-fading'); swapFaces(false); }
   lockControls(false);
   updateDock();
   updateScheduleUI();
