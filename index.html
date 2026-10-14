@@ -104,11 +104,11 @@
   }
   @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
     .glass{ background:var(--glass-solid); }
-    .sheet, .brew-live, .alert-box{ background:var(--card) !important; }
+    .sheet, .alert-box{ background:var(--card) !important; }
   }
   @media (prefers-reduced-transparency: reduce){
     .glass{ background:var(--glass-solid); -webkit-backdrop-filter:none; backdrop-filter:none; }
-    .sheet, .brew-live, .alert-box{ background:var(--card) !important; }
+    .sheet, .alert-box{ background:var(--card) !important; }
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   body{
@@ -552,27 +552,6 @@
   /* ---- Живой таймер: плавающая стеклянная панель над доком ----
      Экран не прокручивается к таймеру — он всегда внизу, под пальцем,
      а контент (график пролива) уходит под него. */
-  .brew-live{
-    display:none;
-    position:fixed; z-index:31;
-    left:50%; transform:translateX(-50%);
-    width:calc(100% - 32px); max-width:420px;
-    bottom:calc(14px + 64px + 12px + var(--app-safe-bottom));
-    border-radius:30px;
-    padding:14px 12px 16px;
-    background:var(--sheet-bg) !important;
-    border:1.5px solid color-mix(in srgb, var(--accent, var(--orange)) 70%, transparent) !important;
-    animation:liveIn .5s cubic-bezier(.3,1.25,.5,1);
-  }
-  @keyframes liveIn{ from{ opacity:0; transform:translate(-50%, 40px) scale(.94); } to{ opacity:1; transform:translateX(-50%); } }
-  /* Пока идёт брю — запас снизу, чтобы весь Калькулятор можно было докрутить выше панели */
-  body.brewing #pageCalc{ padding-bottom:calc(420px + var(--app-safe-bottom)); }
-  .bl-note{
-    margin:-6px 6px 14px; padding:8px 12px; border-radius:14px;
-    font-size:13px; line-height:1.35; text-align:center; color:var(--label);
-    background:color-mix(in srgb, var(--accent, var(--teal)) 16%, transparent);
-  }
-
   /* ---- Док: таб-бар (4 раздела) + круглая контекстная кнопка справа ---- */
   .dock{
     position:fixed; left:0; right:0; bottom:0; z-index:30; pointer-events:none;
@@ -589,14 +568,14 @@
   .tabbar{
     flex:1; min-width:0; height:64px; border-radius:999px; padding:4px;
     display:grid; grid-template-columns:repeat(4,1fr);
-    transition:transform .45s cubic-bezier(.3,1.25,.5,1), opacity .3s;
+    transition:transform .34s cubic-bezier(.3,1.25,.5,1), opacity .2s;
   }
   .tab-lens{
     position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px) / 4);
     transform:translateX(calc(var(--pos,1) * 100%)); border-radius:999px; background:var(--lens);
     box-shadow: inset 0 1px 0 var(--glass-hi);
   }
-  .tab-lens.anim{ transition:transform .45s cubic-bezier(.3,1.35,.5,1); }
+  .tab-lens.anim{ transition:transform .36s cubic-bezier(.3,1.35,.5,1); }
   .tab{
     position:relative; z-index:1; border:none; background:none; cursor:pointer; border-radius:999px; min-width:0;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
@@ -635,83 +614,7 @@
   }
   .action.play .i-play, .action.off .i-play, .action.add .i-plus, .action.stop .i-stop{ opacity:1; transform:none; }
 
-  /* Мьют появляется на месте таб-бара, пока идёт брю */
-  .music-square{
-    position:absolute; right:74px; bottom:0; width:64px; height:64px; border-radius:50%; padding:0;
-    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--label-2);
-    transform:scale(.5); opacity:0; pointer-events:none !important;
-    transition:transform .45s cubic-bezier(.3,1.35,.5,1), opacity .25s;
-  }
-  .music-square.muted{ color:var(--accent, var(--orange)); }
-  .music-square.muted .mute-wave{ display:none; }
-  .music-square:not(.muted) .mute-x{ display:none; }
-  .dock.brewing .tabbar{ transform:translateY(24px) scale(.9); opacity:0; pointer-events:none; }
-  .dock.brewing .music-square{ transform:scale(1); opacity:1; pointer-events:auto !important; }
-
   .tnum{ font-variant-numeric: tabular-nums; }
-
-  /* Грид minmax(0,1fr)/auto/minmax(0,1fr): точки стоят строго по центру.
-     Без minmax(0,…) колонка не сжимается меньше своего содержимого —
-     именно из-за этого «Приготовьтесь» раньше распирало карточку вместо
-     того, чтобы обрезаться по эллипсису. */
-  .bl-top{
-    display:grid;
-    grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
-    align-items:center;
-    gap:8px;
-    padding:0 6px 14px;
-  }
-  .bl-stage{
-    justify-self:start;
-    font-size:16px; font-weight:700;
-    text-transform:uppercase; letter-spacing:.07em;
-    color:var(--accent, var(--orange));
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
-  }
-  /* На «Приготовьтесь» — единственном длинном названии этапа — снижаем
-     кегль и трекинг, чтобы слово помещалось целиком, а не обрезалось. */
-  .bl-stage.bl-stage--tight{ font-size:13px; letter-spacing:.03em; }
-  .bl-dots{ justify-self:center; display:flex; align-items:center; gap:5px; }
-  .bl-elapsed{ justify-self:end; font-size:14px; color:var(--label-2); white-space:nowrap; }
-  .bl-dot{
-    width:6px; height:6px; border-radius:50%;
-    background:var(--track);
-    transition: background .2s ease, transform .2s ease;
-  }
-  .bl-dot.on{ background:var(--label-3); }
-  .bl-dot.cur{ background:var(--accent, var(--orange)); transform:scale(1.4); }
-
-  .bl-cols{ display:flex; align-items:flex-start; }
-  .bl-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:9px; min-width:0; }
-  .bl-cap{
-    font-size:13.5px; color:var(--label-2); text-align:center; line-height:1.25;
-    height:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
-  }
-  .bl-circle{
-    position:relative;
-    width:clamp(104px,33vw,124px);
-    aspect-ratio:1;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .bl-circle.disc{ border-radius:50%; background:var(--fill); }
-  .bl-ring{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
-  .bl-ring .arc{ transition: stroke-dashoffset .15s linear; }
-
-  /* В центрировании участвует только крупная цифра — подписи над и под ней
-     вынесены из потока, поэтому объём и таймер стоят на одной высоте. */
-  .c-num{
-    position:relative; display:inline-block;
-    font-size:clamp(32px,10vw,38px);
-    font-weight:700; letter-spacing:-0.025em; line-height:1;
-  }
-  .c-num.acc{ color:var(--accent, var(--orange)); }
-  .c-above, .c-below{
-    position:absolute; left:50%; transform:translateX(-50%);
-    text-align:center; white-space:nowrap; letter-spacing:0;
-  }
-  .c-above{ bottom:100%; margin-bottom:5px; font-size:12.5px; font-weight:500; color:var(--label-3); line-height:1.2; }
-  .c-below{ top:100%; margin-top:4px; font-size:14px; font-weight:600; color:var(--label-2); line-height:1.2; }
-  .bl-hidden{ visibility:hidden; }
 
   button:disabled, input:disabled{ opacity:0.35; pointer-events:none; }
 
@@ -749,14 +652,14 @@
     background:var(--sheet-bg) !important; border-radius:34px;
     padding:10px 18px 18px;
     transform:translate(-50%, calc(100% + 40px));
-    transition:transform .45s cubic-bezier(.25,1.1,.4,1);
+    transition:transform .38s cubic-bezier(.25,1.1,.4,1);
     z-index:41;
     max-height:calc(88vh - 16px); overflow-y:auto; -webkit-overflow-scrolling:touch;
     overscroll-behavior:contain; /* скролл шторки не «протекает» на страницу под ней */
   }
   .sheet.show{ transform:translate(-50%, 0); }
   /* Спрятанная шторка не должна выглядывать снизу, даже если вьюпорт выше видимой области */
-  .sheet:not(.show){ visibility:hidden; transition:transform .45s cubic-bezier(.25,1.1,.4,1), visibility 0s .45s; }
+  .sheet:not(.show){ visibility:hidden; transition:transform .38s cubic-bezier(.25,1.1,.4,1), visibility 0s .38s; }
   .sheet-handle{ width:36px; height:5px; background:var(--track); border-radius:2px; margin:0 auto; }
   /* Зона захвата «ручки»: сама полоска 32×4 — слишком мелкая цель для пальца,
      поэтому тянуть можно за всю верхнюю полосу шторки. touch-action:none —
@@ -1261,6 +1164,111 @@
   .vstep .v{ min-width:66px; text-align:center; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
 
 
+
+  /* ================= Таймер в карточке рецепта =================
+     Кривые — по гайду Liquid Glass: .bouncy для стекла (капсула дока),
+     .smooth для перестройки контента (карточка, складки), .snappy для
+     мгновенной обратной связи. Линейно — только прогресс времени. */
+  :root{
+    --ease-bouncy: cubic-bezier(.3,1.35,.5,1);
+    --ease-smooth: cubic-bezier(.32,.72,0,1);
+    --ease-snappy: cubic-bezier(.2,.9,.3,1);
+  }
+  /* Высота карточки перетекает между рецептом и таймером (morphCard) */
+  #recipeCard{ transition:height .36s var(--ease-smooth); }
+  .rc-face[hidden]{ display:none; }
+  .rc-face.face-in{ animation:faceIn .3s var(--ease-smooth) both; }
+  @keyframes faceIn{ from{ opacity:0; transform:scale(.97); filter:blur(6px); } to{ opacity:1; transform:none; filter:none; } }
+  .timer-face{ padding:16px; }
+  .tf-hd{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .stage-pill{ display:inline-flex; align-items:center; gap:7px; height:32px; padding:0 13px; border-radius:999px; font-size:15px; font-weight:700; white-space:nowrap; max-width:100%; overflow:hidden;
+    background:color-mix(in srgb, var(--accent, var(--orange)) 14%, transparent); color:var(--accent, var(--orange)); }
+  .stage-pill i{ width:7px; height:7px; border-radius:50%; background:currentColor; flex-shrink:0; animation:livePulse 1.6s ease-in-out infinite; }
+  @keyframes livePulse{ 50%{ opacity:.25; } }
+  .tf-tot{ font-size:14px; color:var(--label-2); white-space:nowrap; }
+  .tf-tot b{ color:var(--label); font-weight:600; }
+  .tf-ice{ margin-top:12px; padding:9px 12px; border-radius:14px; font-size:13.5px; line-height:1.35;
+    background:color-mix(in srgb, var(--accent, var(--teal)) 14%, transparent); animation:faceIn .28s var(--ease-smooth) both; }
+  .tf-ice[hidden]{ display:none; }
+  /* Подписи «налить до» и «до пролива N» на одной линии; число и кольцо — по общему центру */
+  .tf-grid{ display:grid; grid-template-columns:minmax(0,1fr) 96px; column-gap:12px; row-gap:12px; align-items:center; margin-top:12px; }
+  .tf-k{ font-size:13.5px; color:var(--label-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tf-kr{ text-align:center; overflow:visible; }
+  .tf-bn{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .tf-n{ font-size:clamp(44px, 13.5vw, 54px); font-weight:700; letter-spacing:-0.035em; line-height:1; white-space:nowrap; }
+  .tf-n small{ font-size:18px; color:var(--label-2); font-weight:600; margin-left:4px; letter-spacing:0; }
+  .tf-n span{ display:inline-block; }
+  .tf-n span.bump{ animation:numIn .26s var(--ease-snappy); }
+  @keyframes numIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  .tf-a{ font-size:15px; font-weight:600; color:var(--accent, var(--orange)); white-space:nowrap; min-height:20px; }
+  .tf-ring{ position:relative; width:96px; height:96px; }
+  .tf-ring svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+  .tf-ring b{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--accent, var(--orange)); }
+  /* Шкала всего брю: отрезок на этап, ширина — по времени этапа */
+  .tf-trk{ display:flex; gap:4px; margin-top:14px; }
+  .tf-tk{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .tf-tk .bar{ position:relative; height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
+  .tf-tk .bar i{ position:absolute; inset:0; border-radius:inherit; background:var(--accent, var(--orange)); transform-origin:left; transform:scaleX(0); transition:opacity .3s; }
+  .tf-tk.past .bar i{ opacity:.45; }
+  .tf-tk .lb{ font-size:11.5px; font-weight:600; color:var(--label-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .3s; }
+  .tf-tk.cur .lb{ color:var(--accent, var(--orange)); }
+  .tf-tk.past .lb{ color:var(--label-2); }
+  .tf-done{ display:flex; gap:8px; margin-top:16px; animation:faceIn .28s var(--ease-smooth) both; }
+  .tf-done[hidden]{ display:none; }
+  .tf-btn{ flex:1; height:46px; border-radius:999px; border:none; background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; transition:transform .2s var(--ease-snappy); }
+  .tf-btn:active{ transform:scale(.96); }
+  .tf-btn.pri{ background:var(--accent, var(--orange)); color:#fff; }
+
+  /* На время брю зерно, подсказки и заголовок «Кофе» складываются — шаги встают под таймер */
+  .fold{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .36s var(--ease-smooth), opacity .22s ease; }
+  .fold > div{ min-height:0; overflow:hidden; }
+  body.brew-card .fold{ grid-template-rows:0fr; opacity:0; pointer-events:none; }
+  body.brew-card #eyebrow{ margin-bottom:10px; }
+  body.brew-card .pour-cap .cap-tools{ display:none; }
+  body.brew-card .pour-cap{ margin-top:16px; }
+  /* Невысокие экраны: таймер компактнее, чтобы все шаги помещались над капсулой */
+  @media (max-height: 760px){
+    body.brew-card #eyebrow{ margin-bottom:6px; }
+    body.brew-card .timer-face{ padding:14px; }
+    body.brew-card .tf-grid{ grid-template-columns:minmax(0,1fr) 84px; row-gap:8px; margin-top:10px; }
+    body.brew-card .tf-ring{ width:84px; height:84px; }
+    body.brew-card .tf-ring b{ font-size:23px; }
+    body.brew-card .tf-n{ font-size:44px; }
+    body.brew-card .tf-trk{ margin-top:12px; }
+    body.brew-card .pour-cap{ margin:12px 4px 6px; }
+    body.brew-card .pour-row{ padding-top:6px; padding-bottom:6px; }
+  }
+
+  /* Шаги во время брю: номер → галочка, текущий подсвечен */
+  .pour-ck{ display:none; width:24px; height:24px; border-radius:50%; flex-shrink:0; align-items:center; justify-content:center;
+    background:var(--fill); color:var(--label-2); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; transition:background .3s var(--ease-smooth), color .3s, transform .35s var(--ease-bouncy); }
+  .pour-ck svg{ display:block; }
+  body.brew-card .pour-ck{ display:flex; }
+  body.brew-card .pour-dot{ display:none; }
+  body.brew-card .pour-row{ padding-top:8px; padding-bottom:8px; }
+  .pour-row{ transition:background .26s var(--ease-smooth); }
+  .pour-row.active{ background:color-mix(in srgb, var(--accent, var(--orange)) 10%, transparent); }
+  .pour-row.active .pour-ck{ background:var(--accent, var(--orange)); color:#fff; transform:scale(1.08); }
+  .pour-row.active .pour-action{ font-weight:600; }
+  .pour-row.done .pour-time, .pour-row.done .pour-action, .pour-row.done .pour-total{ color:var(--label-3); }
+  .pour-row.done .pour-ck{ background:color-mix(in srgb, var(--accent, var(--orange)) 16%, transparent); color:var(--accent, var(--orange)); }
+
+  /* Капсула дока: вырастает из ▶ справа налево (bouncy), таб-бар уходит под неё */
+  .dock.brewing .tabbar{ transform:translateY(18px) scale(.92); opacity:0; pointer-events:none; transition:transform .34s var(--ease-bouncy), opacity .18s ease; }
+  .dock-inner > .brew-bar{ position:absolute; right:0; bottom:0; height:64px; width:64px; border-radius:32px; padding:4px; gap:4px;
+    display:flex; align-items:center; overflow:hidden; opacity:0; transform:scale(.92); pointer-events:none;
+    transition:width .42s var(--ease-bouncy), opacity .18s ease, transform .34s var(--ease-bouncy); }
+  .dock.brewing .dock-inner > .brew-bar{ width:100%; opacity:1; transform:none; pointer-events:auto; }
+  .dock.brewing .action-wrap{ opacity:0; transform:scale(.7); pointer-events:none; }
+  .action-wrap{ transition:opacity .18s ease, transform .34s var(--ease-bouncy); }
+  .bb-mute{ width:56px; height:56px; flex-shrink:0; border:none; border-radius:50%; background:none; color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:transform .2s var(--ease-snappy), background .2s; }
+  .bb-mute.muted{ color:var(--accent, var(--orange)); }
+  .bb-mute.muted .mute-wave{ display:none; }
+  .bb-mute:not(.muted) .mute-x{ display:none; }
+  .bb-stop{ flex:1; min-width:0; height:56px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; white-space:nowrap; overflow:hidden; transition:transform .2s var(--ease-snappy), background .2s; }
+  .bb-mute:active, .bb-stop:active{ transform:scale(.96); background:var(--track); }
+
   /* ---------- Калькулятор: карточка рецепта (режим → объём → итог) ---------- */
   .rc{ background:var(--card); border-radius:26px; overflow:hidden; }
   .rc-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 14px 4px 16px; }
@@ -1289,7 +1297,7 @@
   .temp-src b{ color:var(--label); font-weight:600; }
   .temp-src:empty{ display:none; }
   .rc .sizes{ border-bottom:none; }
-  .slider-row{ display:flex; align-items:center; gap:10px; padding:10px 14px 10px 8px; min-height:88px; animation:morph .35s cubic-bezier(.3,1.25,.5,1); }
+  .slider-row{ display:flex; align-items:center; gap:10px; padding:10px 14px 10px 8px; min-height:88px; animation:morph .28s cubic-bezier(.3,1.25,.5,1); }
   @keyframes morph{ from{ opacity:0; transform:scale(.97); } to{ opacity:1; transform:none; } }
   .vol-back{ width:40px; height:40px; border-radius:50%; border:none; background:var(--fill); color:var(--accent, var(--orange)); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
   .slider-body{ flex:1; min-width:0; }
@@ -1338,7 +1346,7 @@
   .pop-scrim.show{ display:block; }
   .pop-menu.glass{ position:fixed; z-index:81; min-width:230px; width:max-content; max-width:min(320px, calc(100vw - 32px)); border-radius:22px; padding:6px;
     background:color-mix(in srgb, var(--glass-solid) 84%, transparent);
-    transform-origin:top left; transform:scale(.6); opacity:0; pointer-events:none; transition:transform .32s cubic-bezier(.3,1.35,.5,1), opacity .18s; }
+    transform-origin:top left; transform:scale(.6); opacity:0; pointer-events:none; transition:transform .27s cubic-bezier(.3,1.35,.5,1), opacity .15s; }
   .pop-menu.show{ transform:none; opacity:1; pointer-events:auto; }
   .pop-menu.right{ transform-origin:top right; }
   .mi{ width:100%; display:flex; align-items:center; gap:12px; border:none; background:none; padding:10px 12px; border-radius:16px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
@@ -1358,10 +1366,11 @@
   .ratio-set .pill{ font-size:13px; padding:7px 12px; }
 
   @media (prefers-reduced-motion: reduce){
-    .brew-live, .custom-row, .slider-row, .chart-in, .rc .temp-detail{ animation:none; }
+    .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
+    .fold, #recipeCard, .brew-bar, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
     .hint-tip.glass{ animation:none; }
     .pop-menu.glass{ transition:none; }
-    .tab-lens.anim, .action, .action svg, .tabbar, .music-square{ transition:none; }
+    .tab-lens.anim, .action, .action svg, .tabbar{ transition:none; }
   }
 </style>
 <!-- Yandex.Metrika counter -->
@@ -1412,11 +1421,12 @@
 
       <div class="page" id="pageCalc">
   <p class="eyebrow" id="eyebrow">Калькулятор</p>
-  <h1>Кофе</h1>
+  <div class="fold"><div><h1>Кофе</h1></div></div>
 
   <!-- Карточка рецепта: режим → объём → итог. Пропорция по умолчанию — в «Еще»,
        здесь её только подстраивают «мягче / крепче». -->
   <div class="rc" id="recipeCard">
+   <div class="rc-face" id="recipeFace">
     <div class="rc-top">
       <button class="mode-pill" id="modeBtn" type="button" aria-haspopup="menu" aria-label="Режим заваривания"><span id="modeLabel">V60</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
       <span class="temp-wrap">
@@ -1472,15 +1482,40 @@
         <span class="str"><button type="button" id="coffeeStepDown" aria-label="Мягче: меньше кофе">− мягче</button><i></i><button type="button" id="coffeeStepUp" aria-label="Крепче: больше кофе">крепче +</button></span>
       </div>
     </div>
+   </div>
+
+   <!-- Таймер живёт в той же карточке: на время брю рецепт уступает ему место.
+        Кольцо — только текущий этап, шкала внизу — весь брю. -->
+   <div class="rc-face timer-face" id="timerFace" hidden aria-live="polite">
+    <div class="tf-hd"><span class="stage-pill" id="tfStage">Приготовьтесь</span><span class="tf-tot tnum" id="tfTot"></span></div>
+    <div class="tf-ice" id="brewNote" hidden></div>
+    <div class="tf-grid">
+      <div class="tf-k" id="tfK">налить до</div><div class="tf-k tf-kr" id="tfCdk">старт через</div>
+      <div class="tf-bn"><div class="tf-n tnum"><span id="tfN">0</span><small>мл</small></div><div class="tf-a tnum" id="tfA"></div></div>
+      <div class="tf-ring">
+        <svg viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="43.5" fill="none" stroke="var(--track)" stroke-width="9"/><circle id="tfArc" cx="48" cy="48" r="43.5" fill="none" stroke="var(--accent, var(--orange))" stroke-width="9" stroke-linecap="round"/></svg>
+        <b class="tnum" id="tfCd">5</b>
+      </div>
+    </div>
+    <div class="tf-trk" id="tfTrk"></div>
+    <div class="tf-done" id="tfDone" hidden>
+      <button class="tf-btn pri" type="button" id="tfRateBtn">Оценить</button>
+      <button class="tf-btn" type="button" id="tfCloseBtn">Закрыть</button>
+    </div>
+   </div>
   </div>
 
+  <div class="fold"><div>
   <p class="section-header">Зерно</p>
   <div id="calcBeanCard" role="button" tabindex="0" aria-label="Выбрать зерно"></div>
+  </div></div>
 
+  <div class="fold"><div>
   <div class="tip ice" id="iceTip" style="display:none; margin-top:22px;">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
     <span id="iceTipText"></span>
   </div>
+  </div></div>
   <div class="pour-cap" id="pourHeader" style="display:none;">
     <span id="pourCapText">Пролив</span>
     <span class="cap-tools">
@@ -1489,15 +1524,6 @@
     </span>
   </div>
   <div class="chart-in" id="pourChart" style="display:none;"></div>
-  <div class="card pour-toggle-card" id="pourToggleCard" style="display:none;">
-    <button class="pour-toggle-btn" id="pourToggleBtn" aria-expanded="false" aria-controls="pourCard">
-      <span class="row-label">График пролива</span>
-      <span class="pour-toggle-right">
-        <span class="pour-toggle-count" id="pourToggleCount"></span>
-        <svg class="pour-toggle-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </span>
-    </button>
-  </div>
   <div class="card pour-card" id="pourCard"></div>
 
   <div id="customEditorWrap" style="display:none;">
@@ -1523,10 +1549,12 @@
 
   <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
 
+  <div class="fold"><div>
   <div class="tip" id="notes">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>
     <span id="notesText"></span>
   </div>
+  </div></div>
       </div>
 
       <div class="page" id="pageJournal">
@@ -1562,37 +1590,6 @@
 <div class="pop-scrim" id="popScrim"></div>
 <div class="pop-menu glass" id="popMenu" role="menu"></div>
 
-  <div class="brew-live glass" id="brewLive">
-    <div class="bl-top">
-      <span class="bl-stage" id="brewStageName">Приготовьтесь</span>
-      <span class="bl-dots" id="brewDots"></span>
-      <span class="bl-elapsed tnum" id="brewElapsed">0:00</span>
-    </div>
-    <div class="bl-note" id="brewNote" style="display:none;"></div>
-    <div class="bl-cols">
-      <div class="bl-col">
-        <div class="bl-cap" id="brewCapL">налить до</div>
-        <div class="bl-circle disc">
-          <div class="c-num tnum">
-            <div class="c-above tnum" id="brewVolAdd"></div>
-            <span id="brewVolNum">0</span>
-            <div class="c-below">мл</div>
-          </div>
-        </div>
-      </div>
-      <div class="bl-col">
-        <div class="bl-cap" id="brewCapR">старт через</div>
-        <div class="bl-circle">
-          <svg class="bl-ring" viewBox="0 0 136 136">
-            <circle cx="68" cy="68" r="60" fill="none" stroke="var(--track)" stroke-width="9"/>
-            <circle class="arc" id="brewArc" cx="68" cy="68" r="60" fill="none" stroke="var(--accent, var(--orange))" stroke-width="9" stroke-linecap="round"/>
-          </svg>
-          <div class="c-num acc tnum" id="brewTimeNum">5</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
 <div class="dock" id="dock">
   <div class="dock-inner">
     <nav class="tabbar glass" id="tabbar" style="--pos:1;" aria-label="Разделы">
@@ -1614,7 +1611,10 @@
         <span>Еще</span>
       </button>
     </nav>
-    <button class="music-square glass" id="musicMuteBtn" type="button" aria-label="Выключить музыку" aria-pressed="false">
+    <!-- На время брю ▶ вырастает в капсулу «звук · Остановить» — тот же кусок стекла,
+         таб-бар уходит под неё -->
+    <div class="brew-bar glass" id="brewBar">
+      <button class="bb-mute" id="musicMuteBtn" type="button" aria-label="Выключить музыку" aria-pressed="false">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/>
         <path class="mute-wave" d="M16 8a5 5 0 010 8"/>
@@ -1622,6 +1622,8 @@
         <path class="mute-x" d="M16 9l5 6M21 9l-5 6"/>
       </svg>
     </button>
+      <button class="bb-stop" id="brewStopBtn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg><span id="brewStopLabel">Остановить</span></button>
+    </div>
     <div class="action-wrap">
       <button class="action play glass" id="actionBtn" type="button" aria-label="Начать заваривание">
         <svg class="i-play" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10.6-6.8c.6-.4.6-1.3 0-1.7L9.6 4.3C8.9 3.9 8 4.4 8 5.2z"/></svg>
@@ -2439,7 +2441,6 @@ function compute(){
 
   const accent = accentVar(state.mode);
 
-  document.getElementById('brewLive').style.setProperty('--accent', accent);
   document.getElementById('dock').style.setProperty('--accent', accent);
 
   // Через воронку идёт только горячая вода: для Iced V60 лёд уже в сервере
@@ -2474,7 +2475,6 @@ function renderPourSchedule(coffee, water, accent){
   if(!isBrewMode()){
     card.style.display = 'none';
     document.getElementById('pourHeader').style.display = 'none';
-    document.getElementById('pourToggleCard').style.display = 'none';
     document.getElementById('iceTip').style.display = 'none';
     document.getElementById('pourChart').style.display = 'none';
     if(typeof stopBrew === 'function' && brewPhase !== 'idle') stopBrew(true);
@@ -2501,12 +2501,13 @@ function renderPourSchedule(coffee, water, accent){
     const row = document.createElement('div'); row.className='pour-row'; row.dataset.index=i;
     const time = document.createElement('span'); time.className='pour-time'; time.style.color=accent; time.textContent = (r===rows[rows.length-1] ? '~' : '') + fmtTime(r.time);
     const dot = document.createElement('span'); dot.className='pour-dot'; dot.style.background=accent;
+    const ck = document.createElement('span'); ck.className='pour-ck'; ck.textContent = String(i + 1);
     const action = document.createElement('span'); action.className='pour-action'; action.textContent=r.action;
     const amounts = document.createElement('div'); amounts.className='pour-amounts';
     const tot = document.createElement('div'); tot.className='pour-total'; tot.textContent = fmt(r.total)+' мл';
     const add = document.createElement('div'); add.className='pour-add'; add.textContent = r.add!==null ? '+'+fmt(r.add)+' мл' : '—';
     amounts.appendChild(tot); amounts.appendChild(add);
-    row.appendChild(time); row.appendChild(dot); row.appendChild(action); row.appendChild(amounts);
+    row.appendChild(ck); row.appendChild(time); row.appendChild(dot); row.appendChild(action); row.appendChild(amounts);
     card.appendChild(row);
   });
 
@@ -2806,7 +2807,7 @@ if(window.matchMedia){
 
 /* ---- Живой таймер заваривания ---- */
 let audioCtx = null;
-let brewPhase = 'idle'; // 'idle' | 'counting' | 'running'
+let brewPhase = 'idle'; // 'idle' | 'counting' | 'running' | 'done'
 let brewing = false;
 let brewStartTs = 0;
 let brewWallClockStart = 0;
@@ -2906,64 +2907,139 @@ function releaseWakeLock(){
 }
 
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible' && brewPhase !== 'idle' && !wakeLock){
+  if(document.visibilityState === 'visible' && (brewPhase === 'counting' || brewPhase === 'running') && !wakeLock){
     requestWakeLock();
   }
 });
 
-/* ---- Геометрия кольца обратного отсчёта ---- */
-const RING_R = 60;
+/* ================= Таймер в карточке рецепта =================
+   Фазы: idle → counting (5 с) → running → done → idle.
+   counting/running — док превращается в капсулу «звук · Остановить», контролы
+   заблокированы. done — карточка показывает итог с «Оценить / Закрыть»,
+   док и навигация снова свободны. Кольцо — только текущий этап, шкала — весь брю. */
+const RING_R = 43.5;
 const RING_C = 2 * Math.PI * RING_R;
 const COUNTDOWN_SECS = 5;
 let countdownStartTs = 0;
 let countdownLastSec = -1;
 
-document.getElementById('brewArc').setAttribute('stroke-dasharray', RING_C.toFixed(1));
-
-const blStage = document.getElementById('brewStageName');
-const blDots = document.getElementById('brewDots');
-const blElapsed = document.getElementById('brewElapsed');
-const blCapL = document.getElementById('brewCapL');
-const blCapR = document.getElementById('brewCapR');
-const blVolNum = document.getElementById('brewVolNum');
-const blVolAdd = document.getElementById('brewVolAdd');
-const blTimeNum = document.getElementById('brewTimeNum');
-const blArc = document.getElementById('brewArc');
+const tfArc = document.getElementById('tfArc');
+tfArc.setAttribute('stroke-dasharray', RING_C.toFixed(2));
+const tf = {
+  stage: document.getElementById('tfStage'), tot: document.getElementById('tfTot'), note: document.getElementById('brewNote'),
+  k: document.getElementById('tfK'), ck: document.getElementById('tfCdk'), n: document.getElementById('tfN'), a: document.getElementById('tfA'),
+  cd: document.getElementById('tfCd'), trk: document.getElementById('tfTrk'), done: document.getElementById('tfDone')
+};
+const CHECK_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+const reduceMotion = ()=> !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 function setArc(pct){
-  blArc.setAttribute('stroke-dashoffset', (RING_C * (1 - Math.max(0, Math.min(1, pct)))).toFixed(1));
+  tfArc.setAttribute('stroke-dashoffset', (RING_C * (1 - Math.max(0, Math.min(1, pct)))).toFixed(2));
+}
+// Пишем текст только при изменении — меньше работы на каждом кадре
+function setText(el, v){ if(el.textContent !== v) el.textContent = v; }
+function setHTML(el, v){ if(el._h !== v){ el._h = v; el.innerHTML = v; } }
+// Новое число «налить до» въезжает снизу — мягкий сигнал, что этап сменился
+function setTarget(v){
+  if(tf.n.textContent === v) return;
+  tf.n.textContent = v;
+  if(reduceMotion()) return;
+  tf.n.classList.remove('bump'); void tf.n.offsetWidth; tf.n.classList.add('bump');
 }
 
-// Точек столько же, сколько шагов с водой: последняя строка «Готово» не в счёт
-function buildBrewDots(){
-  blDots.innerHTML = '';
-  const n = Math.max(1, (state.schedule || []).length - 1);
-  for(let i=0;i<n;i++){
-    const d = document.createElement('span');
-    d.className = 'bl-dot';
-    blDots.appendChild(d);
-  }
+/* Шкала брю: отрезок на каждый шаг с водой, ширина по времени шага */
+function buildTrack(){
+  const rows = state.schedule || [];
+  const steps = rows.slice(0, -1);
+  tf.trk.innerHTML = steps.map((r,i)=>
+    '<div class="tf-tk" style="flex:' + Math.max(1, rows[i+1].time - r.time) + '"><span class="bar"><i></i></span><span class="lb">' + (i ? i : 'Блум') + '</span></div>').join('');
 }
-function paintDots(idx, done){
-  [...blDots.children].forEach((d,i)=>{
-    d.classList.toggle('on', done || i < idx);
-    d.classList.toggle('cur', !done && i === idx);
+function paintTrack(idx, frac, done){
+  [...tf.trk.children].forEach((el,i)=>{
+    const f = done || i < idx ? 1 : i === idx ? frac : 0;
+    el.classList.toggle('past', done || (idx >= 0 && i < idx));
+    el.classList.toggle('cur', !done && i === idx);
+    el.querySelector('i').style.transform = 'scaleX(' + Math.max(0, Math.min(1, f)).toFixed(4) + ')';
+  });
+}
+// Строки таблицы: прошедшие — галочка, текущая — подсветка
+function paintRows(idx, done){
+  document.querySelectorAll('#pourCard .pour-row').forEach(el=>{
+    const i = Number(el.dataset.index);
+    const isDone = done || (idx >= 0 && i < idx), isCur = !done && i === idx;
+    el.classList.toggle('done', isDone);
+    el.classList.toggle('active', isCur);
+    const ck = el.querySelector('.pour-ck');
+    if(ck) setHTML(ck, isDone ? CHECK_SVG : String(i + 1));
   });
 }
 
-function showBrewCard(show){
-  document.getElementById('brewLive').style.display = show ? 'block' : 'none';
-  // Таб-бар уезжает, на его место встаёт мьют; кнопка действия становится «стоп»
-  document.getElementById('dock').classList.toggle('brewing', show);
-  document.body.classList.toggle('brewing', show);
+/* Длинный рецепт на невысоком экране: текущий и следующий шаг держим над капсулой */
+function keepNextStepVisible(idx){
+  const rows = document.querySelectorAll('#pourCard .pour-row');
+  const target = rows[Math.min(rows.length - 1, idx + 1)];
+  if(!target) return;
+  const limit = document.getElementById('brewBar').getBoundingClientRect().top - 12;
+  const over = target.getBoundingClientRect().bottom - limit;
+  if(over > 0){
+    const page = document.getElementById('pageCalc');
+    try{ page.scrollBy({ top:over, behavior: reduceMotion() ? 'auto' : 'smooth' }); }catch(e){ page.scrollTop += over; }
+  }
 }
 
-/* ---- Сворачиваемый график пролива на время заваривания ----
-   Пока не варим — обычный заголовок и полная таблица, как всегда.
-   Как только стартует отсчёт — заголовок прячется, вместо него
-   тап-строка «График пролива · N шагов»; таблица схлопывается.
-   Возврат к развёрнутому виду — только по явному «Остановить». */
-let pourCollapsed = true;
+/* Высота h0 → новая. Новую меряем при height:auto (scrollHeight при заданной высоте
+   не меньше её самой — из-за этого раньше карточка сначала стояла высокой и потом
+   резко схлопывалась), затем фиксируем h0 и в следующем кадре едем к h1. */
+function animateCardHeight(card, h0){
+  clearTimeout(animateCardHeight.t);
+  card.style.transition = 'none';
+  card.style.height = 'auto';
+  const h1 = card.offsetHeight;
+  card.style.height = h0 + 'px';
+  void card.offsetHeight;
+  card.style.transition = '';
+  if(Math.abs(h1 - h0) < 1){ card.style.height = ''; return; }
+  requestAnimationFrame(()=>{ card.style.height = h1 + 'px'; });
+  const done = e=>{ if(e && e.target !== card) return; card.removeEventListener('transitionend', done); clearTimeout(animateCardHeight.t); card.style.height = ''; };
+  card.addEventListener('transitionend', done);
+  animateCardHeight.t = setTimeout(done, 520);
+}
+
+/* Высота карточки перетекает между рецептом и таймером, лицо проявляется */
+function morphCard(toTimer){
+  const card = document.getElementById('recipeCard');
+  const from = document.getElementById(toTimer ? 'recipeFace' : 'timerFace');
+  const to = document.getElementById(toTimer ? 'timerFace' : 'recipeFace');
+  if(from.hidden && !to.hidden) return; // уже в нужном состоянии
+  const h0 = card.offsetHeight;
+  from.hidden = true; to.hidden = false;
+  if(reduceMotion() || !h0){ card.style.height = ''; return; }
+  animateCardHeight(card, h0);
+  to.classList.remove('face-in'); void to.offsetWidth; to.classList.add('face-in');
+  clearTimeout(morphCard.f);
+  morphCard.f = setTimeout(()=> to.classList.remove('face-in'), 420);
+}
+// Плавно подстроить высоту, когда внутри таймера что-то появилось/исчезло
+function settleCardHeight(change){
+  const card = document.getElementById('recipeCard');
+  const h0 = card.offsetHeight;
+  change();
+  if(reduceMotion() || !h0) return;
+  animateCardHeight(card, h0);
+}
+
+// Карточка-таймер (count/run/done): складки, номера шагов, лицо карточки
+function showBrewCard(show){
+  document.body.classList.toggle('brew-card', show);
+  morphCard(show);
+  if(!show){ paintRows(-1, false); document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('done', 'active')); }
+}
+// Док: ▶ вырастает в капсулу «звук · Остановить», таб-бар уходит под неё
+function setDockBrewing(on){
+  document.getElementById('dock').classList.toggle('brewing', on);
+  document.body.classList.toggle('brewing', on);
+  document.getElementById('brewBar').setAttribute('aria-hidden', String(!on));
+}
 
 function ruStepsWord(n){
   const mod10 = n % 10, mod100 = n % 100;
@@ -2973,18 +3049,13 @@ function ruStepsWord(n){
 }
 
 function updateScheduleUI(){
-  const toggleCard = document.getElementById('pourToggleCard');
   const header = document.getElementById('pourHeader');
   const card = document.getElementById('pourCard');
   const chart = document.getElementById('pourChart');
   const chartBtn = document.getElementById('chartToggle');
-  const btn = document.getElementById('pourToggleBtn');
-  const countEl = document.getElementById('pourToggleCount');
   const customWrap = document.getElementById('customEditorWrap');
 
   if(!isBrewMode()){
-    toggleCard.style.display = 'none';
-    toggleCard.classList.remove('open');
     header.style.display = 'none';
     chart.style.display = 'none';
     card.style.display = 'none';
@@ -2994,75 +3065,50 @@ function updateScheduleUI(){
   const isCustom = state.recipe === 'custom';
   const brewingNow = brewPhase !== 'idle';
 
-  // «Кастом» в покое: редактор со своими полями заменяет таблицу — показывать
-  // оба одновременно значит дублировать одни и те же шаги.
-  // «Кастом» во время брю: редактор всё равно заблокирован для правки, так что
-  // вместо него показываем ту же таблицу, что у Каскада/Поровну — она даёт
-  // подсветку активного шага, которой в редакторе нет.
+  // «Кастом» в покое: редактор со своими полями заменяет таблицу.
+  // Во время брю (и на итоге) — та же таблица, что у Каскада/Поровну:
+  // в ней подсвечивается текущий шаг.
   if(isCustom) customWrap.style.display = brewingNow ? 'none' : 'block';
 
-  // Заголовок «Пролив · ~2:55» со схемой и графиком — в покое; график только по иконке
-  header.style.display = brewingNow ? 'none' : 'flex';
+  // Заголовок «Пролив · ~2:55» есть всегда; схема и график — только в покое
+  header.style.display = 'flex';
   chartBtn.classList.toggle('on', chartOpen);
   chartBtn.setAttribute('aria-pressed', String(chartOpen));
   chartBtn.setAttribute('aria-label', chartOpen ? 'Скрыть график' : 'Показать график');
   chart.style.display = (!brewingNow && chartOpen) ? 'block' : 'none';
-
-  if(!brewingNow){
-    pourCollapsed = true; // сброс — при следующем старте таблица снова схлопнется
-    toggleCard.style.display = 'none';
-    toggleCard.classList.remove('open');
-    card.style.display = isCustom ? 'none' : 'block';
-    return;
-  }
-
-  toggleCard.style.display = 'block';
-  toggleCard.classList.toggle('open', !pourCollapsed);
-  btn.setAttribute('aria-expanded', String(!pourCollapsed));
-  card.style.display = pourCollapsed ? 'none' : 'block';
-
-  const n = (state.schedule || []).length;
-  countEl.textContent = n + ' ' + ruStepsWord(n);
-}
-
-document.getElementById('pourToggleBtn').onclick = ()=>{
-  pourCollapsed = !pourCollapsed;
-  updateScheduleUI();
-};
-
-// «Приготовьтесь» — единственное длинное название этапа среди возможных
-// («Блум», «Пролив N», «Готово»); порог на пару символов выше него,
-// чтобы будущие «Пролив 10» и подобные не переключались зря.
-function setStageLabel(text){
-  blStage.textContent = text;
-  blStage.classList.toggle('bl-stage--tight', text.length > 8);
+  card.style.display = (isCustom && !brewingNow) ? 'none' : 'block';
 }
 
 function beginCountdown(){
   if(!isBrewMode() || !state.schedule || !state.schedule.length) return;
+  if(brewPhase === 'done') closeBrew(true);
   brewPhase = 'counting';
   countdownStartTs = performance.now();
   countdownLastSec = -1;
-  setAction('stop', 'Отменить');
-  // Iced V60: на отсчёте напоминаем про лёд и тару — последний момент это сделать
-  const note = document.getElementById('brewNote');
+  setText(document.getElementById('brewStopLabel'), 'Отменить');
+  // Iced V60: на отсчёте — последний момент положить лёд и обнулить весы
   if(state.mode === 'v60ice'){
-    note.textContent = 'Лёд ' + fmt((state.water || 0) * ICE_SHARE) + ' г — в сервер, весы на ноль';
-    note.style.display = 'block';
+    tf.note.textContent = 'Положите ' + fmt((state.water || 0) * ICE_SHARE) + ' г льда в сервер, поставьте на весы и обнулите';
+    tf.note.hidden = false;
   } else {
-    note.style.display = 'none';
+    tf.note.hidden = true;
   }
-  buildBrewDots();
-  paintDots(-1, false);
-  // Панель таймера выезжает снизу над доком — экран никуда не прокручиваем
-  showBrewCard(true);
+  tf.done.hidden = true;
+  buildTrack();
+  paintTrack(-1, 0, false);
   updateScheduleUI();
+  paintRows(-1, false);
+  showBrewCard(true);
+  setDockBrewing(true);
+  // Таймер — вверху карточки: экран мягко подъезжает к нему
+  const page = document.getElementById('pageCalc');
+  try{ page.scrollTo({ top:0, behavior: reduceMotion() ? 'auto' : 'smooth' }); }catch(e){ page.scrollTop = 0; }
   lockControls(true);
   requestWakeLock();
   tickCountdown();
 }
 
-/* Отсчёт крутится тем же rAF, что и брю: одна петля, кольцо заполняется плавно,
+/* Отсчёт крутится тем же rAF, что и брю: кольцо заполняется плавно,
    бип срабатывает ровно на смене целой секунды. */
 function tickCountdown(){
   if(brewPhase !== 'counting') return;
@@ -3072,14 +3118,13 @@ function tickCountdown(){
   if(secs !== countdownLastSec){ countdownLastSec = secs; beep(660, 90); }
 
   const first = state.schedule[0];
-  setStageLabel('Приготовьтесь');
-  blElapsed.classList.add('bl-hidden');
-  blCapL.textContent = 'налить до';
-  blCapR.textContent = 'старт через';
-  blVolNum.textContent = fmt(first.total);
-  blVolAdd.textContent = '+' + fmt(first.add) + ' мл';
-  blVolAdd.classList.remove('bl-hidden');
-  blTimeNum.textContent = String(secs);
+  setText(tf.stage, 'Приготовьтесь');
+  setText(tf.tot, '');
+  setText(tf.k, 'налить до');
+  setText(tf.ck, 'старт через');
+  setTarget(fmt(first.total));
+  setText(tf.a, '+' + fmt(first.add) + ' мл');
+  setText(tf.cd, String(secs));
   setArc(el / COUNTDOWN_SECS);
 
   if(left <= 0){ launchBrew(); return; }
@@ -3095,9 +3140,8 @@ function launchBrew(){
   brewDoneFired = false;
   journalOfferedThisBrew = false;
   brewEntryPromise = createBrewEntry();
-  setAction('stop', 'Остановить');
-  document.getElementById('brewNote').style.display = 'none';
-  blElapsed.classList.remove('bl-hidden');
+  setText(document.getElementById('brewStopLabel'), 'Остановить');
+  settleCardHeight(()=>{ tf.note.hidden = true; });
   stageAlert();
   try{
     brewMusic.currentTime = 0;
@@ -3107,22 +3151,6 @@ function launchBrew(){
   tickBrew();
 }
 
-function stopBrew(hide){
-  const wasRunning = brewPhase === 'running';
-  brewPhase = 'idle';
-  brewing = false;
-  releaseWakeLock();
-  if(brewRAF) cancelAnimationFrame(brewRAF);
-  if(hide) showBrewCard(false);
-  updateDock();
-  lockControls(false);
-  brewMusic.pause();
-  try{ brewMusic.currentTime = 0; }catch(e){}
-  document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('active'));
-  updateScheduleUI();
-  if(wasRunning) offerRateSheet();
-}
-
 function tickBrew(){
   if(!brewing) return;
   const rows = state.schedule;
@@ -3130,41 +3158,99 @@ function tickBrew(){
 
   let idx = 0;
   for(let i=0;i<rows.length;i++){ if(elapsed >= rows[i].time) idx = i; }
-
   const cur = rows[idx];
   const next = rows[idx+1];
-  const done = !next;
+  if(!next){ finishBrew(false); return; }
 
   if(idx > brewLastIdx){
     for(let i=brewLastIdx+1; i<=idx; i++){ if(i>0) stageAlert(); }
     brewLastIdx = idx;
-    document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.toggle('active', Number(el.dataset.index)===idx));
-    paintDots(idx, done);
+    paintRows(idx, false);
+    keepNextStepVisible(idx);
   }
 
-  setStageLabel(cur.action);
-  blElapsed.textContent = fmtTime(Math.max(0, elapsed));
-  blVolNum.textContent = fmt(cur.total);
-  blCapL.textContent = done ? 'всего налито' : 'налить до';
-  blCapR.textContent = done ? 'завершено за' : (next.action.toLowerCase() + ' через');
-  blVolAdd.textContent = done ? '' : '+' + fmt(cur.add) + ' мл';
-  blVolAdd.classList.toggle('bl-hidden', done);
-
-  if(done){
-    blTimeNum.textContent = fmtTime(cur.time);
-    setArc(1);
-    if(!brewDoneFired){
-      brewDoneFired = true;
-      finishAlert();
-      setTimeout(offerRateSheet, 700);
-    }
-  } else {
-    blTimeNum.textContent = fmtTime(Math.max(0, next.time - elapsed));
-    setArc((elapsed - cur.time) / (next.time - cur.time));
-  }
+  const end = rows[rows.length-1].time;
+  const frac = (elapsed - cur.time) / (next.time - cur.time);
+  setHTML(tf.stage, '<i></i>' + cur.action);
+  setHTML(tf.tot, '<b>' + fmtTime(Math.max(0, elapsed)) + '</b> из ~' + fmtTime(end));
+  setText(tf.k, 'налить до');
+  setText(tf.ck, next === rows[rows.length-1] ? 'до конца' : 'до ' + next.action.toLowerCase().replace('пролив', 'пролива'));
+  setTarget(fmt(cur.total));
+  setText(tf.a, '+' + fmt(cur.add) + ' мл');
+  setText(tf.cd, fmtTime(Math.max(0, next.time - elapsed)));
+  setArc(frac);
+  paintTrack(idx, frac, false);
 
   brewRAF = requestAnimationFrame(tickBrew);
 }
+
+/* Конец брю: последний шаг (stopped=false) или ручная остановка. Таймер
+   встаёт на итоге, док и навигация освобождаются, предлагаем оценку. */
+function finishBrew(stopped){
+  const wasRunning = brewPhase === 'running';
+  if(brewRAF) cancelAnimationFrame(brewRAF);
+  brewPhase = 'done';
+  brewing = false;
+  releaseWakeLock();
+  brewMusic.pause();
+  try{ brewMusic.currentTime = 0; }catch(e){}
+  const rows = state.schedule || [];
+  const elapsed = Math.max(0, (performance.now() - brewStartTs) / 1000);
+  const end = rows.length ? rows[rows.length-1].time : 0;
+  let idx = 0; rows.forEach((r,i)=>{ if(elapsed >= r.time) idx = i; });
+  const poured = stopped ? (rows[idx] ? rows[idx].total : 0) : (rows.length ? rows[rows.length-1].total : 0);
+
+  setText(tf.stage, stopped ? 'Остановлено' : 'Готово');
+  setText(tf.tot, '');
+  setText(tf.k, 'всего налито');
+  setText(tf.ck, 'общее время');
+  setTarget(fmt(poured));
+  setText(tf.a, 'записано в журнал');
+  setText(tf.cd, fmtTime(stopped ? Math.min(elapsed, end) : end));
+  setArc(1);
+  paintTrack(stopped ? idx : -1, stopped ? Math.min(1, (elapsed - rows[idx].time) / Math.max(1, ((rows[idx+1] || rows[idx]).time - rows[idx].time))) : 1, !stopped);
+  paintRows(stopped ? idx : -1, !stopped);
+  settleCardHeight(()=>{ tf.note.hidden = true; tf.done.hidden = false; });
+
+  setDockBrewing(false);
+  lockControls(false);
+  updateDock();
+  updateScheduleUI();
+  if(!stopped){ finishAlert(); }
+  if(wasRunning) setTimeout(offerRateSheet, stopped ? 300 : 700);
+}
+
+/* Полный возврат к рецепту: «Закрыть» на итоге, «Отменить» на отсчёте. */
+function closeBrew(silent){
+  if(brewRAF) cancelAnimationFrame(brewRAF);
+  brewPhase = 'idle';
+  brewing = false;
+  releaseWakeLock();
+  brewMusic.pause();
+  try{ brewMusic.currentTime = 0; }catch(e){}
+  setDockBrewing(false);
+  if(!silent) showBrewCard(false);
+  else { document.body.classList.remove('brew-card'); document.getElementById('timerFace').hidden = true; document.getElementById('recipeFace').hidden = false; }
+  lockControls(false);
+  updateDock();
+  updateScheduleUI();
+  paintRows(-1, false);
+  document.querySelectorAll('#pourCard .pour-row').forEach(el=> el.classList.remove('done', 'active'));
+}
+
+// Старое имя: «остановить» — на отсчёте отмена, во время брю — итог с оценкой
+function stopBrew(hide){
+  if(brewPhase === 'running') finishBrew(true);
+  else if(brewPhase !== 'idle') closeBrew(false);
+}
+
+document.getElementById('brewStopBtn').addEventListener('click', ()=>{ navHapticTick(); stopBrew(true); });
+document.getElementById('tfCloseBtn').addEventListener('click', ()=>{ navHapticTick(); closeBrew(false); });
+document.getElementById('tfRateBtn').addEventListener('click', ()=>{
+  navHapticTick();
+  if(!journalOfferedThisBrew){ offerRateSheet(); return; }
+  if(brewEntryId != null){ track('journal_rate_opened'); openEditSheet(brewEntryId); }
+});
 
 /* ---- Еще → Настройки: размеры порций S/M/L ----
    Шаг 10 мл. Плитки на Кофе обновляются сразу; если правят выбранный
@@ -3212,11 +3298,11 @@ function setAction(kind, label){
   actionBtn.setAttribute('aria-disabled', String(kind === 'off'));
 }
 function updateDock(){
-  if(brewPhase !== 'idle') return;
+  if(brewPhase === 'counting' || brewPhase === 'running') return;
   setAction(dockPage === 0 ? 'add' : (dockPage === 1 && isBrewMode()) ? 'play' : 'off');
 }
 actionBtn.onclick = ()=>{
-  if(brewPhase !== 'idle'){ stopBrew(true); return; }
+  if(brewPhase === 'counting' || brewPhase === 'running'){ stopBrew(true); return; }
   if(actionBtn.classList.contains('play')){ beginCountdown(); return; }
   if(actionBtn.classList.contains('add')){
     navHapticTick();
@@ -5026,7 +5112,7 @@ const NAV_COMMIT_RATIO = 0.4;
 window.addEventListener('resize', ()=>{ navContainerWidth = navViewport.clientWidth; });
 
 function navSetTransform(percent, animate){
-  navPages.style.transition = animate ? 'transform .32s cubic-bezier(.25,.8,.25,1)' : 'none';
+  navPages.style.transition = animate ? 'transform .28s cubic-bezier(.25,.8,.25,1)' : 'none';
   navPages.style.transform = 'translateX(' + percent + '%)';
 }
 /* position — непрерывная координата в "страницах" (0..NAV_COUNT-1):
