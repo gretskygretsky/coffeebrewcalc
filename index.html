@@ -1260,8 +1260,107 @@
   .vstep button:active{ background:var(--track); }
   .vstep .v{ min-width:66px; text-align:center; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; }
 
+
+  /* ---------- Калькулятор: карточка рецепта (режим → объём → итог) ---------- */
+  .rc{ background:var(--card); border-radius:26px; overflow:hidden; }
+  .rc-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 14px 4px 16px; }
+  .mode-pill{ display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:999px; border:none; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; white-space:nowrap;
+    background:color-mix(in srgb, var(--accent, var(--orange)) 14%, transparent); color:var(--accent, var(--orange)); }
+  .mode-pill:active{ transform:scale(.96); }
+  .temp-wrap{ position:relative; display:inline-flex; min-width:0; }
+  .temp-btn{ display:inline-flex; align-items:center; gap:4px; height:30px; padding:0 10px; border-radius:999px; border:none; background:var(--fill); font-family:inherit; font-size:13px; font-weight:600; color:var(--label-2); cursor:pointer; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .temp-btn b{ color:var(--label); font-weight:700; }
+  .temp-btn .i{ color:var(--accent, var(--orange)); margin-left:2px; flex-shrink:0; }
+  .temp-btn[aria-expanded="true"]{ background:color-mix(in srgb, var(--accent, var(--orange)) 14%, transparent); }
+  .temp-btn:disabled{ opacity:.5; }
+  /* Подсказка «Почему столько?» — до первого открытия температуры, сама гаснет через 6 с */
+  .hint-tip.glass{ position:absolute; right:0; top:calc(100% + 10px); z-index:5; white-space:nowrap; font-size:13px; font-weight:600; color:var(--label); padding:8px 12px; border-radius:14px; pointer-events:none;
+    background:color-mix(in srgb, var(--glass-solid) 86%, transparent);
+    animation:tipIn .4s cubic-bezier(.3,1.35,.5,1) .3s both, tipBob 1.2s ease-in-out .8s 3, tipOut .4s ease 6s forwards; }
+  .hint-tip::after{ content:""; position:absolute; right:22px; top:-6px; width:12px; height:12px; background:inherit; transform:rotate(45deg); border-left:0.5px solid var(--glass-edge); border-top:0.5px solid var(--glass-edge); border-radius:3px 0 0 0; }
+  @keyframes tipIn{ from{ opacity:0; transform:translateY(-4px) scale(.9); } to{ opacity:1; transform:none; } }
+  @keyframes tipBob{ 50%{ transform:translateY(2px); } }
+  @keyframes tipOut{ to{ opacity:0; transform:translateY(-4px) scale(.95); } }
+  .rc .temp-detail{ display:block; margin:8px 14px 4px; padding:2px 12px 12px; background:var(--fill); border-radius:16px; animation:rowIn .3s cubic-bezier(.3,1.25,.5,1); }
+  .rc .temp-detail[hidden]{ display:none; }
+  .rc .temp-detail .pills{ margin:0 -12px; padding:0 12px 2px; }
+  .rc .temp-detail .pill.active{ background:var(--accent, var(--orange)); }
+  .temp-src{ font-size:12.5px; color:var(--label-2); margin:10px 0 0; line-height:1.4; }
+  .temp-src b{ color:var(--label); font-weight:600; }
+  .temp-src:empty{ display:none; }
+  .rc .sizes{ border-bottom:none; }
+  .slider-row{ display:flex; align-items:center; gap:10px; padding:10px 14px 10px 8px; min-height:88px; animation:morph .35s cubic-bezier(.3,1.25,.5,1); }
+  @keyframes morph{ from{ opacity:0; transform:scale(.97); } to{ opacity:1; transform:none; } }
+  .vol-back{ width:40px; height:40px; border-radius:50%; border:none; background:var(--fill); color:var(--accent, var(--orange)); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .slider-body{ flex:1; min-width:0; }
+  .slider-top{ display:flex; justify-content:space-between; align-items:baseline; }
+  .slider-top span{ font-size:13px; color:var(--label-2); }
+  .slider-top b{ font-size:22px; font-weight:700; color:var(--accent, var(--orange)); font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+  .slider-body input[type=range]{ margin:10px 0 4px; }
+  .ticks{ position:relative; height:14px; font-size:11px; color:var(--label-3); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .ticks span{ position:absolute; top:0; }
+  .ticks .mid{ transform:translateX(-50%); font-weight:600; }
+  #classicInput .row{ padding-left:18px; }
+  .rc-res{ position:relative; padding:14px 14px 14px 18px; }
+  .rc-res::before{ content:""; position:absolute; top:0; left:18px; right:0; height:0.5px; background:var(--separator); }
+  .res-nums{ display:flex; align-items:baseline; gap:8px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .res-nums b{ font-size:clamp(30px, 9.6vw, 38px); font-weight:700; letter-spacing:-0.03em; line-height:1; }
+  .res-nums b.c{ color:var(--accent, var(--orange)); }
+  .res-nums span{ font-size:15px; color:var(--label-2); font-weight:600; }
+  .res-nums .arrow{ color:var(--label-3); font-size:20px; margin:0 2px; }
+  .res-ice{ font-size:13px; color:var(--label-2); margin-top:8px; font-variant-numeric:tabular-nums; }
+  .res-ice b{ color:var(--accent, var(--teal)); font-weight:600; }
+  .res-adj{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; }
+  .res-ratio{ font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; min-width:0; white-space:nowrap; }
+  .ratio-reset{ border:none; background:none; padding:6px 0; cursor:pointer; font-family:inherit; color:var(--accent, var(--orange)); }
+  .ratio-reset .rs{ color:var(--label-3); margin-left:2px; }
+  .str{ display:flex; background:var(--fill); border-radius:999px; padding:2px; flex-shrink:0; }
+  .str button{ height:32px; padding:0 12px; border:none; background:none; border-radius:999px; font-family:inherit; font-size:13px; font-weight:600; color:var(--accent, var(--orange)); cursor:pointer; white-space:nowrap; }
+  .str button:active{ background:var(--card); }
+  .str button:disabled{ opacity:.4; }
+  .str i{ width:0.5px; background:var(--separator); margin:7px 0; }
+
+  /* ---------- Пролив: таблица всегда, график — по иконке, схема — меню ---------- */
+  .pour-cap{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin:22px 4px 8px; font-size:13px; font-weight:600; color:var(--label-2); text-transform:uppercase; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+  .cap-tools{ display:flex; gap:6px; align-items:center; text-transform:none; letter-spacing:0; }
+  .chart-tg{ width:30px; height:30px; border-radius:50%; border:none; background:var(--fill); color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s, color .2s; }
+  .chart-tg.on{ background:color-mix(in srgb, var(--accent, var(--orange)) 16%, transparent); color:var(--accent, var(--orange)); }
+  .pill-menu{ display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 11px; border-radius:999px; border:none; background:var(--fill); color:var(--label); font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .pill-menu svg{ color:var(--label-3); }
+  .pill-menu:disabled{ opacity:.5; }
+  .chart-in{ background:var(--card); border-radius:22px; padding:12px 10px 8px; margin-bottom:10px; animation:morph .3s cubic-bezier(.3,1.25,.5,1); }
+  .chart-in svg{ display:block; width:100%; height:auto; }
+  .chart-in text{ font-size:10.5px; fill:var(--label-2); font-variant-numeric:tabular-nums; }
+  #pourHeader + .chart-in + .pour-toggle-card + .pour-card, .pour-cap ~ .pour-card{ margin-top:0; }
+
+  /* ---------- Выпадающее меню (iOS 26): вырастает из точки касания ---------- */
+  .pop-scrim{ position:fixed; inset:0; z-index:80; display:none; }
+  .pop-scrim.show{ display:block; }
+  .pop-menu.glass{ position:fixed; z-index:81; min-width:230px; width:max-content; max-width:min(320px, calc(100vw - 32px)); border-radius:22px; padding:6px;
+    background:color-mix(in srgb, var(--glass-solid) 84%, transparent);
+    transform-origin:top left; transform:scale(.6); opacity:0; pointer-events:none; transition:transform .32s cubic-bezier(.3,1.35,.5,1), opacity .18s; }
+  .pop-menu.show{ transform:none; opacity:1; pointer-events:auto; }
+  .pop-menu.right{ transform-origin:top right; }
+  .mi{ width:100%; display:flex; align-items:center; gap:12px; border:none; background:none; padding:10px 12px; border-radius:16px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
+  .mi:active, .mi:focus-visible{ background:var(--fill); outline:none; }
+  .mi .ck{ width:16px; color:var(--blue); flex-shrink:0; display:flex; }
+  .mi .t{ flex:1; min-width:0; }
+  .mi .t b{ display:block; font-size:16px; font-weight:600; }
+  .mi .t span{ display:block; font-size:12.5px; color:var(--label-2); margin-top:1px; line-height:1.35; }
+  .mi .ic{ color:var(--label-2); flex-shrink:0; display:flex; }
+
+  /* ---------- Еще: пропорция по умолчанию для каждого режима ---------- */
+  .ratio-set{ padding:12px 16px; border-bottom:0.5px solid var(--separator); }
+  .ratio-set:last-child{ border-bottom:none; }
+  .ratio-set .nm{ font-size:15px; margin:0 0 8px; display:flex; justify-content:space-between; }
+  .ratio-set .nm span{ font-size:12.5px; color:var(--label-2); }
+  .ratio-set .pills{ margin:0 -16px; padding:0 16px 2px; }
+  .ratio-set .pill{ font-size:13px; padding:7px 12px; }
+
   @media (prefers-reduced-motion: reduce){
-    .brew-live, .custom-row{ animation:none; }
+    .brew-live, .custom-row, .slider-row, .chart-in, .rc .temp-detail{ animation:none; }
+    .hint-tip.glass{ animation:none; }
+    .pop-menu.glass{ transition:none; }
     .tab-lens.anim, .action, .action svg, .tabbar, .music-square{ transition:none; }
   }
 </style>
@@ -1313,40 +1412,44 @@
 
       <div class="page" id="pageCalc">
   <p class="eyebrow" id="eyebrow">Калькулятор</p>
-  <h1>Пропорции</h1>
+  <h1>Кофе</h1>
 
-  <div class="segmented" id="modeSeg">
-    <div class="thumb"></div>
-    <button class="seg-btn active" data-mode="v60">V60</button>
-    <button class="seg-btn" data-mode="v60ice">Iced V60</button>
-    <button class="seg-btn" data-mode="cold">Cold brew</button>
-  </div>
+  <!-- Карточка рецепта: режим → объём → итог. Пропорция по умолчанию — в «Еще»,
+       здесь её только подстраивают «мягче / крепче». -->
+  <div class="rc" id="recipeCard">
+    <div class="rc-top">
+      <button class="mode-pill" id="modeBtn" type="button" aria-haspopup="menu" aria-label="Режим заваривания"><span id="modeLabel">V60</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
+      <span class="temp-wrap">
+        <button class="temp-btn" id="tempToggle" type="button" aria-expanded="false" aria-controls="tempDetail" aria-describedby="tempTip">вода <b id="tempValue">93 °C</b><svg class="i" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg></button>
+        <span class="hint-tip glass" id="tempTip" role="tooltip" hidden>Почему столько? Нажмите</span>
+      </span>
+    </div>
+    <div class="temp-detail" id="tempDetail" hidden>
+      <p class="temp-src" id="tempSrc"></p>
+      <div id="tempPicks">
+        <p class="temp-group-label">Обжарка</p>
+        <div class="pills" id="roastPills"></div>
+        <p class="temp-group-label">Обработка</p>
+        <div class="pills" id="processPills"></div>
+      </div>
+      <div id="tempWhy"></div>
+    </div>
 
-  <!-- Место под выбор рецепта (Hario / Rao / наш) — рендерится и показывается,
-       только когда рецептов больше одного, см. RECIPES и renderRecipeSeg() -->
-
-  <p class="section-header">Пропорция</p>
-  <div class="pills" id="ratioPills"></div>
-  <p class="ratio-hint" id="ratioHint"></p>
-
-  <div id="classicInput">
-    <p class="section-header">Объём</p>
-    <div class="card">
-      <div style="display:flex; align-items:stretch;">
-        <div id="classicVisualRow" style="display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0 2px 0 14px;"><svg id="visual" viewBox="0 0 100 120" style="width:56px; height:67px;"></svg></div>
-        <div style="flex:1; min-width:0;">
-      <div class="row">
-        <span class="row-label">Зерна</span>
-        <div class="stepper-field">
-          <div class="stepper">
-            <button id="classicCoffeeStepDown">−</button>
-            <div class="divider"></div>
-            <button id="classicCoffeeStepUp">+</button>
-          </div>
-          <input type="number" id="classicCoffeeInput" value="26">
-          <span class="unit">г</span>
+    <!-- V60 и Iced V60: порции S · M · L · Свой. «Свой» сворачивает плитки в ползунок на том же месте. -->
+    <div id="cupInput">
+      <div class="sizes" id="cupSizes" role="radiogroup" aria-label="Размер порции"></div>
+      <div class="slider-row" id="cupCustomRow" style="display:none;">
+        <button class="vol-back" id="cupBackBtn" type="button" aria-label="Вернуться к порциям S, M, L"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="slider-body">
+          <div class="slider-top"><span>Свой объём</span><b id="sliderVolVal">300 мл</b></div>
+          <input type="range" id="volSlider" min="100" max="600" step="1" value="300" aria-label="Свой объём воды">
+          <div class="ticks" id="volTicks"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Cold brew: объём воды задаётся напрямую -->
+    <div id="classicInput" style="display:none;">
       <div class="row" id="classicWaterRow">
         <span class="row-label" id="classicWaterLabel">Вода</span>
         <div class="stepper-field">
@@ -1355,57 +1458,18 @@
             <div class="divider"></div>
             <button id="classicWaterStepUp">+</button>
           </div>
-          <input type="number" id="classicWaterInput" value="416">
+          <input type="number" id="classicWaterInput" value="1000">
           <span class="unit">мл</span>
         </div>
       </div>
-        </div>
-      </div>
-      <div class="row" id="classicDerivedRow1" style="display:none;">
-        <span class="row-label" id="classicDerivedLabel1">Горячая вода</span>
-        <span class="stat-value" id="classicDerivedValue1" style="font-size:17px;"></span>
-      </div>
-      <div class="row" id="classicDerivedRow2" style="display:none;">
-        <span class="row-label" id="classicDerivedLabel2">Лёд в чашке</span>
-        <span class="stat-value" id="classicDerivedValue2" style="font-size:17px;"></span>
-      </div>
     </div>
-  </div>
 
-  <!-- V60 и Iced V60: порции S · M · L · Свой. Объём для Iced — вместе со льдом. -->
-  <div id="cupInput" style="display:none;">
-    <p class="section-header">Объём</p>
-    <div class="card">
-      <div class="sizes" id="cupSizes" role="radiogroup" aria-label="Размер порции"></div>
-      <div class="row custom-row" id="cupCustomRow" style="flex-direction:column; align-items:stretch; gap:8px; display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;">
-          <span class="row-label">Свой объём</span>
-          <span class="stat-value" id="sliderVolVal" style="font-size:20px;">300 мл</span>
-        </div>
-        <input type="range" id="volSlider" min="100" max="500" step="1" value="300" aria-label="Свой объём воды">
-        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--label-2);">
-          <span>100</span><span>500</span>
-        </div>
-      </div>
-      <div class="row">
-        <span class="row-label" id="coffeeRowLabel">Кофе · 1:16</span>
-        <div class="stepper-field">
-          <div class="stepper">
-            <button id="coffeeStepDown">−</button>
-            <div class="divider"></div>
-            <button id="coffeeStepUp">+</button>
-          </div>
-          <input type="number" id="coffeeInput" value="18.5" step="0.5">
-          <span class="unit">г</span>
-        </div>
-      </div>
-      <div class="row" id="cupHotRow" style="display:none;">
-        <span class="row-label">Горячая вода</span>
-        <span class="stat-value" id="cupHotVal" style="font-size:17px; color:var(--label);"></span>
-      </div>
-      <div class="row" id="cupIceRow" style="display:none;">
-        <span class="row-label">Лёд в сервере</span>
-        <span class="stat-value" id="cupIceVal" style="font-size:17px;"></span>
+    <div class="rc-res" id="calcRes">
+      <div class="res-nums"><b class="c" id="resCoffee">20</b><span>г</span><span class="arrow">→</span><b id="resWater">320</b><span>мл</span></div>
+      <div class="res-ice" id="resIce" style="display:none;">Воды <span id="cupHotVal"></span> · <b>лёд <span id="cupIceVal"></span></b> в сервер</div>
+      <div class="res-adj">
+        <span class="res-ratio" id="resRatio"></span>
+        <span class="str"><button type="button" id="coffeeStepDown" aria-label="Мягче: меньше кофе">− мягче</button><i></i><button type="button" id="coffeeStepUp" aria-label="Крепче: больше кофе">крепче +</button></span>
       </div>
     </div>
   </div>
@@ -1413,29 +1477,30 @@
   <p class="section-header">Зерно</p>
   <div id="calcBeanCard" role="button" tabindex="0" aria-label="Выбрать зерно"></div>
 
-  <div class="card temp-card" id="tempCard" style="display:none;">
-    <button class="temp-toggle" id="tempToggle" aria-expanded="false" aria-controls="tempDetail">
-      <span class="row-label">Температура воды</span>
-      <span class="temp-right">
-        <span class="temp-value" id="tempValue">93 °C</span>
-        <svg class="temp-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+  <div class="tip ice" id="iceTip" style="display:none; margin-top:22px;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
+    <span id="iceTipText"></span>
+  </div>
+  <div class="pour-cap" id="pourHeader" style="display:none;">
+    <span id="pourCapText">Пролив</span>
+    <span class="cap-tools">
+      <button class="chart-tg" id="chartToggle" type="button" aria-pressed="false" aria-label="Показать график"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4 16l4-5 4 2 4-6 4 3"/></svg></button>
+      <button class="pill-menu" id="schemeBtn" type="button" aria-haspopup="menu" aria-label="Схема пролива"><span id="schemeLabel">Каскад</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
+    </span>
+  </div>
+  <div class="chart-in" id="pourChart" style="display:none;"></div>
+  <div class="card pour-toggle-card" id="pourToggleCard" style="display:none;">
+    <button class="pour-toggle-btn" id="pourToggleBtn" aria-expanded="false" aria-controls="pourCard">
+      <span class="row-label">График пролива</span>
+      <span class="pour-toggle-right">
+        <span class="pour-toggle-count" id="pourToggleCount"></span>
+        <svg class="pour-toggle-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </span>
     </button>
-    <div class="temp-detail" id="tempDetail">
-      <p class="temp-group-label">Обжарка</p>
-      <div class="pills" id="roastPills"></div>
-      <p class="temp-group-label">Обработка</p>
-      <div class="pills" id="processPills"></div>
-      <div id="tempWhy"></div>
-    </div>
   </div>
-
-  <p class="section-header" id="recipeHeader" style="display:none;">Схема пролива</p>
-  <div class="segmented" id="recipeSeg" style="display:none; margin-bottom:8px;"></div>
-  <p class="ratio-hint" id="recipeHint" style="display:none; margin:0 4px 14px;"></p>
+  <div class="card pour-card" id="pourCard"></div>
 
   <div id="customEditorWrap" style="display:none;">
-    <p class="section-header">Кастомный график</p>
     <div class="card" id="customEditor"></div>
     <button class="ce-add" id="ceAddPour">Добавить пролив</button>
 
@@ -1455,21 +1520,6 @@
     <div class="ce-warn" id="ceWarn" style="display:none;"></div>
   </div>
 
-  <div class="tip ice" id="iceTip" style="display:none; margin-top:22px;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>
-    <span id="iceTipText"></span>
-  </div>
-  <p class="section-header pour-header" id="pourHeader" style="display:none;">График пролива</p>
-  <div class="card pour-toggle-card" id="pourToggleCard" style="display:none;">
-    <button class="pour-toggle-btn" id="pourToggleBtn" aria-expanded="false" aria-controls="pourCard">
-      <span class="row-label">График пролива</span>
-      <span class="pour-toggle-right">
-        <span class="pour-toggle-count" id="pourToggleCount"></span>
-        <svg class="pour-toggle-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </span>
-    </button>
-  </div>
-  <div class="card pour-card" id="pourCard"></div>
 
   <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
 
@@ -1498,12 +1548,19 @@
         <p class="section-header">Размеры порций</p>
         <div class="card" id="sizeSettings"></div>
         <p class="ratio-hint">Плитки S, M, L на Калькуляторе. Для Iced V60 объём считается вместе со льдом.</p>
+        <p class="section-header">Пропорция по умолчанию</p>
+        <div class="card" id="ratioSettings"></div>
+        <p class="ratio-hint">С неё начинается каждая чашка. На Калькуляторе её подстраивают «мягче / крепче».</p>
       </div>
     </div>
   </div>
 </div>
 
 <div class="edge-fade"></div>
+
+<!-- Выпадающее меню iOS 26 (режим, схема пролива): стеклянная плашка поверх контента -->
+<div class="pop-scrim" id="popScrim"></div>
+<div class="pop-menu glass" id="popMenu" role="menu"></div>
 
   <div class="brew-live glass" id="brewLive">
     <div class="bl-top">
@@ -1704,6 +1761,25 @@ const DEFAULT_RATIO = { v60:16, v60ice:16, cold:5 };
 const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
 const MAX_COFFEE = { v60:30, v60ice:30 };
 const EYEBROW = { v60:'Калькулятор', v60ice:'Калькулятор · лёд', cold:'Долгий настой' };
+/* Пропорция по умолчанию — своя для каждого режима, правится в «Еще».
+   На Калькуляторе state.ratio — фактическая: «мягче / крепче» её сдвигают, ↺ возвращает. */
+const ratioPref = Object.assign({}, DEFAULT_RATIO);
+(function loadRatioPrefs(){
+  try{
+    const o = JSON.parse(localStorage.getItem('ratioDefaults') || 'null');
+    if(o) Object.keys(DEFAULT_RATIO).forEach(m=>{ const v = Number(o[m]); if(RATIOS[m].includes(v)) ratioPref[m] = v; });
+  }catch(e){}
+})();
+function saveRatioPrefs(){ try{ localStorage.setItem('ratioDefaults', JSON.stringify(ratioPref)); }catch(e){} }
+const MODE_META = {
+  v60:    { t:'V60', d:'Горячий пролив', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5h17l-6 8h-5z"/><path d="M9.5 13v2h5v-2M7 19h10"/></svg>' },
+  v60ice: { t:'Iced V60', d:'Пролив на лёд', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></svg>' },
+  cold:   { t:'Cold brew', d:'Настой 12–24 часа', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="15" rx="3"/><path d="M8 3h8v3H8z"/></svg>' }
+};
+const SCHEME_DESC = { cascade:'Блум и проливы по убывающей. Подходит почти всегда', equal:'Одинаковые проливы — ровный ритм', custom:'Свои объёмы и паузы' };
+let coldWater = 1000;
+let chartOpen = false;
+try{ chartOpen = localStorage.getItem('pourChartOpen') === '1'; }catch(e){}
 
 /* ---- Рецепты V60: три равноправных варианта — Каскад и Поровну раньше были
    подуровнем внутри «Классики» (общая формула + переключатель формы), теперь
@@ -2010,29 +2086,49 @@ function buildTempPills(){
   mk('roastPills', ROASTS, 'roast');
   mk('processPills', PROCESSES, 'process');
 
-  const card = document.getElementById('tempCard');
-  document.getElementById('tempToggle').onclick = ()=>{
-    const open = !card.classList.contains('open');
-    card.classList.toggle('open', open);
-    document.getElementById('tempToggle').setAttribute('aria-expanded', String(open));
-    if(open) track('temp_hint_expanded');
+  const btn = document.getElementById('tempToggle');
+  btn.onclick = ()=>{
+    const detail = document.getElementById('tempDetail');
+    const open = detail.hidden;
+    detail.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    if(open){
+      try{ localStorage.setItem('tempTipSeen', '1'); }catch(e){}
+      track('temp_hint_expanded');
+    }
+    updateTempTip();
   };
+}
+// «Почему столько? Нажмите» — пока температуру ни разу не открывали
+function updateTempTip(){
+  let seen = false;
+  try{ seen = localStorage.getItem('tempTipSeen') === '1'; }catch(e){}
+  document.getElementById('tempTip').hidden = seen || !document.getElementById('tempDetail').hidden;
 }
 
 function updateTempBlock(){
-  const card = document.getElementById('tempCard');
-  if(state.mode === 'cold'){
-    card.style.display = 'none';
-    card.classList.remove('open');
-    document.getElementById('tempToggle').setAttribute('aria-expanded', 'false');
-    return;
-  }
-  card.style.display = 'block';
-
   const accent = accentVar(state.mode);
   const valueEl = document.getElementById('tempValue');
-  valueEl.style.setProperty('--accent', accent);
+  const why = document.getElementById('tempWhy');
+  const src = document.getElementById('tempSrc');
+  why.innerHTML = '';
+  if(state.mode === 'cold'){
+    valueEl.textContent = 'холодная';
+    document.getElementById('tempPicks').style.display = 'none';
+    src.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'temp-why';
+    p.innerHTML = '<b>Холодная вода</b> — комнатной температуры или из холодильника. Экстракция идёт сама, медленно: поэтому и 12–24 часа.';
+    why.appendChild(p);
+    return;
+  }
+  document.getElementById('tempPicks').style.display = 'block';
   valueEl.textContent = brewTemp() + ' °C';
+
+  const bean = activeBeanId != null && typeof beans !== 'undefined' ? beans.find(b=> b.id === activeBeanId) : null;
+  src.innerHTML = bean
+    ? 'Из профиля зерна <b>' + escapeHTML(bean.name || 'Без названия') + '</b>. Можно поправить для этой чашки.'
+    : 'Зерно не выбрано — укажите обжарку и обработку.';
 
   document.querySelectorAll('#roastPills .pill').forEach(b=>{
     b.style.setProperty('--accent', accent);
@@ -2043,8 +2139,6 @@ function updateTempBlock(){
     b.classList.toggle('active', b.dataset.value === state.process);
   });
 
-  const why = document.getElementById('tempWhy');
-  why.innerHTML = '';
   const paras = (PROCESS_WHY[state.process] || []).slice();
   if(state.mode === 'v60ice') paras.push(TEMP_ICE_NOTE);
   paras.forEach(t=>{
@@ -2059,147 +2153,154 @@ function updateTempBlock(){
   why.appendChild(foot);
 }
 
-function renderPills(){
-  const wrap = document.getElementById('ratioPills');
-  wrap.innerHTML = '';
-  const accent = accentVar(state.mode);
-  RATIOS[state.mode].forEach(r=>{
-    const b = document.createElement('button');
-    b.className = 'pill' + (r===state.ratio ? ' active' : '');
-    b.style.setProperty('--accent', accent);
-    b.textContent = state.mode==='cold' ? COLD_LABELS[r] : ('1:'+r);
-    b.onclick = ()=>{
-      state.ratio = r;
-      if(isBrewMode()){ state.inputType = 'water'; state.value = cupWater(); }
-      renderPills(); compute();
-    };
-    wrap.appendChild(b);
-  });
-  const hint = document.getElementById('ratioHint');
-  hint.textContent = (state.mode==='v60' || state.mode==='v60ice') ? (RATIO_HINTS[state.ratio] || '') : '';
+/* «Еще» → Пропорция по умолчанию: по ряду пилюль на режим */
+function renderRatioSettings(){
+  const wrap = document.getElementById('ratioSettings');
+  if(!wrap) return;
+  wrap.innerHTML = Object.keys(MODE_META).map(m=>
+    '<div class="ratio-set"><p class="nm">' + MODE_META[m].t + '<span>' + (m === 'cold' ? '' : (RATIO_HINTS[ratioPref[m]] || '')) + '</span></p>' +
+    '<div class="pills">' + RATIOS[m].map(r=> '<button class="pill' + (r === ratioPref[m] ? ' active' : '') + '" data-m="' + m + '" data-r="' + r + '" style="--accent:var(' + ACCENT[m] + ')">' + (m === 'cold' ? COLD_LABELS[r] : '1:' + r) + '</button>').join('') + '</div></div>').join('');
 }
+document.getElementById('ratioSettings').addEventListener('click', e=>{
+  const b = e.target.closest('.pill'); if(!b) return;
+  const m = b.dataset.m, r = Number(b.dataset.r);
+  ratioPref[m] = r;
+  saveRatioPrefs();
+  renderRatioSettings();
+  track('ratio_default_changed', { mode:m, ratio:r });
+  if(state.mode === m && brewPhase === 'idle'){ state.ratio = r; compute(); }
+});
+// Старое имя: пропорция больше не выбирается на Калькуляторе, оставляем вызовы рабочими
+function renderPills(){ renderRatioSettings(); }
 
-const modeSeg = document.getElementById('modeSeg');
-
-// Кнопки и .thumb строятся один раз — если пересобирать их на каждый клик
-// (как было раньше), новый .thumb рождается сразу в целевой позиции и
-// анимации сдвига попросту неоткуда взяться. Дальше только двигаем thumb
-// и переключаем .active — точно так же, как у modeSeg.
-function buildRecipeSeg(){
-  const wrap = document.getElementById('recipeSeg');
-  wrap.innerHTML = '<div class="thumb"></div>';
-  RECIPES.forEach(rec=>{
-    const b = document.createElement('button');
-    b.className = 'seg-btn';
-    b.textContent = rec.label;
-    b.dataset.recipe = rec.id;
-    b.onclick = ()=>{
-      state.recipe = rec.id;
-      if(rec.ratio != null) state.ratio = rec.ratio;
-      if(isBrewMode()){ state.inputType = 'water'; state.value = cupWater(); }
-      renderRecipeSeg();
-      renderPills();
-      compute();
-    };
-    wrap.appendChild(b);
-  });
+function ratioModified(){ return Math.abs(state.ratio - ratioPref[state.mode]) > 0.05; }
+// «мягче / крепче»: объём на месте, граммы ±шаг — пропорция становится фактической
+function adjustStrength(dir){
+  if(brewPhase !== 'idle' || !state.water) return;
+  const step = isBrewMode() ? 0.5 : 5;
+  const base = Math.round((state.coffee || 0) / step) * step;
+  const c = Math.max(step, base + dir * step);
+  state.ratio = state.water / c;
+  state.inputType = 'water'; state.value = state.water;
+  navHapticTick();
+  compute();
 }
+document.getElementById('coffeeStepUp').onclick = ()=> adjustStrength(1);
+document.getElementById('coffeeStepDown').onclick = ()=> adjustStrength(-1);
+document.getElementById('resRatio').addEventListener('click', e=>{
+  if(!e.target.closest('.ratio-reset') || brewPhase !== 'idle') return;
+  state.ratio = ratioPref[state.mode];
+  compute();
+});
 
-function renderRecipeSeg(){
-  const wrap = document.getElementById('recipeSeg');
-  const hint = document.getElementById('recipeHint');
-  const header = document.getElementById('recipeHeader');
-  if(!isBrewMode() || RECIPES.length < 2){
-    wrap.style.display = 'none';
-    hint.style.display = 'none';
-    header.style.display = 'none';
-    return;
+/* ---- Выпадающее меню: режим и схема пролива ---- */
+const popMenu = document.getElementById('popMenu'), popScrim = document.getElementById('popScrim');
+const POP_TICK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+function openPopMenu(kind, anchor){
+  if(brewPhase !== 'idle') return;
+  const items = kind === 'mode'
+    ? Object.keys(MODE_META).map(k=> ({ k, t:MODE_META[k].t, d:MODE_META[k].d, icon:MODE_META[k].icon }))
+    : RECIPES.map(r=> ({ k:r.id, t:r.label, d:SCHEME_DESC[r.id] || '' }));
+  const cur = kind === 'mode' ? state.mode : state.recipe;
+  popMenu.innerHTML = items.map(it=> '<button class="mi" type="button" role="menuitemradio" aria-checked="' + (it.k === cur) + '" data-kind="' + kind + '" data-k="' + it.k + '">' +
+    '<span class="ck">' + (it.k === cur ? POP_TICK : '') + '</span><span class="t"><b>' + it.t + '</b><span>' + it.d + '</span></span>' + (it.icon ? '<span class="ic">' + it.icon + '</span>' : '') + '</button>').join('');
+  const r = anchor.getBoundingClientRect(), vw = window.innerWidth;
+  const right = r.left + r.width / 2 > vw / 2;
+  popMenu.classList.toggle('right', right);
+  popMenu.style.right = 'auto';
+  // Меряем в покое (без scale), потом ставим в пределах экрана с полями 16 px
+  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
+  const mw = popMenu.offsetWidth, mh = popMenu.offsetHeight;
+  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
+  const left = Math.max(16, Math.min(vw - 16 - mw, right ? r.right - mw : r.left));
+  popMenu.style.left = Math.round(left) + 'px';
+  // Не влезает вниз — раскрываем вверх от кнопки
+  const down = r.bottom + 8 + mh <= window.innerHeight - 90;
+  popMenu.style.top = Math.round(down ? r.bottom + 8 : Math.max(12, r.top - 8 - mh)) + 'px';
+  popMenu.style.transformOrigin = (down ? 'top ' : 'bottom ') + (right ? 'right' : 'left');
+  popScrim.classList.add('show');
+  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  navHapticTick();
+}
+function closePopMenu(){ popMenu.classList.remove('show'); popScrim.classList.remove('show'); }
+popScrim.addEventListener('click', closePopMenu);
+popScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closePopMenu(); });
+popMenu.addEventListener('click', e=>{
+  const b = e.target.closest('.mi'); if(!b) return;
+  const kind = b.dataset.kind, k = b.dataset.k;
+  closePopMenu();
+  if(kind === 'mode'){ if(k !== state.mode){ setMode(k); track('mode_selected', { mode:k }); } }
+  else if(k !== state.recipe){
+    state.recipe = k;
+    if(isBrewMode()){ state.inputType = 'water'; state.value = state.water || cupWater(); }
+    renderRecipeSeg();
+    compute();
+    track('recipe_selected', { recipe:k });
   }
-  wrap.style.display = 'flex';
-  hint.style.display = 'block';
-  header.style.display = 'block';
-  hint.textContent = RECIPE_HINTS[state.recipe] || '';
+});
+document.getElementById('modeBtn').addEventListener('click', e=> openPopMenu('mode', e.currentTarget));
+document.getElementById('schemeBtn').addEventListener('click', e=> openPopMenu('scheme', e.currentTarget));
+document.getElementById('chartToggle').addEventListener('click', ()=>{
+  chartOpen = !chartOpen;
+  try{ localStorage.setItem('pourChartOpen', chartOpen ? '1' : '0'); }catch(e){}
+  updateScheduleUI();
+  if(chartOpen) track('pour_chart_opened');
+});
 
-  const btns = [...wrap.querySelectorAll('.seg-btn')];
-  btns.forEach(b=> b.classList.toggle('active', b.dataset.recipe === state.recipe));
-  const idx = btns.findIndex(b=>b.classList.contains('active'));
-  if(idx>=0) moveThumb(wrap, idx, btns.length);
+function buildRecipeSeg(){}
+function renderRecipeSeg(){
+  document.getElementById('schemeLabel').textContent = getRecipe(state.recipe).label;
 }
 
 function setMode(mode, animate){
+  closePopMenu();
   state.mode = mode;
-  if(isBrewMode(mode)){
-    const rr = getRecipe(state.recipe).ratio;
-    state.ratio = rr != null ? rr : (state.ratio || DEFAULT_RATIO[mode]);
-    // V60 и Iced V60 считаются от порции: объём чашки фиксирован, граммы — производные
-    state.inputType = 'water';
-    state.value = cupWater();
-  } else {
-    state.ratio = DEFAULT_RATIO[mode];
-  }
-  const btns = [...modeSeg.querySelectorAll('.seg-btn')];
-  btns.forEach((b,i)=>{
-    b.classList.toggle('active', b.dataset.mode===mode);
-    if(b.dataset.mode===mode) moveThumb(modeSeg, i, btns.length);
-  });
+  state.ratio = ratioPref[mode];
+  state.inputType = 'water';
+  // V60 и Iced V60 считаются от порции: объём чашки фиксирован, граммы — производные
+  state.value = isBrewMode(mode) ? cupWater() : coldWater;
+  document.getElementById('modeLabel').textContent = MODE_META[mode].t;
   document.getElementById('eyebrow').textContent = EYEBROW[mode];
   document.getElementById('eyebrow').style.setProperty('--accent', accentVar(mode));
+  document.getElementById('pageCalc').style.setProperty('--accent', accentVar(mode));
   document.getElementById('classicInput').style.display = isBrewMode(mode) ? 'none' : 'block';
   document.getElementById('cupInput').style.display = isBrewMode(mode) ? 'block' : 'none';
 
   renderRecipeSeg();
-  renderPills();
   compute();
 }
 
-modeSeg.querySelectorAll('.seg-btn').forEach(b=> b.onclick = ()=> setMode(b.dataset.mode));
-
-/* ---- V60ice/Cold: Зёрна и Вода видны и редактируемы одновременно (как в V60),
-   без переключателя единиц — переключать больше нечего и нечему рассинхронизироваться ---- */
-const classicCoffeeInput = document.getElementById('classicCoffeeInput');
+/* ---- Cold brew: объём воды задаётся напрямую, граммы — от пропорции ---- */
 const classicWaterInput = document.getElementById('classicWaterInput');
-
-classicCoffeeInput.oninput = ()=>{
-  state.inputType = 'coffee';
-  state.value = parseFloat(classicCoffeeInput.value) || 0;
-  compute();
-};
-classicCoffeeInput.addEventListener('keydown', e=>{ if(e.key==='Enter') classicCoffeeInput.blur(); });
-document.getElementById('classicCoffeeStepUp').onclick = ()=>{
-  classicCoffeeInput.value = (parseFloat(classicCoffeeInput.value)||0)+1;
-  classicCoffeeInput.dispatchEvent(new Event('input'));
-};
-document.getElementById('classicCoffeeStepDown').onclick = ()=>{
-  classicCoffeeInput.value = Math.max(0,(parseFloat(classicCoffeeInput.value)||0)-1);
-  classicCoffeeInput.dispatchEvent(new Event('input'));
-};
 
 classicWaterInput.oninput = ()=>{
   state.inputType = 'water';
   state.value = parseFloat(classicWaterInput.value) || 0;
+  coldWater = state.value || coldWater;
   compute();
 };
 classicWaterInput.addEventListener('keydown', e=>{ if(e.key==='Enter') classicWaterInput.blur(); });
 document.getElementById('classicWaterStepUp').onclick = ()=>{
-  classicWaterInput.value = (parseFloat(classicWaterInput.value)||0)+10;
+  classicWaterInput.value = (parseFloat(classicWaterInput.value)||0)+50;
   classicWaterInput.dispatchEvent(new Event('input'));
 };
 document.getElementById('classicWaterStepDown').onclick = ()=>{
-  classicWaterInput.value = Math.max(0,(parseFloat(classicWaterInput.value)||0)-10);
+  classicWaterInput.value = Math.max(0,(parseFloat(classicWaterInput.value)||0)-50);
   classicWaterInput.dispatchEvent(new Event('input'));
 };
 
-/* ---- V60: слайдер объёма (с магнитными отметками) + поле граммов кофе,
-   оба редактируемы напрямую и держат state.value/inputType в синхроне ---- */
+/* ---- «Свой»: ползунок на месте плиток (магнит к отметкам и пресетам S/M/L) ---- */
 const volSlider = document.getElementById('volSlider');
-const coffeeInputV60 = document.getElementById('coffeeInput');
 const sliderVolVal = document.getElementById('sliderVolVal');
-const SNAP_POINTS = [];
-for(let v=CUP_MIN; v<=500; v+=25) SNAP_POINTS.push(v);
-
+function snapPoints(){
+  const pts = [];
+  for(let v=CUP_MIN; v<=CUP_MAX; v+=25) pts.push(v);
+  return pts.concat(CUP_KEYS.map(k=> cup.sizes[k]));
+}
 function nearestSnap(v){
   let best=v, bd=999;
-  SNAP_POINTS.forEach(s=>{ const d=Math.abs(v-s); if(d<bd){ bd=d; best=s; } });
+  snapPoints().forEach(s=>{ const d=Math.abs(v-s); if(d<bd){ bd=d; best=s; } });
   return {best,bd};
 }
 
@@ -2210,7 +2311,6 @@ function updateSliderFill(){
   volSlider.style.background = `linear-gradient(to right, ${accent} ${pct}%, var(--fill) ${pct}%)`;
 }
 
-// Ползунок виден только у «Свой»: двигаем — меняется свой объём
 volSlider.oninput = ()=>{
   let v = parseFloat(volSlider.value);
   const { best, bd } = nearestSnap(v);
@@ -2223,23 +2323,15 @@ volSlider.oninput = ()=>{
   updateSliderFill();
   compute();
 };
-
-// Граммы правятся напрямую; объём следует за ними — совпал с пресетом, значит пресет,
-// иначе выбор сам уходит на «Свой» (см. compute → syncCupControls).
-coffeeInputV60.oninput = ()=>{
-  state.inputType = 'coffee';
-  state.value = parseFloat(coffeeInputV60.value) || 0;
+// «‹» — обратно к плиткам: совпал с пресетом — он, иначе ближайший к своему объёму
+document.getElementById('cupBackBtn').onclick = ()=>{
+  const w = cup.custom;
+  cup.size = CUP_KEYS.reduce((a,k)=> Math.abs(cup.sizes[k] - w) < Math.abs(cup.sizes[a] - w) ? k : a, 'M');
+  saveCupPrefs();
+  state.inputType = 'water';
+  state.value = cupWater();
+  navHapticTick();
   compute();
-};
-coffeeInputV60.addEventListener('keydown', e=>{ if(e.key==='Enter') coffeeInputV60.blur(); });
-
-document.getElementById('coffeeStepUp').onclick = ()=>{
-  coffeeInputV60.value = ((parseFloat(coffeeInputV60.value)||0)+0.5).toFixed(1);
-  coffeeInputV60.dispatchEvent(new Event('input'));
-};
-document.getElementById('coffeeStepDown').onclick = ()=>{
-  coffeeInputV60.value = Math.max(0,(parseFloat(coffeeInputV60.value)||0)-0.5).toFixed(1);
-  coffeeInputV60.dispatchEvent(new Event('input'));
 };
 
 /* ---- Плитки S · M · L · Свой ----
@@ -2267,6 +2359,8 @@ function buildCupSizes(){
     '<button class="size" type="button" role="radio" data-k="custom" aria-label="Свой объём">' +
       '<span class="art">'+CUP_CUSTOM_SVG+'</span><span class="letter">Свой</span><span class="ml"></span></button>';
   wrap.querySelectorAll('.size').forEach(b=> b.addEventListener('click', ()=>{
+    // «Свой» стартует с текущего объёма — ползунок подхватывает, а не прыгает
+    if(b.dataset.k === 'custom' && cup.size !== 'custom') cup.custom = Math.max(CUP_MIN, Math.min(CUP_MAX, Math.round(cupWater())));
     cup.size = b.dataset.k;
     saveCupPrefs();
     state.inputType = 'water';
@@ -2278,13 +2372,6 @@ function buildCupSizes(){
 }
 
 function syncCupControls(coffee, water){
-  // Граммы правили руками — объём поехал: подсвечиваем совпавший пресет или «Свой»
-  if(state.inputType === 'coffee'){
-    const m = matchCupSize(Math.round(water*10)/10);
-    cup.size = m;
-    if(m === 'custom') cup.custom = Math.round(water);
-    saveCupPrefs();
-  }
   const accent = accentVar(state.mode);
   document.getElementById('cupInput').style.setProperty('--accent', accent);
   document.querySelectorAll('#cupSizes .size').forEach(b=>{
@@ -2296,7 +2383,9 @@ function syncCupControls(coffee, water){
     else ml.textContent = cup.sizes[k] + ' мл';
   });
 
+  // «Свой» — плитки уступают место ползунку на том же месте
   const isCustom = cup.size === 'custom';
+  document.getElementById('cupSizes').style.display = isCustom ? 'none' : 'grid';
   document.getElementById('cupCustomRow').style.display = isCustom ? 'flex' : 'none';
   const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
   if(document.activeElement !== volSlider){
@@ -2304,24 +2393,35 @@ function syncCupControls(coffee, water){
   }
   updateSliderFill();
   sliderVolVal.textContent = fmt(water)+' мл';
-  if(document.activeElement !== coffeeInputV60){
-    coffeeInputV60.value = (Math.round(coffee*2)/2).toFixed(1);
-  }
-  document.getElementById('coffeeRowLabel').textContent = 'Кофе · 1:' + fmtRatio(state.ratio);
+  const pos = v=> ((v - min) / (max - min) * 100).toFixed(1) + '%';
+  document.getElementById('volTicks').innerHTML =
+    '<span style="left:0">' + min + '</span>' +
+    CUP_KEYS.map(k=> '<span class="mid" style="left:' + pos(cup.sizes[k]) + '">' + k + '</span>').join('') +
+    '<span style="right:0">' + max + '</span>';
 
   const iced = state.mode === 'v60ice';
   const ice = water * ICE_SHARE, hot = water - ice;
-  document.getElementById('cupHotRow').style.display = iced ? 'flex' : 'none';
-  document.getElementById('cupIceRow').style.display = iced ? 'flex' : 'none';
+  document.getElementById('resIce').style.display = iced ? 'block' : 'none';
   document.getElementById('cupHotVal').textContent = fmt(hot) + ' мл';
   document.getElementById('cupIceVal').textContent = fmt(ice) + ' г';
-  document.getElementById('cupIceVal').style.color = accent;
 
   const tip = document.getElementById('iceTip');
   tip.style.display = iced ? 'flex' : 'none';
   tip.style.setProperty('--accent', accent);
   document.getElementById('iceTipText').innerHTML = '<b>Перед стартом:</b> положи ' + fmt(ice) +
     ' г льда в сервер, поставь его на весы и обнули их. Дальше весы показывают только горячую воду — по ней и идёт график.';
+}
+
+// Итог под объёмом: «г → мл», пропорция (фактическая — с ↺ к пропорции по умолчанию)
+function renderResult(coffee, water){
+  document.getElementById('resCoffee').textContent = fmt(isBrewMode() ? coffee : Math.round(coffee));
+  document.getElementById('resWater').textContent = fmt(water);
+  const el = document.getElementById('resRatio');
+  const lbl = '1:' + fmtRatio(state.ratio).replace('.', ',');
+  const coldNote = state.mode === 'cold' ? ' <span style="font-weight:400;color:var(--label-2)">· ' + (state.ratio <= 6 ? 'концентрат' : 'готов к питью') + '</span>' : '';
+  el.innerHTML = ratioModified()
+    ? '<button class="ratio-reset" type="button" aria-label="Вернуть 1:' + ratioPref[state.mode] + '">' + lbl + ' <span class="rs">↺</span></button>' + coldNote
+    : lbl + coldNote;
 }
 
 function fmtRatio(r){
@@ -2344,49 +2444,23 @@ function compute(){
 
   // Через воронку идёт только горячая вода: для Iced V60 лёд уже в сервере
   const brewWater = brewWaterOf(water);
-  if(!isBrewMode()) drawVisual(coffee, water, accent);
+  document.getElementById('pageCalc').style.setProperty('--accent', accent);
+  state.coffee = coffee;
+  state.water = water;
+  renderResult(coffee, water);
   updateTempBlock();
   renderNotes();
   renderCustomEditor(coffee, brewWater, accent);
   renderPourSchedule(coffee, brewWater, accent);
   if(isBrewMode()) syncCupControls(coffee, water);
   else syncClassicPair(coffee, water, r);
-
-  state.coffee = coffee;
-  state.water = water;
 }
 
 function syncClassicPair(coffee, water, r){
-  if(document.activeElement !== classicCoffeeInput){
-    classicCoffeeInput.value = (Math.round(coffee*10)/10).toString();
-  }
   if(document.activeElement !== classicWaterInput){
     classicWaterInput.value = (Math.round(water*10)/10).toString();
   }
-
-  const row1 = document.getElementById('classicDerivedRow1');
-  const row2 = document.getElementById('classicDerivedRow2');
-  const waterLabel = document.getElementById('classicWaterLabel');
-  const waterRow = document.getElementById('classicWaterRow');
-
-  if(state.mode==='v60ice'){
-    waterLabel.textContent = 'Вода';
-    waterRow.style.borderBottom = '0.5px solid var(--separator)';
-    const ice = water*0.2, hot = water-ice;
-    row1.style.display = 'flex';
-    row2.style.display = 'flex';
-    document.getElementById('classicDerivedLabel1').textContent = 'Горячая вода';
-    document.getElementById('classicDerivedValue1').textContent = fmt(hot)+' мл';
-    document.getElementById('classicDerivedValue1').style.color = 'var(--label)';
-    document.getElementById('classicDerivedLabel2').textContent = 'Лёд в чашке';
-    document.getElementById('classicDerivedValue2').textContent = fmt(ice)+' г';
-    document.getElementById('classicDerivedValue2').style.color = accentVar('v60ice');
-  } else {
-    waterLabel.textContent = r<=5 ? 'Вода (настой)' : 'Вода (готово)';
-    waterRow.style.borderBottom = 'none';
-    row1.style.display = 'none';
-    row2.style.display = 'none';
-  }
+  document.getElementById('classicWaterLabel').textContent = 'Вода';
 }
 
 function fmtTime(sec){
@@ -2402,6 +2476,7 @@ function renderPourSchedule(coffee, water, accent){
     document.getElementById('pourHeader').style.display = 'none';
     document.getElementById('pourToggleCard').style.display = 'none';
     document.getElementById('iceTip').style.display = 'none';
+    document.getElementById('pourChart').style.display = 'none';
     if(typeof stopBrew === 'function' && brewPhase !== 'idle') stopBrew(true);
     updateDock();
     return;
@@ -2414,6 +2489,13 @@ function renderPourSchedule(coffee, water, accent){
   // видны в редакторе), но во время брю мы её показываем взамен заблокированного
   // редактора, и подсветка активного шага (tickBrew) должна на неё опираться.
   // Видимость целиком решает updateScheduleUI(), не это построение.
+  const endT = rows[rows.length-1].time;
+  document.getElementById('pourCapText').textContent = 'Пролив · ~' + fmtTime(endT);
+  document.getElementById('pourChart').innerHTML = journalChartSVG({
+    mode: state.mode, duration: endT,
+    pours: rows.filter(r=> r.add != null).map(r=> ({ time:r.time, add:r.add }))
+  });
+
   card.innerHTML = '';
   rows.forEach((r,i)=>{
     const row = document.createElement('div'); row.className='pour-row'; row.dataset.index=i;
@@ -2587,54 +2669,6 @@ document.getElementById('ceAddPour').onclick = ()=>{
   compute();
 };
 
-function drawVisual(coffee, water, accent){
-  const svg = document.getElementById('visual');
-  const max = MAX_SCALE[state.mode];
-  const pct = Math.max(0.05, Math.min(1, water/max));
-  const stroke = 'var(--label-3)';
-
-  if(state.mode==='cold'){
-    const jarTop=20, jarBottom=100, jarLeft=22, jarRight=78, fillH=(jarBottom-jarTop)*pct;
-    svg.innerHTML = `
-      <path d="M30,8 h40 v10 h-4 v6 h-32 v-6 h-4 z" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M${jarLeft},${jarTop} h${jarRight-jarLeft} v${jarBottom-jarTop} q0,8 -8,8 h-${jarRight-jarLeft-16} q-8,0 -8,-8 z" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <clipPath id="clip"><path d="M${jarLeft},${jarTop} h${jarRight-jarLeft} v${jarBottom-jarTop} q0,8 -8,8 h-${jarRight-jarLeft-16} q-8,0 -8,-8 z"/></clipPath>
-      <rect x="${jarLeft}" y="${jarBottom-fillH}" width="${jarRight-jarLeft}" height="${fillH+10}" fill="${accent}" opacity="0.85" clip-path="url(#clip)"/>
-    `;
-  } else {
-    // Широкая воронка (V60) стекает в узкое горлышко сервера, который расширяется
-    // книзу — читается как графин/кружка, а не безликий прямоугольник.
-    const coneTopY=6, coneBottomY=44, coneTopL=6, coneTopR=94, neckL=38, neckR=62;
-    const cupTop=50, cupBottomY=110, baseL=14, baseR=86, corner=10;
-    const cupH = cupBottomY-cupTop, fillH = cupH*pct;
-    const coneH = coneBottomY-coneTopY;
-    const coffeePct = Math.max(0, Math.min(1, coffee/(MAX_COFFEE[state.mode]||30)));
-    const coffeeFillH = coneH*coffeePct;
-
-    let ice = '';
-    if(state.mode==='v60ice'){
-      ice = `
-        <rect x="35" y="${cupBottomY-fillH-2}" width="10" height="10" rx="3" fill="var(--card)" opacity="0.9"/>
-        <rect x="52" y="${cupBottomY-fillH-10}" width="9" height="9" rx="3" fill="var(--card)" opacity="0.8"/>
-      `;
-    }
-
-    const conePath = `M${coneTopL},${coneTopY} H${coneTopR} L${neckR},${coneBottomY} H${neckL} Z`;
-    const serverPath = `M${neckL},${cupTop} L${baseL},${cupBottomY-corner} Q${baseL},${cupBottomY} ${baseL+corner},${cupBottomY} H${baseR-corner} Q${baseR},${cupBottomY} ${baseR},${cupBottomY-corner} L${neckR},${cupTop} Z`;
-
-    svg.innerHTML = `
-      <path d="${conePath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <clipPath id="clipCone"><path d="${conePath}"/></clipPath>
-      <rect x="${coneTopL}" y="${coneBottomY-coffeeFillH}" width="${coneTopR-coneTopL}" height="${coffeeFillH+4}" fill="var(--brown)" opacity="0.9" clip-path="url(#clipCone)"/>
-
-      <path d="${serverPath}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round"/>
-      <clipPath id="clipServer"><path d="${serverPath}"/></clipPath>
-      <rect x="${baseL}" y="${cupBottomY-fillH}" width="${baseR-baseL}" height="${fillH}" fill="${accent}" opacity="0.85" clip-path="url(#clipServer)"/>
-      ${ice}
-    `;
-  }
-}
-
 function renderNotes(){
   const el = document.getElementById('notesText');
   if(state.mode==='v60'){
@@ -2655,17 +2689,7 @@ document.addEventListener('click', e=>{
   }
 });
 
-window.addEventListener('resize', ()=>{
-  const mBtns=[...modeSeg.querySelectorAll('.seg-btn')];
-  const mIdx = mBtns.findIndex(b=>b.classList.contains('active'));
-  moveThumb(modeSeg, mIdx, mBtns.length);
-  const recipeWrap = document.getElementById('recipeSeg');
-  if(recipeWrap.style.display !== 'none'){
-    const rBtns=[...recipeWrap.querySelectorAll('.seg-btn')];
-    const rIdx = rBtns.findIndex(b=>b.classList.contains('active'));
-    if(rIdx>=0) moveThumb(recipeWrap, rIdx, rBtns.length);
-  }
-});
+window.addEventListener('resize', closePopMenu);
 
 /* ---- Единый источник истины для темы: применяем весь набор цветов разом,
    никогда не смешивая Telegram-цвета с системными по отдельным свойствам. ---- */
@@ -2840,27 +2864,25 @@ musicMuteBtn.onclick = ()=>{
 applyMusicMuteState();
 
 function lockControls(locked){
-  modeSeg.querySelectorAll('button').forEach(b=> b.disabled = locked);
-  document.querySelectorAll('#ratioPills .pill').forEach(b=> b.disabled = locked);
-  document.querySelectorAll('#recipeSeg button').forEach(b=> b.disabled = locked);
+  document.getElementById('modeBtn').disabled = locked;
+  document.getElementById('schemeBtn').disabled = locked;
   document.querySelectorAll('#roastPills .pill').forEach(b=> b.disabled = locked);
   document.querySelectorAll('#processPills .pill').forEach(b=> b.disabled = locked);
   document.getElementById('tempToggle').disabled = locked;
   document.getElementById('calcBeanCard').classList.toggle('locked', locked);
-  classicCoffeeInput.disabled = locked;
   classicWaterInput.disabled = locked;
-  document.getElementById('classicCoffeeStepUp').disabled = locked;
-  document.getElementById('classicCoffeeStepDown').disabled = locked;
   document.getElementById('classicWaterStepUp').disabled = locked;
   document.getElementById('classicWaterStepDown').disabled = locked;
   document.querySelectorAll('#customEditor input').forEach(el=> el.disabled = locked);
   document.querySelectorAll('#customEditor .ce-del').forEach(el=> el.disabled = locked);
   document.getElementById('ceAddPour').disabled = locked;
   volSlider.disabled = locked;
-  coffeeInputV60.disabled = locked;
+  document.getElementById('cupBackBtn').disabled = locked;
   document.getElementById('coffeeStepUp').disabled = locked;
   document.getElementById('coffeeStepDown').disabled = locked;
+  const rr = document.querySelector('#resRatio .ratio-reset'); if(rr) rr.disabled = locked;
   document.querySelectorAll('#cupSizes .size').forEach(b=> b.disabled = locked);
+  if(locked) closePopMenu();
   navLocked = locked;
 }
 
@@ -2954,6 +2976,8 @@ function updateScheduleUI(){
   const toggleCard = document.getElementById('pourToggleCard');
   const header = document.getElementById('pourHeader');
   const card = document.getElementById('pourCard');
+  const chart = document.getElementById('pourChart');
+  const chartBtn = document.getElementById('chartToggle');
   const btn = document.getElementById('pourToggleBtn');
   const countEl = document.getElementById('pourToggleCount');
   const customWrap = document.getElementById('customEditorWrap');
@@ -2962,6 +2986,7 @@ function updateScheduleUI(){
     toggleCard.style.display = 'none';
     toggleCard.classList.remove('open');
     header.style.display = 'none';
+    chart.style.display = 'none';
     card.style.display = 'none';
     return;
   }
@@ -2973,29 +2998,24 @@ function updateScheduleUI(){
   // оба одновременно значит дублировать одни и те же шаги.
   // «Кастом» во время брю: редактор всё равно заблокирован для правки, так что
   // вместо него показываем ту же таблицу, что у Каскада/Поровну — она даёт
-  // подсветку активного шага, которой в редакторе нет. Итоги («Итого») прячутся
-  // вместе с редактором: тот же объём и время видны в последней строке таблицы.
+  // подсветку активного шага, которой в редакторе нет.
   if(isCustom) customWrap.style.display = brewingNow ? 'none' : 'block';
 
-  if(isCustom && !brewingNow){
-    pourCollapsed = true;
-    toggleCard.style.display = 'none';
-    toggleCard.classList.remove('open');
-    header.style.display = 'none';
-    card.style.display = 'none';
-    return;
-  }
+  // Заголовок «Пролив · ~2:55» со схемой и графиком — в покое; график только по иконке
+  header.style.display = brewingNow ? 'none' : 'flex';
+  chartBtn.classList.toggle('on', chartOpen);
+  chartBtn.setAttribute('aria-pressed', String(chartOpen));
+  chartBtn.setAttribute('aria-label', chartOpen ? 'Скрыть график' : 'Показать график');
+  chart.style.display = (!brewingNow && chartOpen) ? 'block' : 'none';
 
   if(!brewingNow){
     pourCollapsed = true; // сброс — при следующем старте таблица снова схлопнется
     toggleCard.style.display = 'none';
     toggleCard.classList.remove('open');
-    header.style.display = 'block';
-    card.style.display = 'block';
+    card.style.display = isCustom ? 'none' : 'block';
     return;
   }
 
-  header.style.display = 'none';
   toggleCard.style.display = 'block';
   toggleCard.classList.toggle('open', !pourCollapsed);
   btn.setAttribute('aria-expanded', String(!pourCollapsed));
@@ -3673,7 +3693,7 @@ async function createBrewEntry(){
   const entry = {
     id: brewWallClockStart || Date.now(),
     mode: state.mode,
-    ratio: state.ratio,
+    ratio: Math.round(state.ratio * 10) / 10,
     coffee: Math.round((state.coffee || 0) * 10) / 10,
     water: pours.reduce((a,b)=> a+b.add, 0),
     pours: pours,
@@ -4975,7 +4995,9 @@ buildTempPills();
 buildRecipeSeg();
 buildCupSizes();
 renderSizeSettings();
+renderRatioSettings();
 setMode('v60');
+updateTempTip();
 Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries);
 
 /* ---- Навигация: стеклянный таб-бар внизу + свайп между разделами ----
