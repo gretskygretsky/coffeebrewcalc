@@ -2119,6 +2119,7 @@ function buildTempPills(){
       b.dataset.value = it.id;
       b.textContent = it.label;
       b.onclick = ()=>{
+        if(state[key] !== it.id) haptics('selection');
         state[key] = it.id;
         saveBeanPrefs();
         updateTempBlock();
@@ -2208,6 +2209,7 @@ function renderRatioSettings(){
 document.getElementById('ratioSettings').addEventListener('click', e=>{
   const b = e.target.closest('.pill'); if(!b) return;
   const m = b.dataset.m, r = Number(b.dataset.r);
+  if(ratioPref[m] !== r) haptics('selection');
   ratioPref[m] = r;
   saveRatioPrefs();
   renderRatioSettings();
@@ -2226,7 +2228,7 @@ function adjustStrength(dir){
   const c = Math.max(step, base + dir * step);
   state.ratio = state.water / c;
   state.inputType = 'water'; state.value = state.water;
-  navHapticTick();
+  haptics('selection');
   compute();
 }
 document.getElementById('coffeeStepUp').onclick = ()=> adjustStrength(1);
@@ -2264,7 +2266,6 @@ function openPopMenu(kind, anchor){
   popMenu.style.transformOrigin = (down ? 'top ' : 'bottom ') + (right ? 'right' : 'left');
   popScrim.classList.add('show');
   requestAnimationFrame(()=> popMenu.classList.add('show'));
-  navHapticTick();
 }
 function closePopMenu(){ popMenu.classList.remove('show'); popScrim.classList.remove('show'); }
 popScrim.addEventListener('click', closePopMenu);
@@ -2273,6 +2274,7 @@ document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closePopMenu();
 popMenu.addEventListener('click', e=>{
   const b = e.target.closest('.mi'); if(!b) return;
   const kind = b.dataset.kind, k = b.dataset.k;
+  if(k !== (kind === 'mode' ? state.mode : state.recipe)) haptics('selection');
   closePopMenu();
   if(kind === 'mode'){ if(k !== state.mode){ setMode(k); track('mode_selected', { mode:k }); } }
   else if(k !== state.recipe){
@@ -2360,6 +2362,9 @@ volSlider.oninput = ()=>{
   let v = parseFloat(volSlider.value);
   const { best, bd } = nearestSnap(v);
   if(bd<=6){ v = best; volSlider.value = v; }
+  // Детент: ползунок «щёлкнул» на отметке (каждые 25 мл, S/M/L)
+  if(bd<=6 && v !== volSlider._detent){ volSlider._detent = v; haptics('selection'); }
+  else if(bd > 6) volSlider._detent = null;
   cup.size = 'custom';
   cup.custom = v;
   saveCupPrefs();
@@ -2394,7 +2399,6 @@ volSlider.oninput = ()=>{
       if(Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)){
         g.on = true;
         if(!g.onInput){ try{ zone.setPointerCapture(e.pointerId); }catch(_){} }
-        navHapticTick();
       } else if(Math.abs(dy) > 8){ g = null; return; }
       else return;
     }
@@ -2412,7 +2416,7 @@ document.getElementById('cupBackBtn').onclick = ()=>{
   saveCupPrefs();
   state.inputType = 'water';
   state.value = cupWater();
-  navHapticTick();
+  haptics('light');
   compute();
 };
 
@@ -2443,11 +2447,12 @@ function buildCupSizes(){
   wrap.querySelectorAll('.size').forEach(b=> b.addEventListener('click', ()=>{
     // «Свой» стартует с текущего объёма — ползунок подхватывает, а не прыгает
     if(b.dataset.k === 'custom' && cup.size !== 'custom') cup.custom = Math.max(CUP_MIN, Math.min(CUP_MAX, Math.round(cupWater())));
+    const changed = b.dataset.k !== cup.size;
     cup.size = b.dataset.k;
     saveCupPrefs();
     state.inputType = 'water';
     state.value = cupWater();
-    navHapticTick();
+    if(changed) haptics('selection');
     track('cup_size_selected', { cup_size: cup.size });
     compute();
   }));
@@ -2916,20 +2921,35 @@ function beep(freq, dur){
     osc.stop(audioCtx.currentTime + dur/1000 + 0.03);
   }catch(e){}
 }
-function haptic(){
-  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback){
-    try{ window.Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){}
-  } else if(navigator.vibrate){
-    navigator.vibrate(200);
-  }
+/* ================= Тактильный отклик =================
+   Типы — как в web-haptics и Apple HIG:
+     selection — дискретный шаг: плитка, сегмент, таб, звезда, степпер, пункт меню;
+     light — второстепенная кнопка, переключатель, порог свайпа/шторки;
+     medium — главная кнопка (▶, «+»), щелчок на место;
+     heavy — крупная смена состояния: новый этап пролива;
+     success / warning / error — исход: сохранено, готово / дальше необратимо / ошибка.
+   В Telegram — его родной HapticFeedback (Vibration API там на iOS не работает),
+   вне Telegram — короткие паттерны web-haptics. Вибро всегда в паре с визуальной
+   реакцией и в тот же момент; на каждый тап не вешаем. */
+const HAPTIC_PATTERNS = { selection:6, light:10, soft:12, rigid:15, medium:20, heavy:35,
+  success:[12,60,18], warning:[25,80,25], error:[30,50,30,50,30] };
+function haptics(type){
+  type = type || 'medium';
+  const tg = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback;
+  try{
+    if(tg){
+      if(type === 'success' || type === 'warning' || type === 'error') tg.notificationOccurred(type);
+      else if(type === 'selection') tg.selectionChanged();
+      else tg.impactOccurred(['light','medium','heavy','rigid','soft'].includes(type) ? type : 'medium');
+      return;
+    }
+    if(navigator.vibrate) navigator.vibrate(HAPTIC_PATTERNS[type] || HAPTIC_PATTERNS.medium);
+  }catch(e){}
 }
-// Тактильный отклик на нажатие: light — переключатели, medium — старт, rigid — стоп
-function hapticImpact(style){
-  const tg = window.Telegram && window.Telegram.WebApp;
-  if(tg && tg.HapticFeedback){ try{ tg.HapticFeedback.impactOccurred(style || 'medium'); }catch(e){} }
-  else if(navigator.vibrate){ navigator.vibrate(style === 'light' ? 10 : style === 'rigid' ? 18 : 25); }
-}
-function stageAlert(){ beep(880,150); setTimeout(()=>beep(1046,150),170); haptic(); }
+// Старые имена — тонкие обёртки
+function haptic(){ haptics('success'); }
+function hapticImpact(style){ haptics(style); }
+function stageAlert(){ beep(880,150); setTimeout(()=>beep(1046,150),170); haptics('heavy'); }
 function finishAlert(){ beep(660,120); setTimeout(()=>beep(880,120),140); setTimeout(()=>beep(1175,260),280); haptic(); }
 
 /* ---- Фоновая музыка на время заваривания — отдельный мьют от бипов/вибро ---- */
@@ -3471,10 +3491,10 @@ function stopBrew(hide){
   else if(brewPhase !== 'idle') closeBrew(false);
 }
 
-document.getElementById('brewStopBtn').addEventListener('click', ()=>{ hapticImpact('rigid'); stopBrew(true); });
-document.getElementById('tfCloseBtn').addEventListener('click', ()=>{ navHapticTick(); closeBrew(false); });
+document.getElementById('brewStopBtn').addEventListener('click', ()=>{ haptics(brewPhase === 'running' ? 'medium' : 'light'); stopBrew(true); });
+document.getElementById('tfCloseBtn').addEventListener('click', ()=>{ haptics('light'); closeBrew(false); });
 document.getElementById('tfRateBtn').addEventListener('click', ()=>{
-  navHapticTick();
+  haptics('light');
   if(!journalOfferedThisBrew){ offerRateSheet(); return; }
   if(brewEntryId != null){ track('journal_rate_opened'); openEditSheet(brewEntryId); }
 });
@@ -3498,6 +3518,7 @@ function renderSizeSettings(){
     const k = b.dataset.k;
     const next = Math.max(CUP_MIN, Math.min(CUP_MAX, cup.sizes[k] + Number(b.dataset.d)));
     if(next === cup.sizes[k]) return;
+    haptics('selection');
     cup.sizes[k] = next;
     saveCupPrefs();
     wrap.querySelector('[data-v="'+k+'"]').textContent = next + ' мл';
@@ -3533,9 +3554,9 @@ function updateDock(){
 }
 actionBtn.onclick = ()=>{
   if(brewPhase === 'counting' || brewPhase === 'running'){ stopBrew(true); return; }
-  if(actionBtn.classList.contains('play')){ hapticImpact('medium'); beginCountdown(); return; }
+  if(actionBtn.classList.contains('play')){ haptics('medium'); beginCountdown(); return; }
   if(actionBtn.classList.contains('add')){
-    navHapticTick();
+    haptics('medium');
     openBeanAddSheet();
     track('bean_add_opened');
   }
@@ -3810,7 +3831,7 @@ window.addEventListener('pointermove', (e)=>{
   jSw.x = x;
   jSw.hist.push([performance.now(), x]); if(jSw.hist.length > 6) jSw.hist.shift();
   const full = -x > jSw.row.clientWidth * 0.55;
-  if(full !== jSw.full){ jSw.full = full; jSw.row.classList.toggle('full', full); if(full) navHapticTick(); }
+  if(full !== jSw.full){ jSw.full = full; jSw.row.classList.toggle('full', full); if(full) haptics('warning'); }
   jSetX(jSw.row, x, false);
 });
 function jEndSwipe(e){
@@ -3828,7 +3849,7 @@ function jEndSwipe(e){
   // Решаем по тому, куда строка «летит», а не где её отпустили: проекция импульса
   const h = s.hist, v = h.length > 1 ? (h[h.length-1][1] - h[0][1]) / Math.max(1, h[h.length-1][0] - h[0][0]) * 1000 : 0;
   const projected = s.x + projectMomentum(v);
-  if(-projected > J_OPEN / 2){ jSetX(s.row, -J_OPEN, true); jSwipeOpenRow = s.row; navHapticTick(); }
+  if(-projected > J_OPEN / 2){ jSetX(s.row, -J_OPEN, true); jSwipeOpenRow = s.row; haptics('light'); }
   else closeJournalRow(s.row);
 }
 // Проекция и резинка — формулы из «Designing Fluid Interfaces» (WWDC 2018)
@@ -3852,7 +3873,6 @@ journalList.addEventListener('click', (e)=>{
   if(m){
     const k = Number(m.dataset.jm);
     if(journalOpenMonths.has(k)) journalOpenMonths.delete(k); else journalOpenMonths.add(k);
-    navHapticTick();
     renderJournal();
   }
 });
@@ -4399,7 +4419,7 @@ sheetScrimEl.addEventListener('click', dismissSheet);
     const h = sheetEl.offsetHeight || 1;
     sheetScrimEl.style.opacity = String(Math.max(0.2, 1 - Math.max(0, dy) / h));
     const now = dy >= threshold();
-    if(now && !crossed) navHapticTick();
+    if(now && !crossed) haptics('light');
     crossed = now;
   });
   function finish(e){
@@ -4530,6 +4550,7 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
     await beanUpdateEntry(entry);
     track('bean_edited');
   }
+  haptics('success');
   closeSheet();
   if(mode === 'edit') renderJournal();
   if(mode === 'bean-add' || mode === 'bean-edit') renderBeans();
@@ -4554,6 +4575,7 @@ function openDeleteAlert(id, kind){
   alertCancelBtn.textContent = 'Отмена';
   alertConfirmBtn.textContent = 'Удалить';
   alertConfirmBtn.className = 'alert-btn danger';
+  if(!alertBoxEl.classList.contains('show')) haptics('warning');
   lockPageScroll();
   alertScrimEl.classList.add('show');
   alertBoxEl.classList.add('show');
@@ -4591,6 +4613,7 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
   const kind = alertDeleteKind;
   // Строку, которую удаляем, не закрываем обратно — она схлопнется ниже
   if(kind === 'journal') jSwipeOpenRow = null;
+  haptics('medium');
   closeDeleteAlert();
   if(kind === 'archive'){
     await archiveBean(id);
@@ -5070,7 +5093,6 @@ document.getElementById('beansArchive').addEventListener('click', (e)=>{
   if(e.target.closest('.arch-toggle')){
     beansArchiveOpen = !beansArchiveOpen;
     renderBeans();
-    navHapticTick();
     return;
   }
   const row = e.target.closest('.a-row');
@@ -5283,7 +5305,7 @@ let beanRemainingTouched = false;
 sheetActionEl.addEventListener('click', async ()=>{
   if(sheetMode !== 'bean-edit' || !sheetEntry) return;
   const entry = sheetEntry;
-  navHapticTick();
+  haptics('light');
   if(entry.archived){
     entry.archived = false;
     await beanUpdateEntry(entry);
@@ -5392,13 +5414,7 @@ function navUpdateIndicator(position, animate){
     if(on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
   });
 }
-function navHapticTick(){
-  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback){
-    try{ window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); }catch(e){}
-  } else if(navigator.vibrate){
-    navigator.vibrate(10);
-  }
-}
+function navHapticTick(){ haptics('selection'); }
 function navGoTo(i, animate){
   const prev = navIndex;
   navIndex = Math.max(0, Math.min(NAV_COUNT - 1, i));
