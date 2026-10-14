@@ -576,7 +576,6 @@
   .tabbar{
     flex:1; min-width:0; height:64px; border-radius:999px; padding:4px;
     display:grid; grid-template-columns:repeat(4,1fr);
-    transition:transform .34s cubic-bezier(.3,1.25,.5,1), opacity .2s;
   }
   .tab-lens{
     position:absolute; top:4px; bottom:4px; left:4px; width:calc((100% - 8px) / 4);
@@ -1268,19 +1267,29 @@
   .pour-row.done .pour-time, .pour-row.done .pour-action, .pour-row.done .pour-total{ color:var(--label-3); }
   .pour-row.done .pour-ck{ background:color-mix(in srgb, var(--accent, var(--orange)) 16%, transparent); color:var(--accent, var(--orange)); }
 
-  /* Капсула дока: вырастает из ▶ справа налево (bouncy), таб-бар уходит под неё */
-  .dock.brewing .tabbar{ transform:translateY(18px) scale(.92); opacity:0; pointer-events:none; transition:transform .34s var(--ease-bouncy), opacity .18s ease; }
-  /* Ширину не анимируем (это пересчёт раскладки под blur) — капсула всегда во всю
-     ширину, а «вырастает» из кнопки через clip-path */
+  /* ===== Хореография дока =====
+     Стекло с backdrop-filter в WebKit плавно двигается только через transform и
+     opacity: анимация clip-path на нём перерисовывает размытие каждый кадр и
+     даёт рывки. Поэтому таб-бар и капсула не «режутся», а меняются местами:
+     таб-бар уплывает вниз и гаснет, капсула всплывает на его место (и наоборот),
+     ▶ уступает ей место. Все три слоя — отдельные композитные слои (will-change). */
+  .dock .tabbar, .dock-inner > .brew-bar, .action-wrap{ will-change:transform, opacity; }
+  /* возврат из брю: таб-бар всплывает с лёгкой пружиной, чуть после ухода капсулы */
+  .dock .tabbar{ transform:none; opacity:1;
+    transition:transform .42s var(--ease-bouncy) .08s, opacity .24s ease .08s; }
+  .dock.brewing .tabbar{ transform:translateY(22px) scale(.94); opacity:0; pointer-events:none;
+    transition:transform .3s var(--ease-smooth), opacity .18s ease; }
+
   .dock-inner > .brew-bar{ position:absolute; right:0; bottom:0; height:64px; width:100%; border-radius:32px; padding:4px; gap:4px;
-    display:flex; align-items:center; overflow:hidden; opacity:0; pointer-events:none;
-    clip-path:inset(0 0 0 calc(100% - 64px) round 32px);
-    transition:clip-path .4s cubic-bezier(.3,1.12,.5,1), opacity .16s ease; }
-  .dock.brewing .dock-inner > .brew-bar{ clip-path:inset(0 0 0 0 round 32px); opacity:1; pointer-events:auto; }
-  .brew-bar > *{ opacity:0; transition:opacity .2s ease; }
-  .dock.brewing .brew-bar > *{ opacity:1; transition-delay:.08s; }
-  .dock.brewing .action-wrap{ opacity:0; transform:scale(.7); pointer-events:none; }
-  .action-wrap{ transition:opacity .18s ease, transform .34s var(--ease-bouncy); }
+    display:flex; align-items:center; overflow:hidden;
+    opacity:0; transform:translateY(22px) scale(.94); pointer-events:none;
+    transition:transform .3s var(--ease-smooth), opacity .18s ease; }
+  .dock.brewing .dock-inner > .brew-bar{ opacity:1; transform:none; pointer-events:auto;
+    transition:transform .42s var(--ease-bouncy) .08s, opacity .24s ease .08s; }
+
+  /* ▶ — на старте сжимается и гаснет, на возврате проступает с упругим «чпоком» */
+  .action-wrap{ transition:opacity .22s ease .1s, transform .42s var(--ease-bouncy) .1s; }
+  .dock.brewing .action-wrap{ opacity:0; transform:scale(.8); pointer-events:none; transition:opacity .14s ease, transform .26s var(--ease-smooth); }
   .bb-mute{ width:56px; height:56px; flex-shrink:0; border:none; border-radius:50%; background:none; color:var(--label-2); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:transform .2s var(--ease-snappy), background .2s; }
   .bb-mute.muted{ color:var(--accent, var(--orange)); }
   .bb-mute.muted .mute-wave{ display:none; }
@@ -1388,7 +1397,7 @@
 
   @media (prefers-reduced-motion: reduce){
     .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
-    .fold, #recipeCard, .brew-bar, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
+    .fold, #recipeCard, .brew-bar, .brew-bar *, .pour-row, .tf-trk i, .dock .tabbar, .action-wrap{ transition:none !important; }
     .fold.fold-in{ animation:none !important; }
     .hint-tip.glass{ animation:none; }
     .pop-menu.glass{ transition:none; }
