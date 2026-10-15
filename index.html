@@ -1442,6 +1442,8 @@
     .tab-lens.anim, .action, .action svg, .tabbar{ transition:none; }
   }
 </style>
+<!-- Umami (cloud.umami.is) — вторая аналитика, параллельно Метрике -->
+<script defer id="umamiScript" src="https://cloud.umami.is/script.js" data-website-id="a6b50b1f-5857-4b6e-b020-7d3cf0adf4bd"></script>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript">
     (function(m,e,t,r,i,k,a){
@@ -2102,6 +2104,36 @@ const PROCESS_WHY = {
 };
 const TEMP_FOOTNOTE = 'Это стартовая точка. Температура в первую очередь меняет скорость экстракции — дальше подстраивайте помол и время по вкусу.';
 const TEMP_ICE_NOTE = 'Лёд идёт в чашку после заваривания и на температуру пролива не влияет.';
+
+/* ---- Umami: события продукта ----
+   Скрипт грузится defer и может быть заблокирован — тогда события тихо теряются.
+   До загрузки копим очередь и отправляем по onload. Каждое свойство события
+   считается в лимите тарифа отдельным событием, поэтому свойств мало. */
+const umamiQueue = [];
+function ua(name, data){
+  try{
+    if(window.umami && typeof window.umami.track === 'function'){ window.umami.track(name, data); return; }
+    if(umamiQueue.length < 50) umamiQueue.push([name, data]);
+  }catch(e){}
+}
+(function(){
+  const el = document.getElementById('umamiScript');
+  if(el) el.addEventListener('load', ()=>{
+    try{ while(umamiQueue.length){ const q = umamiQueue.shift(); window.umami.track(q[0], q[1]); } }catch(e){}
+  });
+})();
+function uaPlatform(){
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if(!(tg && tg.initData)) return 'browser';
+  return tg.platform === 'ios' ? 'tg_ios' : tg.platform === 'android' || tg.platform === 'android_x' ? 'tg_android' : 'tg_desktop';
+}
+function uaOpen(){
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const sp = tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  const d = { platform: uaPlatform() };
+  if(sp) d.src = String(sp).slice(0, 64);
+  ua('open', d);
+}
 
 const YM_ID = 111490970;
 const ymFired = {};
@@ -3415,6 +3447,15 @@ function launchBrew(){
   brewDoneFired = false;
   journalOfferedThisBrew = false;
   brewEntryPromise = createBrewEntry();
+  ua('brew_start', {
+    mode: state.mode,
+    scheme: state.recipe,
+    cup: cup.size,
+    water_ml: Math.round(state.water || 0),
+    coffee_g: Math.round((state.coffee || 0) * 10) / 10,
+    ratio: Number(fmtRatio(state.ratio)),
+    bean: activeBeanId != null ? 'yes' : 'no'
+  });
   setText(document.getElementById('brewStopLabel'), 'Остановить');
   settleCardHeight(()=>{ tf.note.hidden = true; });
   stageAlert();
@@ -3492,6 +3533,7 @@ function finishBrew(stopped){
   updateDock();
   updateScheduleUI();
   if(!stopped){ finishAlert(); }
+  if(wasRunning) ua(stopped ? 'brew_cancel' : 'brew_finish');
   if(wasRunning) setTimeout(offerRateSheet, stopped ? 300 : 700);
 }
 
@@ -4625,11 +4667,13 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
       if(newId != null) await adjustBeanRemaining(newId, -(entry.coffee || 0));
       track('journal_bean_changed');
     }
+    if((entry.rating || 0) > 0 && !(before && (before.rating || 0) > 0)) ua('entry_rate');
     await journalUpdateEntry(entry);
   } else if(mode === 'bean-add'){
     entry.remaining = entry.startWeight;
     await beanSaveEntry(entry);
     track('bean_added');
+    ua('bean_add');
     if(beans.length === 1) await setActiveBean(entry.id);
   } else if(mode === 'bean-edit'){
     // Вручную вернули остаток — зерно снова «в деле», метка «Закончилось» снимается.
@@ -5027,6 +5071,7 @@ function openBeanPickSheet(){
     if(!changed){ setTimeout(()=>{ if(sheetMode === 'bean-pick') closeSheet(); }, 160); return; }
     picking = true;
     navHapticTick();
+    ua('bean_pick', { bean: id == null ? 'none' : 'bean' });
     listEl.querySelectorAll('.bean-pick-card').forEach(c=>{
       const on = Number(c.dataset.id) === id;
       c.classList.toggle('on', on);
@@ -5055,13 +5100,7 @@ function openBeanPickSheet(){
    остатка, а текст нового зерна проявляется следом. Температура досчитывает.
    «Без зерна» — то же самое, просто рисовать нечего: кольцо остаётся пустым.
    Хаптик один — selection на тап (подсветка переехала). Без движения (reduce) —
-   только смена прозрачности; плитки не видно — просто меняем данные.
-   Тайминги (apple-design + review-animations: ответ без лишних ожиданий, UI ≤ 300 мс,
-   уход быстрее появления, ease-out на вход/выход, ease-in-out на движение по экрану):
-   подсветка в шторке 100 мс → шторка уходит → через 40 мс текст гаснет 120 мс,
-   кольцо стягивается 160 мс → кольцо рисуется 340 мс (индикатор остатка: дуга до
-   полного круга, чуть дольше 300 мс), текст проявляется 200 мс с задержкой 40 мс,
-   температура досчитывает 340 мс. От тапа до готовой плитки ≈ 0,65 с. */
+   только смена прозрачности; плитки не видно — просто меняем данные. */
 const canAnimate = el=> !!el && typeof el.animate === 'function';
 const BEAN_BLUR_OUT = [{ opacity:1, filter:'blur(0px)', transform:'scale(1)' }, { opacity:0, filter:'blur(2px)', transform:'scale(.98)' }];
 const BEAN_BLUR_IN = [BEAN_BLUR_OUT[1], BEAN_BLUR_OUT[0]];
@@ -5080,7 +5119,7 @@ function countTemp(from){
   const el = document.getElementById('tempValue');
   const to = beanTempNow();
   if(from == null || to == null || from === to || reduceMotion()) return;
-  const t0 = performance.now(), d = 340; // в такт с кольцом
+  const t0 = performance.now(), d = 420;
   let shown = from + ' °C';
   el.textContent = shown;
   const f = now=>{
@@ -5113,16 +5152,16 @@ function beanPickLand(id){
       const text = el=> [...el.children].filter(c=> !c.classList.contains('bc-ringcol'));
       // 1. Старый текст растворяется, кольцо стягивается в ноль — плитка «перезаряжается»
       const outs = text(tile).map(c=> c.animate(calm ? [{opacity:1},{opacity:0}] : BEAN_BLUR_OUT,
-        { duration:120, easing:BEAN_EASE, fill:'forwards' }).finished.catch(()=>{}));
+        { duration:150, easing:BEAN_EASE, fill:'forwards' }).finished.catch(()=>{}));
       const oldArc = tile.querySelector('.arc');
       if(oldArc && !calm){
         outs.push(oldArc.animate([
           { strokeDashoffset:oldArc.getAttribute('stroke-dashoffset'), opacity:1 },
           { strokeDashoffset:oldArc.getAttribute('stroke-dasharray'), opacity:1, offset:0.9 },
           { strokeDashoffset:oldArc.getAttribute('stroke-dasharray'), opacity:0 }
-        ], { duration:160, easing:'cubic-bezier(0.77, 0, 0.175, 1)', fill:'forwards' }).finished.catch(()=>{}));
+        ], { duration:240, easing:'cubic-bezier(0.77, 0, 0.175, 1)', fill:'forwards' }).finished.catch(()=>{}));
       } else if(oldArc){
-        outs.push(oldArc.animate([{opacity:1},{opacity:0}], { duration:120, fill:'forwards' }).finished.catch(()=>{}));
+        outs.push(oldArc.animate([{opacity:1},{opacity:0}], { duration:150, fill:'forwards' }).finished.catch(()=>{}));
       }
       const wasEmpty = tile.classList.contains('empty');
       await Promise.all(outs);
@@ -5131,25 +5170,25 @@ function beanPickLand(id){
       const nt = slot.firstElementChild;
       if(canAnimate(nt)){
         text(nt).forEach(c=> c.animate(calm ? [{opacity:0},{opacity:1}] : BEAN_BLUR_IN,
-          { duration:200, delay:calm ? 0 : 40, easing:BEAN_EASE, fill:'backwards' }));
+          { duration:220, delay:calm ? 0 : 60, easing:BEAN_EASE, fill:'backwards' }));
         const arc = nt.querySelector('.arc');
         if(arc && !calm){
           const C = parseFloat(arc.getAttribute('stroke-dasharray'));
           arc.animate([
             { strokeDashoffset:C, opacity:0 }, { strokeDashoffset:C * 0.97, opacity:1, offset:0.06 },
             { strokeDashoffset:arc.getAttribute('stroke-dashoffset'), opacity:1 }
-          ], { duration:340, easing:BEAN_EASE });
+          ], { duration:560, easing:BEAN_EASE });
         }
         // Пунктир пустого кольца и сплошная дорожка сменяют друг друга мягко
         if(wasEmpty !== nt.classList.contains('empty')){
           const rc = nt.querySelector('.bc-ringcol');
-          if(rc) rc.animate([{ opacity:.3 }, { opacity:1 }], { duration:200, easing:BEAN_EASE });
+          if(rc) rc.animate([{ opacity:.3 }, { opacity:1 }], { duration:220, easing:BEAN_EASE });
         }
       }
       countTemp(fromTemp);
       end();
-    }, 40);
-  }, 100);
+    }, 60);
+  }, 140);
 }
 
 document.getElementById('calcBeanCard').addEventListener('click', openBeanPickSheet);
@@ -5558,6 +5597,7 @@ function openBeanEditSheet(id){
 
 
 initTelegram();
+uaOpen();
 loadBeanPrefs();
 buildTempPills();
 buildRecipeSeg();
@@ -5625,6 +5665,7 @@ function navGoTo(i, animate){
   dockPage = navIndex;
   updateDock();
   if(prev !== navIndex && navIndex === 3) track('settings_opened');
+  if(prev !== navIndex) ua('tab', { tab: ['beans','coffee','journal','more'][navIndex] });
 }
 
 tabEls.forEach(t=>{
