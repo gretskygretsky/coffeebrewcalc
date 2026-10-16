@@ -1386,6 +1386,25 @@
   .res-nums.pick b:focus-visible{ outline:2px solid var(--blue); outline-offset:0; }
   .res-nums.pick b.on::after{ content:""; position:absolute; left:6px; right:6px; bottom:-3px; height:2.5px; border-radius:2px; background:var(--accent, var(--orange)); }
   .cup-hint{ font-size:12px; color:var(--label-3); margin-top:8px; }
+  /* Точный ввод: второй тап по ведущему числу — печатаешь прямо в нём (весы показали 18,4 г) */
+  .res-nums b .cup-ed{ font:inherit; letter-spacing:inherit; color:inherit; background:none; border:none; padding:0; margin:0; outline:none; width:3ch;
+    font-variant-numeric:tabular-nums; caret-color:var(--accent, var(--orange)); -webkit-appearance:none; appearance:none; border-radius:0; }
+  .res-nums b .cup-ed.bad{ color:var(--orange); }
+  .res-nums.pick b.editing{ cursor:text; }
+  .res-nums.pick b.editing::after{ animation:edCaret 1s ease-in-out infinite; }
+  @keyframes edCaret{ 50%{ opacity:.35; } }
+  /* «Готово» на время ввода встаёт на место «мягче / крепче»: у цифровой клавиатуры iPhone своей кнопки нет */
+  .res-adj{ position:relative; }
+  .res-adj .str{ transition:opacity .12s var(--ease-out); }
+  .res-adj.editing .str{ opacity:0; pointer-events:none; }
+  .cup-done{ position:absolute; right:0; top:50%; height:36px; padding:0 14px 0 10px; display:inline-flex; align-items:center; gap:4px;
+    border:none; border-radius:999px; background:var(--accent, var(--orange)); color:#fff; font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
+    transform-origin:right center; transform:translate(8px, -50%) scale(.95); opacity:0; pointer-events:none;
+    transition:transform .14s var(--ease-out), opacity .12s var(--ease-out); }
+  .res-adj.editing .cup-done{ transform:translate(0, -50%); opacity:1; pointer-events:auto; transition:transform .22s var(--ease-out), opacity .18s var(--ease-out); }
+  .res-adj.editing .cup-done:active{ transform:translate(0, -50%) scale(.97); transition:transform .1s var(--ease-out); }
+  .cup-done:focus-visible{ outline:2px solid var(--blue); outline-offset:2px; }
+  .cup-done svg{ width:16px; height:16px; }
   .cup-hint[hidden]{ display:none; }
   /* Цифры-барабаны (дискретные смены) и одометр (под пальцем) */
   .dg{ display:inline-block; position:relative; clip-path:inset(0 -0.04em); white-space:pre; }
@@ -1476,6 +1495,8 @@
   .arch-toggle:active, .jm-head:active{ transform:scale(.98); }
   .ratio-reset:active{ opacity:.55; }
   @media (prefers-reduced-motion: reduce){
+    .res-nums.pick b.editing::after{ animation:none; }
+    .cup-done, .res-adj.editing .cup-done{ transform:translateY(-50%) !important; transition:opacity .15s ease; }
     .alert-btn, .bs-act, .temp-btn, .vol-back, .chart-tg, .pill-menu, .arch-toggle, .jm-head, .star, .js-rate button{ transition:none !important; }
     .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
     .fold, #recipeCard, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
@@ -1600,6 +1621,7 @@
       <div class="res-adj">
         <span class="res-ratio" id="resRatio"></span>
         <span class="str"><button type="button" id="coffeeStepDown" aria-label="Мягче: меньше кофе"><span class="bl">− мягче</span></button><i></i><button type="button" id="coffeeStepUp" aria-label="Крепче: больше кофе"><span class="bl">крепче +</span></button></span>
+        <button type="button" class="cup-done" id="cupDone" tabindex="-1" aria-label="Готово"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Готово</button>
       </div>
     </div>
    </div>
@@ -2960,14 +2982,102 @@ function setCupUnit(u){
   if(hadHint) flipCalc(apply, 300); else apply();
   placeDrv(true);
 }
+// Первый тап по числу — оно начинает вести ползунок; тап по уже ведущему — точный ввод прямо в нём
+function cupNumTap(b){
+  if(cupEdit.on) return;
+  if(b === cupDrivenEl()) cupStartEdit(b);
+  else setCupUnit(b.id === 'resCoffee' ? 'g' : 'ml');
+}
 document.querySelector('#calcRes .res-nums').addEventListener('click', e=>{
-  const b = e.target.closest('b'); if(!b || !cupPickOn()) return;
-  setCupUnit(b.id === 'resCoffee' ? 'g' : 'ml');
+  const b = e.target.closest('b'); if(!b || !cupPickOn() || e.target.closest('.cup-ed')) return;
+  cupNumTap(b);
 });
 document.querySelector('#calcRes .res-nums').addEventListener('keydown', e=>{
-  const b = e.target.closest('b'); if(!b || !cupPickOn() || (e.key !== 'Enter' && e.key !== ' ')) return;
-  e.preventDefault(); setCupUnit(b.id === 'resCoffee' ? 'g' : 'ml');
+  const b = e.target.closest('b'); if(!b || !cupPickOn() || e.target.closest('.cup-ed') || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); cupNumTap(b);
 });
+
+/* ---- Точный ввод в числе итога ----
+   Граммы — с десятыми (кофе уже в кофемолке, весы показали 18,4), миллилитры — целые.
+   Вода остаётся целой: при 1:10 и выше погрешность меньше 0,05 г, введённые граммы видны как есть.
+   Закрыть: «Готово» на месте «мягче / крепче», Return там, где он есть, или тап вне поля —
+   как в iOS, такой тап только закрывает ввод и сохраняет; ползунок можно брать сразу. */
+const cupEdit = { on:false, b:null, inp:null, g:false, before:0, swallowUntil:0 };
+function cupEdParse(str, g){
+  const v = parseFloat(String(str).replace(',', '.').replace(/[^\d.]/g, ''));
+  if(!isFinite(v)) return null;
+  return g ? Math.round(v * 10) / 10 : Math.round(v);
+}
+function cupEdRange(g){ return g ? [CUP_MIN / state.ratio, CUP_MAX / state.ratio] : [CUP_MIN, CUP_MAX]; }
+function cupEdWater(v, g){ return Math.max(CUP_MIN, Math.min(CUP_MAX, g ? Math.round(v * state.ratio) : v)); }
+function cupApplyWater(w){
+  cup.size = 'custom'; cup.custom = w; saveCupPrefs();
+  state.inputType = 'water'; state.value = w;
+  volSlider.value = w; volSlider._detent = null; updateSliderFill();
+  compute();
+}
+function cupEdFit(){ const i = cupEdit.inp; i.style.width = Math.max(1, i.value.length) + 0.4 + 'ch'; placeDrv(false); }
+function cupStartEdit(b){
+  const g = b.id === 'resCoffee', inp = document.createElement('input');
+  inp.className = 'cup-ed'; inp.type = 'text'; inp.autocomplete = 'off';
+  inp.setAttribute('inputmode', g ? 'decimal' : 'numeric'); inp.setAttribute('enterkeyhint', 'done');
+  inp.setAttribute('aria-label', g ? 'Граммы кофе' : 'Объём воды, мл');
+  inp.value = g ? fmt(state.coffee) : String(Math.round(state.water));
+  Object.assign(cupEdit, { on:true, b, inp, g, before:Math.round(cup.custom) });
+  b._editing = true; b.textContent = ''; b.appendChild(inp); b.classList.add('editing');
+  document.querySelector('#calcRes .res-adj').classList.add('editing');
+  document.getElementById('cupDone').tabIndex = 0;
+  cupEdFit();
+  // фокус — синхронно в тапе: иначе iOS не поднимет клавиатуру
+  inp.focus(); inp.select();
+  inp.addEventListener('input', cupEdInput);
+  inp.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ e.preventDefault(); cupEndEdit(true); }
+    else if(e.key === 'Escape'){ e.preventDefault(); cupEndEdit(false); }
+  });
+  inp.addEventListener('blur', ()=> cupEndEdit(true));   // «Готово» в панели над клавиатурой и прочие потери фокуса
+}
+function cupEdInput(){
+  const { inp, g } = cupEdit;
+  cupEdFit();
+  const v = cupEdParse(inp.value, g), [lo, hi] = cupEdRange(g);
+  // меньше минимума — ещё печатают («29» на пути к 290), не красим; больше максимума — перебор
+  inp.classList.toggle('bad', v != null && v > hi);
+  if(v == null || v < lo || v > hi) return;
+  cupApplyWater(cupEdWater(v, g));    // второе число и ползунок — по ходу набора
+}
+function cupEndEdit(commit){
+  if(!cupEdit.on) return;
+  const { b, inp, g, before } = cupEdit;
+  cupEdit.on = false;
+  const v = cupEdParse(inp.value, g), [lo, hi] = cupEdRange(g);
+  const ok = commit && v != null && v >= lo && v <= hi;
+  b._editing = false; b.classList.remove('editing');
+  if(inp.parentNode) inp.remove();
+  b._gen = (b._gen || 0) + 1; b.textContent = b._t != null ? b._t : '';
+  document.querySelector('#calcRes .res-adj').classList.remove('editing');
+  document.getElementById('cupDone').tabIndex = -1;
+  if(ok){
+    cupApplyWater(cupEdWater(v, g));
+    haptics('selection');
+    track('cup_value_typed', { unit:g ? 'g' : 'ml' });
+  } else {
+    if(Math.round(cup.custom) !== before) cupApplyWater(before);
+    if(commit && v != null) haptics('error');
+  }
+  placeDrv(false);
+}
+document.addEventListener('pointerdown', e=>{
+  if(!cupEdit.on || e.target === cupEdit.inp) return;
+  const onSlider = e.target.closest('#cupCustomRow'), onDone = e.target.closest('#cupDone');
+  if(!onSlider) e.preventDefault();      // поле не теряет фокус раньше, чем сохраним
+  cupEndEdit(true);
+  if(!onSlider && !onDone) cupEdit.swallowUntil = performance.now() + 500;
+}, true);
+document.addEventListener('click', e=>{
+  if(performance.now() < cupEdit.swallowUntil){ e.stopPropagation(); e.preventDefault(); cupEdit.swallowUntil = 0; }
+}, true);
+document.getElementById('cupDone').addEventListener('click', ()=> cupEndEdit(true));
 // Шкала под ползунком: строится один раз, дальше меняются подписи и положения S·M·L.
 // В граммах крайние подписи — граммы при текущей пропорции; S·M·L стоят на тех же местах.
 function syncTicks(water, swapDir){
@@ -3028,6 +3138,7 @@ function renderResult(coffee, water){
   } else rs.hidden = true;
 }
 function setResNum(el, txt, v, an){
+  if(el._editing){ el._t = txt; el._v = v; return; }   // в числе сейчас печатают — не трогаем
   if(window.__enHold){ el._enTxt = txt; el._v = v; return; }   // первый вход в «Кофе» ещё не показан
   if(el._odo){ el._t = txt; el._v = v; odoSet(el, v); return; }
   const prev = el._v; el._v = v;
@@ -3296,7 +3407,8 @@ function renderNotes(){
    другое место страницы должен сам её закрывать ---- */
 document.addEventListener('click', e=>{
   const active = document.activeElement;
-  if(active && active.tagName === 'INPUT' && active.type !== 'range' && e.target !== active){
+  // .cup-ed закрывается своей логикой (cupEndEdit): тап, которым ввод открыли, сюда тоже долетает
+  if(active && active.tagName === 'INPUT' && active.type !== 'range' && e.target !== active && !active.classList.contains('cup-ed')){
     active.blur();
   }
 });
