@@ -1583,7 +1583,7 @@
     <div class="rc-top">
       <button class="mode-pill" id="modeBtn" type="button" aria-haspopup="menu" aria-label="Режим заваривания"><span id="modeLabel">V60</span><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></button>
       <span class="temp-wrap">
-        <button class="temp-btn" id="tempToggle" type="button" aria-expanded="false" aria-controls="tempDetail">вода <b id="tempValue">93 °C</b><svg class="i" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg></button>
+        <button class="temp-btn" id="tempToggle" type="button" aria-expanded="false" aria-controls="tempDetail">вода <b id="tempValue">93&nbsp;°C</b><svg class="i" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg></button>
       </span>
     </div>
     <div class="temp-detail" id="tempDetail" hidden>
@@ -1640,8 +1640,8 @@
 
    <!-- Таймер живёт в той же карточке: на время брю рецепт уступает ему место.
         Кольцо — только текущий этап, шкала внизу — весь брю. -->
-   <div class="rc-face timer-face" id="timerFace" hidden aria-live="polite">
-    <div class="tf-hd"><span class="stage-pill" id="tfStage">Приготовьтесь</span><span class="tf-tot tnum" id="tfTot"></span></div>
+   <div class="rc-face timer-face" id="timerFace" hidden>
+    <div class="tf-hd"><span class="stage-pill" id="tfStage" aria-live="polite">Приготовься</span><span class="tf-tot tnum" id="tfTot"></span></div>
     <div class="tf-ice" id="brewNote" hidden></div>
     <div class="tf-grid">
       <div class="tf-k" id="tfK">налить до</div><div class="tf-k tf-kr" id="tfCdk">старт через</div>
@@ -2119,17 +2119,17 @@ function customWarnings(coffee, water, vals){
   let accExceptLast = 0;
   for(let i=0;i<vals.length-1;i++) accExceptLast += vals[i];
   if(accExceptLast > water + 0.5){
-    out.push('Заданные объёмы уже дают ' + fmt(accExceptLast) + ' мл — это больше, чем ' + fmt(water) + ' мл. Уменьшите проливы, иначе на последний ничего не остаётся.');
+    out.push('Заданные объёмы уже дают ' + fmt(accExceptLast) + '\u00a0мл — это больше, чем ' + fmt(water) + '\u00a0мл. Уменьшите проливы, иначе на последний ничего не остаётся.');
   }
   if(coffee > 0 && vals[0] < coffee * 2 - 0.5){
-    out.push('Блум меньше ×2 от граммовки (' + fmt(coffee * 2) + ' мл) — зерно может смочиться не полностью.');
+    out.push('Блум меньше ×2 от граммовки (' + fmt(coffee * 2) + '\u00a0мл) — зерно может смочиться не полностью.');
   }
   for(let i=1;i<vals.length;i++){
-    if(vals[i] > 150) out.push('Пролив ' + i + ' — ' + fmt(vals[i]) + ' мл за раз, воронка может переполниться.');
+    if(vals[i] > 150) out.push('Пролив ' + i + ' — ' + fmt(vals[i]) + '\u00a0мл за раз, воронка может переполниться.');
   }
   for(let i=0;i<steps.length;i++){
     if(vals[i] > 100 && steps[i].wait < 20){
-      out.push((i === 0 ? 'После блума' : 'После пролива ' + i) + ' всего ' + steps[i].wait + ' с — вода может не успеть уйти.');
+      out.push((i === 0 ? 'После блума' : 'После пролива ' + i) + ' всего ' + steps[i].wait + '\u00a0с — вода может не успеть уйти.');
     }
   }
   return out;
@@ -2301,7 +2301,7 @@ function updateTempBlock(){
     return;
   }
   document.getElementById('tempPicks').style.display = 'block';
-  valueEl.textContent = brewTemp() + ' °C';
+  valueEl.textContent = brewTemp() + '\u00a0°C';
 
   const bean = activeBeanId != null && typeof beans !== 'undefined' ? beans.find(b=> b.id === activeBeanId) : null;
   src.innerHTML = bean
@@ -2638,8 +2638,8 @@ function syncCupControls(coffee, water){
     b.classList.toggle('on', on);
     b.setAttribute('aria-checked', String(on));
     const ml = b.querySelector('.ml');
-    if(k === 'custom') ml.textContent = on ? fmt(water) + ' мл' : '—';
-    else ml.textContent = cup.sizes[k] + ' мл';
+    if(k === 'custom') ml.textContent = on ? fmt(water) + '\u00a0мл' : '—';
+    else ml.textContent = cup.sizes[k] + '\u00a0мл';
   });
 
   // «Свой» — плитки уступают место ползунку на том же месте (во время перехода раскладкой правит morphCup)
@@ -2656,14 +2656,14 @@ function syncCupControls(coffee, water){
   const iced = state.mode === 'v60ice';
   const ice = water * ICE_SHARE, hot = water - ice;
   document.getElementById('resIce').style.display = iced ? 'block' : 'none';
-  document.getElementById('cupHotVal').textContent = fmt(hot) + ' мл';
-  document.getElementById('cupIceVal').textContent = fmt(ice) + ' г';
+  document.getElementById('cupHotVal').textContent = fmt(hot) + '\u00a0мл';
+  document.getElementById('cupIceVal').textContent = fmt(ice) + '\u00a0г';
 
   const tip = document.getElementById('iceTip');
   tip.style.display = iced ? 'flex' : 'none';
   tip.style.setProperty('--accent', accent);
   document.getElementById('iceTipText').innerHTML = '<b>Перед стартом:</b> положи ' + fmt(ice) +
-    ' г льда в сервер, поставь его на весы и обнули их. Дальше весы показывают только горячую воду — по ней и идёт график.';
+    '\u00a0г льда в сервер, поставь его на весы и обнули их. Дальше весы показывают только горячую воду — по ней и идёт график.';
 }
 
 
@@ -3414,8 +3414,8 @@ function renderPourSchedule(coffee, water, accent){
     const ck = document.createElement('span'); ck.className='pour-ck'; ck.textContent = String(i + 1);
     const action = document.createElement('span'); action.className='pour-action'; action.textContent=r.action;
     const amounts = document.createElement('div'); amounts.className='pour-amounts';
-    const tot = document.createElement('div'); tot.className='pour-total'; tot.textContent = fmt(r.total)+' мл';
-    const add = document.createElement('div'); add.className='pour-add'; add.textContent = r.add!==null ? '+'+fmt(r.add)+' мл' : '—';
+    const tot = document.createElement('div'); tot.className='pour-total'; tot.textContent = fmt(r.total)+'\u00a0мл';
+    const add = document.createElement('div'); add.className='pour-add'; add.textContent = r.add!==null ? '+'+fmt(r.add)+'\u00a0мл' : '—';
     amounts.appendChild(tot); amounts.appendChild(add);
     row.appendChild(ck); row.appendChild(time); row.appendChild(dot); row.appendChild(action); row.appendChild(amounts);
     card.appendChild(row);
@@ -3550,7 +3550,7 @@ function renderCustomEditor(coffee, water, accent){
   let totalSec = 0;
   steps.forEach(s=> totalSec += s.wait);
   document.getElementById('ceTotalsCard').style.setProperty('--accent', accent);
-  document.getElementById('ceTotalWater').textContent = fmt(totalMl) + ' мл';
+  document.getElementById('ceTotalWater').textContent = fmt(totalMl) + '\u00a0мл';
   document.getElementById('ceTotalTime').textContent = fmtTime(totalSec);
 
   const warnEl = document.getElementById('ceWarn');
@@ -3634,6 +3634,9 @@ function applyPalette(isDark){
   const p = isDark ? PALETTE.dark : PALETTE.light;
   const root = document.documentElement.style;
   Object.keys(p).forEach(k=> root.setProperty(k, p[k]));
+  // Нативные части (календарь даты, select, скроллбары, автозаполнение) берут тему из color-scheme —
+  // ставим её из того же источника, что и палитру, иначе при тёмном Telegram и светлой системе они светлые.
+  root.colorScheme = isDark ? 'dark' : 'light';
   if(window.Telegram && window.Telegram.WebApp){
     try{ window.Telegram.WebApp.setBackgroundColor(p['--bg']); }catch(e){}
     try{ window.Telegram.WebApp.setHeaderColor(p['--bg']); }catch(e){}
@@ -4203,7 +4206,7 @@ function beginCountdown(){
   setText(document.getElementById('brewStopLabel'), 'Отменить');
   // Iced V60: на отсчёте — последний момент положить лёд и обнулить весы
   if(state.mode === 'v60ice'){
-    tf.note.textContent = 'Положите ' + fmt((state.water || 0) * ICE_SHARE) + ' г льда в сервер, поставьте на весы и обнулите';
+    tf.note.textContent = 'Положите ' + fmt((state.water || 0) * ICE_SHARE) + '\u00a0г льда в сервер, поставьте на весы и обнулите';
     tf.note.hidden = false;
   } else {
     tf.note.hidden = true;
@@ -4237,12 +4240,12 @@ function tickCountdown(){
   }
 
   const first = state.schedule[0];
-  setText(tf.stage, 'Приготовьтесь');
+  setText(tf.stage, 'Приготовься');
   setText(tf.tot, '');
   setText(tf.k, 'налить до');
   setText(tf.ck, 'старт через');
   if(performance.now() >= brewStepLockUntil) setTarget(fmt(first.total));
-  setText(tf.a, '+' + fmt(first.add) + ' мл');
+  setText(tf.a, '+' + fmt(first.add) + '\u00a0мл');
   setArc(el / COUNTDOWN_SECS);
 
   if(left <= 0){ launchBrew(); return; }
@@ -4350,12 +4353,12 @@ function brewRewind(at, secs){
 }
 
 /* ================= Подготовка: вход в брю и отсчёт 5 секунд =================
-   Карточка таймера собирается сверху вниз с нахлёстом: пилюля «Приготовьтесь» →
+   Карточка таймера собирается сверху вниз с нахлёстом: пилюля «Приготовься» →
    «налить до», число набегает с нуля → «+N мл» → кольцо проявляется → сегменты шкалы
    вырастают слева направо → в таблице появляются номера, у блума загорается плашка.
    Подсказка про лёд (Iced V60) разворачивается сверху. Каждая секунда отсчёта — бип,
    вибро selection и перекат цифры в один кадр. Старт блума — тот же откат кольца,
-   что между шагами: «Приготовьтесь» → «Блум» с живой точкой. */
+   что между шагами: «Приготовься» → «Блум» с живой точкой. */
 function brewPrepIn(){
   if(!brewCanAnimate()) return;
   const first = state.schedule[0], now = performance.now();
@@ -4397,12 +4400,12 @@ function brewCountdownStep(txt){
     }).catch(()=>{});
   brewBump(document.querySelector('#timerFace .tf-ring'), 1.04, 0, 300);
 }
-// Старт блума: «Приготовьтесь» → «Блум», живая точка, откат кольца с паузой часов
+// Старт блума: «Приготовься» → «Блум», живая точка, откат кольца с паузой часов
 function brewLaunchAnim(){
   const rows = state.schedule, cur = rows[0], next = rows[1];
   brewRewind(0, next.time - cur.time);
   const finalStage = '<i></i><span class="tf-st">' + cur.action + '</span>';
-  tf.stage.innerHTML = '<span class="tf-st">Приготовьтесь</span>';
+  tf.stage.innerHTML = '<span class="tf-st">Приготовься</span>';
   brewSwapText(tf.stage.querySelector('.tf-st'), cur.action, 0);
   setTimeout(()=>{
     if(brewPhase !== 'running') return;
@@ -4439,7 +4442,7 @@ function animateBrewStep(prev, idx){
     requestAnimationFrame(f);
   }, 60);
   brewBump(tf.n.parentElement, 1.04, 60, 420);
-  brewSwapText(tf.a, '+' + fmt(cur.add) + ' мл', 120);
+  brewSwapText(tf.a, '+' + fmt(cur.add) + '\u00a0мл', 120);
   // 4. Шкала: пройденный сегмент вспыхивает и гаснет, подпись нового щёлкает
   const tks = tf.trk.children;
   if(tks[prev]) tks[prev].querySelector('i').animate([{ opacity:1 }, { opacity:1, offset:.25 }, { opacity:.45 }], { duration:520, easing:'ease-out' });
@@ -4477,7 +4480,7 @@ function brewChartSVG(e){
   const mid = Math.round(end / 2 / 30) * 30;
   const ticks = [[0,'start'], [mid,'middle'], [end,'end']].map(([t,a])=> '<text x="' + X(t).toFixed(1) + '" y="' + (H-6) + '" text-anchor="' + a + '">' + fmtTime(t) + '</text>').join('');
   brewChartGeo = { X, Y, pours, T, h };
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Профиль пролива: ' + fmt(jsWater(e)) + ' мл за ' + fmtTime(end) + '" style="overflow:visible">' + grid + ticks +
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Профиль пролива: ' + fmt(jsWater(e)) + '\u00a0мл за ' + fmtTime(end) + '" style="overflow:visible">' + grid + ticks +
     '<defs><clipPath id="bcPast"><rect id="bcPastRect" x="0" y="0" width="' + L + '" height="' + H + '"/></clipPath></defs>' +
     '<path d="' + area + '" fill="' + col + '" opacity=".05"/>' +
     '<path d="' + path + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" opacity=".3" stroke-dasharray="3 4"/>' +
@@ -4546,7 +4549,7 @@ function tickBrew(){
     setText(tf.k, 'налить до');
     setText(tf.ck, next === rows[rows.length-1] ? 'до конца' : 'до ' + next.action.toLowerCase().replace('пролив', 'пролива'));
     setTarget(fmt(cur.total));
-    setText(tf.a, '+' + fmt(cur.add) + ' мл');
+    setText(tf.a, '+' + fmt(cur.add) + '\u00a0мл');
   }
   setHTML(tf.tot, '<b>' + fmtTime(Math.max(0, elapsed)) + '</b> из ~' + fmtTime(end));
   if(now >= brewCdRollUntil) paintCountdown(Math.max(0, next.time - elapsed));
@@ -4699,7 +4702,7 @@ function renderSizeSettings(){
       '<div class="set-name"><b>'+k+'</b>'+CUP_NAMES[k]+'</div>' +
       '<div class="vstep">' +
         '<button type="button" data-k="'+k+'" data-d="-10" aria-label="'+CUP_NAMES[k]+': меньше">−</button>' +
-        '<span class="v" data-v="'+k+'">'+cup.sizes[k]+' мл</span>' +
+        '<span class="v" data-v="'+k+'">'+cup.sizes[k]+'\u00a0мл</span>' +
         '<button type="button" data-k="'+k+'" data-d="10" aria-label="'+CUP_NAMES[k]+': больше">+</button>' +
       '</div>' +
     '</div>').join('');
@@ -4710,7 +4713,7 @@ function renderSizeSettings(){
     haptics('selection');
     cup.sizes[k] = next;
     saveCupPrefs();
-    wrap.querySelector('[data-v="'+k+'"]').textContent = next + ' мл';
+    wrap.querySelector('[data-v="'+k+'"]').textContent = next + '\u00a0мл';
     track('cup_sizes_edited', { cup_size: k, cup_ml: next });
     if(cup.size === k && isBrewMode() && brewPhase === 'idle'){ state.inputType = 'water'; state.value = next; }
     compute();
@@ -4922,7 +4925,7 @@ function journalMonthSumHTML(list, k, open){
   return '<button class="jm-sum" type="button" data-jm="' + k + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Свернуть месяц' : 'Раскрыть месяц') + '">' +
     '<div><b>' + list.length + '</b><span>' + pluralRu(list.length, 'заваривание', 'заваривания', 'завариваний') + '</span></div>' +
     '<div><b>' + (avg ? '<span class="st">★</span> ' + fmt(avg) : '—') + '</b><span>средняя</span></div>' +
-    '<div><b>' + fmt(Math.round(grams)) + ' г</b><span>кофе</span></div></button>';
+    '<div><b>' + fmt(Math.round(grams)) + '\u00a0г</b><span>кофе</span></div></button>';
 }
 function renderJournal(){
   const listCard = document.getElementById('journalListCard');
@@ -4976,7 +4979,7 @@ function journalRowHTML(e, prev){
       '<span class="jr-day' + (today ? ' today' : '') + (same ? ' same' : '') + '"><b>' + d.getDate() + '</b><span>' + JR_WD[d.getDay()] + '</span></span>' +
       '<span class="jr-mid"><div class="jr-name' + (beanName ? '' : ' none') + '">' + (beanName ? escapeHTML(beanName) : 'Без зерна') + '</div>' +
         '<div class="jr-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
-          fmt(e.coffee || 0) + ' г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + ' мл · 1:' + e.ratio + '</div></span>' +
+          fmt(e.coffee || 0) + '\u00a0г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + '\u00a0мл · 1:' + e.ratio + '</div></span>' +
       '<span class="jr-r"><div class="jr-rate' + (rated ? '' : ' none') + '">' + (rated ? '<span class="st">★</span>' + e.rating : 'оценить') + '</div>' +
         '<div class="jr-time">' + journalTimeLabel(e.id) + '</div></span>' +
     '</button></div>';
@@ -5204,6 +5207,13 @@ document.addEventListener('touchstart', (e)=>{
 
 /* ---- Дневник: шторка (сохранение и правка — один компонент) ---- */
 let sheetMode = null, sheetEntry = null;
+/* Черновик шторки: снимок записи/зерна при открытии. Закрытие без сохранения
+   (×, тап мимо, протяжка вниз, Esc) при изменённом черновике сначала спрашивает. */
+const SHEET_DRAFT_MODES = ['edit', 'bean-add', 'bean-edit'];
+let sheetSnap = null;
+function sheetDirty(){
+  return SHEET_DRAFT_MODES.includes(sheetMode) && !!sheetEntry && sheetSnap != null && JSON.stringify(sheetEntry) !== sheetSnap;
+}
 const sheetScrimEl = document.getElementById('sheetScrim');
 const sheetEl = document.getElementById('sheet');
 const sheetTitleEl = document.getElementById('sheetTitle');
@@ -5367,7 +5377,10 @@ function showSheet(){
   sheetPrimaryBtn.style.display = sheetMode === 'bean-pick' ? 'none' : '';
   lockPageScroll();
   sheetOpenedAt = performance.now();
-  if(!sheetEl.classList.contains('show')) dialogFocus.open(sheetEl);
+  if(!sheetEl.classList.contains('show')){
+    sheetSnap = SHEET_DRAFT_MODES.includes(sheetMode) && sheetEntry ? JSON.stringify(sheetEntry) : null;
+    dialogFocus.open(sheetEl);
+  }
   sheetScrimEl.classList.add('show');
   sheetEl.classList.add('show');
 }
@@ -5379,7 +5392,7 @@ function closeSheet(){
   const wasOpen = sheetEl.classList.contains('show');
   sheetScrimEl.classList.remove('show');
   sheetEl.classList.remove('show');
-  sheetMode = null; sheetEntry = null;
+  sheetMode = null; sheetEntry = null; sheetSnap = null;
   if(wasOpen) dialogFocus.close(sheetEl);
   if(!alertBoxEl.classList.contains('show')) unlockPageScroll();
 }
@@ -5438,7 +5451,7 @@ async function offerRateSheet(){
   sheetTitleEl.textContent = 'Записано в журнал';
   const beanName = entryBeanName(entry);
   sheetSubtitleEl.textContent = (beanName ? beanName + ' · ' : '') +
-    fmt(entry.coffee) + ' г · ' + fmt(entry.water) + ' мл' + (entry.ice ? ' + ' + fmt(entry.ice) + ' г льда' : '') + ' · ' +
+    fmt(entry.coffee) + '\u00a0г · ' + fmt(entry.water) + '\u00a0мл' + (entry.ice ? ' + ' + fmt(entry.ice) + '\u00a0г льда' : '') + ' · ' +
     entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
   sheetTabSeg.style.display = 'none';
   sheetTabRate.style.display = 'none';
@@ -5502,7 +5515,7 @@ function journalChartSVG(e){
     '<text x="' + (L-6) + '" y="' + (Y(max*f)+3.5).toFixed(1) + '" text-anchor="end">' + Math.round(max*f) + '</text>').join('');
   const mid = Math.round(end / 2 / 30) * 30;
   const ticks = [[0,'start'], [mid,'middle'], [end,'end']].map(([t,a])=> '<text x="' + X(t).toFixed(1) + '" y="' + (H-6) + '" text-anchor="' + a + '">' + fmtTime(t) + '</text>').join('');
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Профиль пролива: ' + fmt(jsWater(e)) + ' мл за ' + fmtTime(end) + '">' + grid + ticks +
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Профиль пролива: ' + fmt(jsWater(e)) + '\u00a0мл за ' + fmtTime(end) + '">' + grid + ticks +
     '<path d="' + path + ' L' + X(end).toFixed(1) + ',' + Y(0).toFixed(1) + ' Z" fill="' + col + '" opacity=".12"/>' +
     '<path d="' + path + '" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linejoin="round"/>' + dots + '</svg>';
 }
@@ -5517,7 +5530,7 @@ function jsPoursHTML(e){
         '<input class="js-pin" type="number" inputmode="decimal" name="pourAdd' + i + '" autocomplete="off" min="0" step="1" data-jpa="' + i + '" value="' + (p.add || 0) + '" aria-label="' + label + ': граммы"><span class="js-pu">г</span></div>';
     }
     return '<div class="bs-row"><span class="bs-l"><span class="tm">' + fmtTime(p.time || 0) + '</span><span class="t">' + label + '</span></span>' +
-      '<span class="bs-v"><b>' + fmt(run) + ' мл</b> <span class="add">+' + fmt(p.add || 0) + '</span></span></div>';
+      '<span class="bs-v"><b>' + fmt(run) + '\u00a0мл</b> <span class="add">+' + fmt(p.add || 0) + '</span></span></div>';
   }).join('');
 }
 function renderEditSheet(){
@@ -5543,13 +5556,13 @@ function renderEditSheet(){
         '<span class="c"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></span></button>' +
       (orphan ? '<div class="js-note-bean">' + (id != null ? 'зерно удалено' : 'не привязано к зерну') + '</div>' : '') +
       '<div class="js-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
-        (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + e.ratio + (e.ice ? ' · лёд ' + fmt(e.ice) + ' г' : '') + '</div>' +
+        (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + e.ratio + (e.ice ? ' · лёд ' + fmt(e.ice) + '\u00a0г' : '') + '</div>' +
     '</div>' +
     '<div class="js-rate" id="jsRate">' + [1,2,3,4,5].map(i=> '<button type="button" class="' + (i <= e.rating ? 'on' : '') + '" data-jstar="' + i + '" aria-label="' + i + ' из 5">' + star + '</button>').join('') + '</div>' +
     '<div class="js-rate-l" id="jsRateL">' + (e.rating ? JS_RATE_LABELS[e.rating] : 'Как получилось?') + '</div>' +
     '<div class="js-metrics">' +
-      '<div><b>' + fmt(e.coffee || 0) + ' г</b><span>кофе</span></div>' +
-      '<div><b id="jsWaterVal">' + fmt(water) + ' мл</b><span>вода</span></div>' +
+      '<div><b>' + fmt(e.coffee || 0) + '\u00a0г</b><span>кофе</span></div>' +
+      '<div><b id="jsWaterVal">' + fmt(water) + '\u00a0мл</b><span>вода</span></div>' +
       '<div><b>' + fmtTime(jsDuration(e)) + '</b><span>время</span></div>' +
     '</div>' +
 
@@ -5663,7 +5676,7 @@ function repeatEntryRecipe(e){
       if(t.dataset.jpt != null) e.pours[i].time = Math.max(0, parseInt(t.value, 10) || 0);
       else e.pours[i].add = Math.max(0, parseFloat(t.value) || 0);
       document.getElementById('jsChart').innerHTML = journalChartSVG(e);
-      document.getElementById('jsWaterVal').textContent = fmt(jsWater(e)) + ' мл';
+      document.getElementById('jsWaterVal').textContent = fmt(jsWater(e)) + '\u00a0мл';
     }
   });
 })();
@@ -5690,7 +5703,7 @@ function openEntryBeanPick(){
   const stored = journalEntries.find(e=> e.id === sheetEntry.id);
   const storedId = stored ? normId(stored.beanId) : null;
   const hadBean = storedId != null && beans.some(b=> b.id === storedId);
-  const g = fmt(sheetEntry.coffee || 0) + ' г';
+  const g = fmt(sheetEntry.coffee || 0) + '\u00a0г';
   sheetSubtitleEl.textContent = !beans.length
     ? 'Сначала добавь зерно на странице «Зерна»'
     : (hadBean ? g + ' вернутся прежнему зерну и спишутся с выбранного' : g + ' спишутся с выбранного зерна');
@@ -5720,6 +5733,7 @@ function openEntryBeanPick(){
 }
 
 function closeSheetAndMaybeStop(){
+  if(sheetDirty()){ openDiscardAlert(); return; }
   const wasSaveMode = sheetMode === 'saved';
   closeSheet();
   if(wasSaveMode && brewing) stopBrew(true);
@@ -5946,6 +5960,20 @@ function openArchiveAlert(id){
   alertBoxEl.classList.add('show');
   dialogFocus.open(alertBoxEl, alertCancelBtn);
 }
+function openDiscardAlert(){
+  alertDeleteId = null;
+  alertDeleteKind = 'discard';
+  alertTitleEl.textContent = sheetMode === 'bean-add' ? 'Не добавлять зерно?' : 'Отменить изменения?';
+  alertTextEl.textContent = 'Правки не сохранятся.';
+  alertCancelBtn.textContent = 'Продолжить';
+  alertConfirmBtn.textContent = 'Не сохранять';
+  alertConfirmBtn.className = 'alert-btn danger';
+  haptics('warning');
+  lockPageScroll();
+  alertScrimEl.classList.add('show');
+  alertBoxEl.classList.add('show');
+  dialogFocus.open(alertBoxEl, alertCancelBtn);
+}
 function closeDeleteAlert(){
   const wasOpen = alertBoxEl.classList.contains('show');
   alertScrimEl.classList.remove('show');
@@ -5968,6 +5996,12 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
   const kind = alertDeleteKind;
   // Строку, которую удаляем, не закрываем обратно — она схлопнется ниже
   if(kind === 'journal') jSwipeOpenRow = null;
+  if(kind === 'discard'){
+    closeDeleteAlert();
+    sheetSnap = null;          // черновик выброшен осознанно — закрываем без повторного вопроса
+    closeSheetAndMaybeStop();
+    return;
+  }
   haptics('medium');
   closeDeleteAlert();
   if(kind === 'archive'){
@@ -6243,7 +6277,7 @@ function beanCardHTML(b, selectedId){
   if(!n.finished){
     chips.push(opened == null
       ? '<span class="bc-chip muted">не вскрыто</span>'
-      : '<span class="bc-chip' + (opened >= BEAN_STALE_OPENED ? ' warn' : '') + '" title="После вскрытия">вскрыто ' + (opened <= 0 ? 'сегодня' : opened + ' дн') + '</span>');
+      : '<span class="bc-chip' + (opened >= BEAN_STALE_OPENED ? ' warn' : '') + '" title="После вскрытия">вскрыто ' + (opened <= 0 ? 'сегодня' : opened + '\u00a0дн') + '</span>');
     chips.push('<span class="bc-chip" title="Температура воды">' + computeBrewTemp(b.roast, b.process) + '°</span>');
   }
   chips.push(st.rated
@@ -6252,7 +6286,7 @@ function beanCardHTML(b, selectedId){
   return (
     '<div class="bc-ringcol">' + beanRingSVG(n.pct, n.low, n.finished, 44, 5) + (on ? '<span class="bc-lbl">Выбрано</span>' : '') + '</div>' +
     '<div class="bc-t"><div class="bc-name">' + escapeHTML(b.name || 'Без названия') + '</div><div class="bc-sub">' + sub + '</div></div>' +
-    '<div class="bc-g"><b>' + (n.finished ? '—' : Math.round(n.remain) + ' г') + '</b><span>из ' + Math.round(n.start) + '</span></div>' +
+    '<div class="bc-g"><b>' + (n.finished ? '—' : Math.round(n.remain) + '\u00a0г') + '</b><span>из ' + Math.round(n.start) + '</span></div>' +
     '<div class="bc-chips">' + chips.join('') + '</div>'
   );
 }
@@ -6351,12 +6385,12 @@ function countTemp(from){
   const to = beanTempNow();
   if(from == null || to == null || from === to || reduceMotion()) return;
   const t0 = performance.now(), d = 420;
-  let shown = from + ' °C';
+  let shown = from + '\u00a0°C';
   el.textContent = shown;
   const f = now=>{
     if(el.textContent !== shown) return;
     const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 3);
-    shown = Math.round(from + (to - from) * e) + ' °C';
+    shown = Math.round(from + (to - from) * e) + '\u00a0°C';
     el.textContent = shown;
     if(p < 1) requestAnimationFrame(f);
   };
@@ -6443,8 +6477,8 @@ function runBeanLand(tile, fromBean, toBean){
     const g = tile.querySelector('.bc-g b'); if(!g || !bean) return;
     const target = Math.round(beanNumbers(bean).remain), f0 = from || 0, s0 = performance.now(), d = Math.max(300, ms);
     const f = now=>{ if(!g.isConnected || !beanLand.busy) return; const p = Math.min(1, (now - s0) / d), e = 1 - Math.pow(1 - p, 3);
-      g.textContent = Math.round(f0 + (target - f0) * e) + ' г'; if(p < 1) requestAnimationFrame(f); };
-    g.textContent = f0 + ' г'; requestAnimationFrame(f);
+      g.textContent = Math.round(f0 + (target - f0) * e) + '\u00a0г'; if(p < 1) requestAnimationFrame(f); };
+    g.textContent = f0 + '\u00a0г'; requestAnimationFrame(f);
   };
   const breath = at=> A(ring, [{ transform:'scale(1)' }, { transform:'scale(1.1)', offset:.35 }, { transform:'scale(1)' }], { duration:380, delay:at, easing:BEAN_EASE });
   // Пунктир ↔ сплошная дорожка: «прокладка» за головой дуги (toSolid) или обратно за хвостом
@@ -6613,7 +6647,7 @@ function beanStatusHTML(b, pct, low, remain, start, openedLbl){
       (when ? '<div class="b-opened">' + when + '</div>' : '');
   }
   return '<div class="b-bar"><div class="b-bar-fill" style="width:' + Math.round(pct*100) + '%;"></div></div>' +
-    '<div class="b-weight-row"><span class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + ' г' + (low ? ' · заканчивается' : '') + '</span>' + rate + '</div>' +
+    '<div class="b-weight-row"><span class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + '\u00a0г' + (low ? ' · заканчивается' : '') + '</span>' + rate + '</div>' +
     (openedLbl ? '<div class="b-opened">' + openedLbl + '</div>' : '');
 }
 
@@ -6747,7 +6781,7 @@ const beanChevronSVG = '<svg aria-hidden="true" width="11" height="11" viewBox="
 function beanHeroLeftHTML(e){
   const n = beanNumbers(e);
   if(n.finished) return 'Закончилось';
-  return '<b>' + Math.round(n.remain) + ' г</b> из ' + Math.round(n.start) + (n.low ? ' · <span class="warn">скоро закончится</span>' : '');
+  return '<b>' + Math.round(n.remain) + '\u00a0г</b> из ' + Math.round(n.start) + (n.low ? ' · <span class="warn">скоро закончится</span>' : '');
 }
 function beanStepRow(label, key, step){
   return '<div class="bs-row"><span class="bs-l"><span class="t">' + label + '</span></span>' +
@@ -6806,7 +6840,7 @@ function renderBeanSheet(){
       beanSelectRow('Обработка', 'process', PROCESSES) +
       '<div class="bs-row"><span class="bs-l"><span class="t">Температура воды</span>' +
         '<button class="bs-why" type="button" data-bwhy aria-expanded="' + beanWhyOpen + '">' + (beanWhyOpen ? 'Скрыть' : 'Почему такая?') + '</button></span>' +
-        '<span class="bs-v"><b>' + temp + ' °C</b></span></div>' +
+        '<span class="bs-v"><b>' + temp + '\u00a0°C</b></span></div>' +
       (beanWhyOpen ? '<div class="bs-why-text">' + beanTempNoteHTML(e.process) + '</div>' : '') +
     '</div>' +
 
@@ -7137,7 +7171,7 @@ function enRowParts(row){
 function enPaintRing(P, grams, p){
   P.arc.style.strokeDashoffset = (P.C * (1 - p)).toFixed(2);
   P.arc.style.opacity = p > 0.0001 ? Math.min(1, p / 0.03).toFixed(3) : '0';
-  if(grams != null) P.g.textContent = Math.max(0, Math.round(grams)) + ' г';
+  if(grams != null) P.g.textContent = Math.max(0, Math.round(grams)) + '\u00a0г';
 }
 function enBeansArm(){
   const onBeans = typeof navIndex !== 'undefined' && navIndex === 0;
@@ -7177,7 +7211,7 @@ function enBeansReveal(){
       const orig = P.of.textContent;
       setTimeout(()=>{
         if(!P.of.isConnected) return;
-        P.of.textContent = (delta < 0 ? '−' : '+') + Math.abs(delta) + ' г';
+        P.of.textContent = (delta < 0 ? '−' : '+') + Math.abs(delta) + '\u00a0г';
         P.of.classList.add('bc-delta');
         P.of.animate([{ opacity:0, transform:'translateY(3px)' }, { opacity:1, transform:'none' }], { duration:220, easing:BEAN_EASE });
         setTimeout(()=>{
