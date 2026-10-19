@@ -1136,10 +1136,12 @@
   .js-note-bean{ font-size:12.5px; color:var(--orange); font-weight:600; margin-top:2px; }
   .js-sub{ font-size:14px; color:var(--label-2); margin-top:3px; }
   .js-rate{ display:flex; justify-content:center; gap:10px; padding:14px 0 4px; }
-  .js-rate button{ width:42px; height:42px; border:none; background:none; padding:0; cursor:pointer; color:var(--label-3); transition:transform .16s var(--ease-out), color .16s ease; }
+  .js-rate{ touch-action:pan-y; -webkit-user-select:none; user-select:none; }
+  .js-rate button{ width:42px; height:42px; border:none; background:none; padding:0; cursor:pointer; color:var(--label-3); transition:transform .4s var(--gl-spring), color .16s ease; touch-action:pan-y; }
+  .js-rate button.pop{ transform:scale(1.28); transition:transform .1s var(--ease-out), color .1s ease; }
   .js-rate button.on{ color:var(--orange); }
   .js-rate button:active{ transform:scale(.92); }
-  .js-rate-l{ text-align:center; font-size:13px; color:var(--label-2); margin-bottom:4px; min-height:17px; }
+  .js-rate-l{ display:grid; text-align:center; font-size:13px; color:var(--label-2); margin-bottom:4px; min-height:17px; }
   .js-metrics{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); background:var(--sheet-group); border-radius:20px; margin-top:14px; }
   .js-metrics > div{ padding:11px 12px 12px 14px; min-width:0; }
   .js-metrics > div + div{ border-left:0.5px solid var(--separator); }
@@ -1148,11 +1150,19 @@
   .js-taste{ padding:12px 16px 14px; }
   .js-taste-top{ display:flex; justify-content:space-between; font-size:16px; margin-bottom:12px; color:var(--label); }
   .js-taste-top b{ font-weight:600; }
-  .js-track{ position:relative; display:grid; grid-template-columns:repeat(5,1fr); height:34px; background:var(--fill); border-radius:999px; }
+  .js-track{ position:relative; display:grid; grid-template-columns:repeat(5,1fr); height:34px; border-radius:999px; touch-action:pan-y; -webkit-user-select:none; user-select:none; }
+  /* Баланс — ползунок-линза на пять делений: тонкая дорожка, бегунок-капсула; под пальцем раздувается в стекло */
+  .js-track::before{ content:""; position:absolute; left:calc((100% - 6px) / 10 + 3px); right:calc((100% - 6px) / 10 + 3px); top:50%; height:4px; margin-top:-2px; border-radius:2px; background:var(--track); }
   .js-track button{ position:relative; z-index:1; border:none; background:none; cursor:pointer; border-radius:999px; }
   .js-track button::after{ content:""; position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:var(--label-3); }
-  .js-thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / 5); border-radius:999px; background:var(--seg-thumb);
-    box-shadow: inset 0 1px 0 var(--glass-hi), 0 2px 8px rgba(0,0,0,0.14); transform:translateX(calc(var(--t,2) * 100%)); transition:transform .24s var(--ease-out); }
+  .js-thumb{ position:absolute; top:3px; bottom:3px; left:3px; width:calc((100% - 6px) / 5); pointer-events:none; z-index:2;
+    transform:translateX(calc(var(--t,2) * 100%)); transition:transform .4s var(--gl-spring); }
+  .js-thumb::after{ content:""; position:absolute; left:50%; top:50%; width:30px; height:22px; margin:-11px 0 0 -15px; border-radius:999px; background:#FFFFFF;
+    box-shadow:0 1px 5px rgba(0,0,0,.25), inset 0 1px 0 var(--glass-hi); transition:transform .36s var(--gl-spring), background .2s ease, box-shadow .2s ease; }
+  .js-track.grab .js-thumb{ transition:transform .2s var(--ease-out); }
+  .js-track.grab .js-thumb::after{ transform:scale(1.45, 1.35); background:color-mix(in srgb, var(--glass-solid) 55%, transparent);
+    -webkit-backdrop-filter:blur(2px) saturate(160%); backdrop-filter:blur(2px) saturate(160%);
+    box-shadow:0 6px 16px -4px var(--glass-shadow), inset 0 0 0 .5px var(--glass-edge), inset 0 1px 0 var(--glass-hi); }
   .js-ends{ display:flex; justify-content:space-between; font-size:12px; color:var(--label-2); margin-top:7px; padding:0 4px; }
   .js-taste + .bs-row::before{ content:""; position:absolute; top:0; left:16px; right:0; height:0.5px; background:var(--separator); }
   .js-cap{ display:flex; justify-content:space-between; align-items:baseline; }
@@ -1576,6 +1586,131 @@
     .pop-menu.glass{ transition:opacity .15s ease; transform:none !important; }
     .tab-lens.anim, .action, .action svg, .tabbar{ transition:none; }
   }
+
+  /* ================= Стеклянные контролы ================= */
+  :root{ --gl-spring:cubic-bezier(.34,1.56,.55,1); --gl-press:color-mix(in srgb, var(--accent, var(--blue)) 16%, transparent); }
+  /* ---------- Степпер ±: одна стеклянная капсула во всех местах ----------
+     Капсула из стекла таб-бара: блик сверху, тонкий обод. У каждой кнопки своя подложка-линза (::before):
+     вспыхивает под пальцем, кнопка вдавливается и пружиной отскакивает. Удержание — повтор с разгоном,
+     упор в край — капсула вздрагивает в сторону упора, край тускнеет (JS ниже). */
+  .stepper, .vstep, .bs-step, .str{
+    position:relative; isolation:isolate; overflow:visible;
+    background:var(--glass-bg); -webkit-backdrop-filter:blur(18px) saturate(180%); backdrop-filter:blur(18px) saturate(180%);
+    box-shadow:inset 0 0 0 .5px var(--glass-edge), inset 0 1px 0 var(--glass-hi), inset 0 -.5px 0 var(--glass-lo), 0 6px 16px -6px var(--glass-shadow), 0 1px 2px var(--glass-shadow);
+  }
+  .stepper::before, .vstep::before, .bs-step::before, .str::before{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:-1; pointer-events:none;
+    background:linear-gradient(180deg, var(--glass-sheen), transparent 55%); }
+  .stepper button, .vstep button, .bs-step button, .str button{ position:relative; isolation:isolate; touch-action:manipulation;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; transition:transform .42s var(--gl-spring), opacity .2s ease, color .2s ease; }
+  .stepper button:active, .vstep button:active, .bs-step button:active, .str button:active{ background:none; }
+  .stepper button::before, .vstep button::before, .bs-step button::before, .str button::before{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:-1;
+    background:var(--gl-press); opacity:0; transform:scale(.6); transition:opacity .28s var(--ease-out), transform .42s var(--gl-spring); }
+  .stepper button.gs-down, .vstep button.gs-down, .bs-step button.gs-down{ transform:scale(.86); transition:transform .1s var(--ease-out); }
+  .str button.gs-down{ transform:scale(.93); transition:transform .1s var(--ease-out); }
+  .gs-down::before{ opacity:1 !important; transform:none !important; transition:opacity .06s linear, transform .16s var(--ease-out) !important; }
+  .gs-lim{ opacity:.35; }
+  @media (hover:hover) and (pointer:fine){
+    .str button:hover, .stepper button:hover, .vstep button:hover, .bs-step button:hover{ background-color:transparent; }
+    .str button:hover::before, .stepper button:hover::before, .vstep button:hover::before, .bs-step button:hover::before{ opacity:.6; transform:none; }
+  }
+
+  /* ---------- Стеклянный сегмент (пропорции, обжарка, обработка) ----------
+     Подложка едет к выбранной опции пружиной; пальцем можно вести по опциям — щелчок на каждой.
+     Ширины — статикой через --n (урок сегмент-контролов); сетка 2×2 — через --c/--r. */
+  .gseg{ --n:3; --c:var(--n); --r:1; position:relative; display:grid; grid-template-columns:repeat(var(--c), minmax(0,1fr)); grid-auto-rows:32px;
+    padding:2px; border-radius:999px; background:var(--fill); touch-action:pan-y; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  .gseg.grid{ border-radius:20px; touch-action:none; }
+  .gseg-th{ position:absolute; top:2px; left:2px; width:calc((100% - 4px) / var(--c)); height:calc((100% - 4px) / var(--r)); border-radius:999px; pointer-events:none;
+    background:var(--seg-thumb); box-shadow:0 3px 8px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.05), inset 0 1px 0 var(--glass-hi);
+    transform:translate(calc(var(--ci, 0) * 100%), calc(var(--ri, 0) * 100%)); transition:transform .38s var(--gl-spring), scale .2s var(--ease-out); }
+  .gseg.grid .gseg-th{ border-radius:16px; }
+  .gseg.down .gseg-th{ scale:.95; transition:transform .24s var(--ease-out), scale .14s var(--ease-out); }
+  .gseg.idle .gseg-th{ transition:none; }
+  .gseg button{ position:relative; z-index:1; min-width:0; border:0; background:none; border-radius:999px; font-family:inherit; font-size:13px; font-weight:600;
+    color:var(--label-2); cursor:pointer; padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .2s ease; touch-action:inherit; }
+  .gseg.grid button{ border-radius:16px; }
+  .gseg button.on{ color:var(--accent, var(--blue)); }
+  .gseg button:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
+  .gseg-ends{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--label-3); margin:5px 4px 0; }
+  .gl-roll{ display:inline-grid; overflow:hidden; vertical-align:bottom; }
+  .gl-roll > span{ grid-area:1 / 1; }
+  .ratio-set .nm{ align-items:baseline; gap:10px; }
+  .ratio-set .nm .gl-roll{ text-align:right; }
+
+  .bs-blk{ position:relative; display:flex; flex-direction:column; gap:9px; padding:11px 14px 13px 16px; }
+  .bs-blk .t{ font-size:16px; color:var(--label); }
+  .bs-row + .bs-blk::before, .bs-blk + .bs-row::before, .bs-blk + .bs-blk::before{ content:""; position:absolute; top:0; left:16px; right:0; height:0.5px; background:var(--separator); }
+  .js-rate-l.gl-roll{ display:grid; justify-items:center; }
+
+  /* ---------- «Свой»: бегунок-линза ---------- */
+  .slider-body{ position:relative; }
+  #volSlider::-webkit-slider-thumb{ opacity:0; }
+  #volSlider::-moz-range-thumb{ opacity:0; }
+  .vl-knob{ position:absolute; z-index:2; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; background:#FFFFFF; box-shadow:0 1px 4px rgba(0,0,0,.25);
+    pointer-events:none; transition:opacity .12s ease, scale .3s var(--gl-spring); }
+  .vl-lens{ position:absolute; z-index:3; width:64px; height:36px; margin:-18px 0 0 -32px; border-radius:18px; overflow:hidden; pointer-events:none;
+    background:var(--card); opacity:0; scale:.4; transition:opacity .14s ease, scale .34s var(--gl-spring);
+    box-shadow:0 10px 24px -6px var(--glass-shadow), 0 1px 3px var(--glass-shadow); }
+  .vl-lens::before{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:2; pointer-events:none;
+    background:linear-gradient(180deg, var(--glass-sheen) 0%, transparent 46%), radial-gradient(120% 90% at 50% 120%, transparent 55%, var(--glass-lo) 100%); }
+  .vl-lens::after{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:3; pointer-events:none; padding:1px;
+    background:linear-gradient(160deg, var(--glass-hi), transparent 38%, transparent 62%, var(--glass-edge));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+            mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+  .vl-mag{ position:absolute; pointer-events:none; }
+  .vl-mag .vm-track{ position:absolute; height:4px; border-radius:2px; background:var(--fill); overflow:hidden; }
+  .vl-mag .vm-track i{ display:block; height:100%; border-radius:2px; }
+  .vl-mag .ticks{ position:absolute; }
+  .slider-body.lens-on .vl-knob{ opacity:0; scale:1.6; }
+  .slider-body.lens-on .vl-lens{ opacity:1; scale:1; }
+  #volSlider:disabled ~ .vl-knob{ opacity:.5; }
+  @media (prefers-reduced-motion: reduce){ .vl-knob, .vl-lens{ transition:none !important; } }
+
+  /* ---------- Таб-бар: линза на пружинах (положение, вытягивание и подъём — в JS) ---------- */
+  .tab-lens, .tab-lens.anim{ transition:none; will-change:transform; --lift:0; }
+  .tab-lens.lifted{ z-index:2; }
+  .tab-lens .tl-glass{ position:absolute; inset:0; border-radius:inherit; opacity:var(--lift);
+    background:color-mix(in srgb, var(--glass-solid) 92%, transparent);
+    box-shadow:inset 0 1px 0 var(--glass-hi), inset 0 -1px 0 var(--glass-lo), 0 12px 24px -8px var(--glass-shadow), 0 2px 6px var(--glass-shadow); }
+  .tab-lens .tl-glass::before{ content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(120% 70% at 50% -10%, var(--glass-sheen), transparent 60%); }
+  .tab-lens .tl-clip{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; opacity:var(--lift); }
+  .tab-lens .tl-row{ position:absolute; top:-4px; padding:4px; display:grid; grid-template-columns:repeat(4,1fr); pointer-events:none; }
+  .tab-lens .tl-tab{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:0; color:var(--blue);
+    font-size:10.5px; font-weight:600; letter-spacing:0; white-space:nowrap; }
+  .tab-lens::after{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none; opacity:calc(var(--lift) * .55);
+    background:conic-gradient(from 210deg, rgba(255,120,160,.55), rgba(255,255,255,.15) 18%, rgba(140,220,255,.5) 32%, rgba(255,255,255,.1) 50%, rgba(200,150,255,.45) 68%, rgba(255,255,255,.15) 84%, rgba(255,120,160,.55));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+            mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+  .tabbar{ touch-action:pan-y; }
+
+  /* ---------- Меню зерна (то же меню, что у режима, шириной с плитку) ---------- */
+  .pop-menu.bean-menu.glass{ min-width:0; max-width:calc(100vw - 32px); }
+  .pop-menu .mi.hot{ background:var(--fill); }
+  .pop-menu .mi .t span .warn{ color:var(--orange); font-weight:600; }
+  .pop-menu .mi.add .t b, .pop-menu .mi.add .ic{ color:var(--blue); }
+  .pop-menu .mi .t b, .pop-menu .mi .t span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pop-menu .mi .ic .bc-ring svg{ width:22px; height:22px; }
+  .pop-menu .mi-sep{ height:.5px; background:var(--separator); margin:5px 12px; }
+  #calcBeanCard{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+
+  /* ---------- Долгое нажатие: подъём карточки над размытием ---------- */
+  .ctx-scrim{ position:fixed; inset:0; z-index:79; display:none; background:var(--scrim); opacity:0;
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); transition:opacity .24s var(--ease-out); }
+  .ctx-scrim.show{ display:block; }
+  .ctx-scrim.on{ opacity:1; }
+  .ctx-clone{ position:fixed !important; z-index:80; margin:0 !important; pointer-events:none; box-sizing:border-box; border-radius:22px; background:var(--card);
+    transition:transform .38s var(--gl-spring), box-shadow .3s var(--ease-out); }
+  .ctx-clone.jr{ border-radius:18px; }
+  .ctx-clone.jr::before{ display:none; }
+  .ctx-clone.lift{ transform:scale(1.03) !important; box-shadow:0 24px 50px -12px rgba(0,0,0,.4); }
+  .pop-menu.ctx-menu.glass{ min-width:220px; }
+  .pop-menu .mi.ctx{ padding:11px 14px; justify-content:space-between; }
+  .pop-menu .mi.ctx .t b{ font-weight:500; }
+  .pop-menu .mi.danger, .pop-menu .mi.danger .ic{ color:var(--red); }
+  .pop-menu .mi:disabled{ opacity:.4; }
+  #beansList .b-row-content, #journalList .jr{ -webkit-touch-callout:none; }
+  @media (prefers-reduced-motion: reduce){ .ctx-clone, .ctx-scrim{ transition:none !important; } }
+  /* @@glass-css-end */
 </style>
 <!-- Umami (cloud.umami.is) — вторая аналитика, параллельно Метрике -->
 <script defer id="umamiScript" src="https://cloud.umami.is/script.js" data-website-id="a6b50b1f-5857-4b6e-b020-7d3cf0adf4bd"></script>
@@ -1660,6 +1795,8 @@
           <div class="slider-top"><span id="cupUnitLbl">Свой объём</span></div>
           <input type="range" id="volSlider" min="100" max="600" step="1" value="300" aria-label="Свой объём воды">
           <div class="ticks" id="volTicks"></div>
+          <span class="vl-knob" id="volKnob" aria-hidden="true"></span>
+          <span class="vl-lens" id="volLens" aria-hidden="true"><span class="vl-mag" id="volMag"></span></span>
         </div>
       </div>
     </div>
@@ -2392,20 +2529,36 @@ function updateTempBlock(){
 }
 
 /* «Еще» → Пропорция по умолчанию: по ряду пилюль на режим */
+const COLD_RATIO_HINTS = { 4:'Концентрат — разбавить 1:1 водой или молоком', 5:'Концентрат — разбавить 1:1, чуть мягче', 8:'Готов к питью, плотный', 10:'Готов к питью, сбалансированный', 12:'Готов к питью, лёгкий' };
+const ratioHint = (m, r)=> (m === 'cold' ? COLD_RATIO_HINTS[r] : RATIO_HINTS[r]) || '';
+/* «Еще» → Пропорция по умолчанию: стеклянный сегмент на режим. Разметка строится один раз,
+   дальше — только .on, подложка и подсказка (ведение пальцем не теряет сегмент под собой). */
 function renderRatioSettings(){
   const wrap = document.getElementById('ratioSettings');
   if(!wrap) return;
-  wrap.innerHTML = Object.keys(MODE_META).map(m=>
-    '<div class="ratio-set"><p class="nm">' + MODE_META[m].t + '<span>' + (m === 'cold' ? '' : (RATIO_HINTS[ratioPref[m]] || '')) + '</span></p>' +
-    '<div class="pills">' + RATIOS[m].map(r=> '<button class="pill' + (r === ratioPref[m] ? ' active' : '') + '" data-m="' + m + '" data-r="' + r + '" style="--accent:var(' + ACCENT[m] + ')">' + (m === 'cold' ? COLD_LABELS[r] : '1:' + r) + '</button>').join('') + '</div></div>').join('');
+  if(!wrap.querySelector('.gseg')){
+    wrap.innerHTML = Object.keys(MODE_META).map(m=>
+      '<div class="ratio-set"><p class="nm">' + MODE_META[m].t + '<span class="gl-roll" data-rh="' + m + '"><span>' + ratioHint(m, ratioPref[m]) + '</span></span></p>' +
+      gsegHTML(RATIOS[m].map(r=> ({ id:r, label:'1:' + r })), ratioPref[m], it=> 'data-m="' + m + '" data-r="' + it.id + '" style="--accent:var(' + ACCENT[m] + ')"') +
+      (m === 'cold' ? '<div class="gseg-ends"><span>концентрат</span><span>готов к питью</span></div>' : '') + '</div>').join('');
+    wrap.querySelectorAll('.gseg').forEach(g=> gsegPaint(g, true));
+    return;
+  }
+  Object.keys(MODE_META).forEach(m=>{
+    const g = wrap.querySelector('[data-m="' + m + '"]').parentNode;
+    g.querySelectorAll('button').forEach(b=> b.classList.toggle('on', Number(b.dataset.r) === ratioPref[m]));
+    gsegPaint(g);
+  });
 }
 document.getElementById('ratioSettings').addEventListener('click', e=>{
-  const b = e.target.closest('.pill'); if(!b) return;
-  const m = b.dataset.m, r = Number(b.dataset.r);
-  if(ratioPref[m] !== r) haptics('selection');
+  const b = e.target.closest('.gseg button'); if(!b) return;
+  const m = b.dataset.m, r = Number(b.dataset.r), prev = ratioPref[m];
+  if(prev === r) return;
+  haptics('selection');
   ratioPref[m] = r;
   saveRatioPrefs();
   renderRatioSettings();
+  glRoll(document.querySelector('#ratioSettings [data-rh="' + m + '"]'), ratioHint(m, r), r > prev ? 1 : -1);
   track('ratio_default_changed', { mode:m, ratio:r });
   if(state.mode === m && brewPhase === 'idle'){ state.ratio = r; compute(); }
 });
@@ -2452,6 +2605,7 @@ function openPopMenu(kind, anchor){
     '<span class="ck">' + (it.k === cur ? POP_TICK : '') + '</span><span class="t"><b>' + it.t + '</b><span>' + it.d + '</span></span>' + (it.icon ? '<span class="ic">' + it.icon + '</span>' : '') + '</button>').join('');
   const r = anchor.getBoundingClientRect(), vw = window.innerWidth;
   const right = r.left + r.width / 2 > vw / 2;
+  popMenu.classList.remove('bean-menu'); popMenu.style.width = '';
   popMenu.classList.toggle('right', right);
   popMenu.style.right = 'auto';
   // Меряем в покое (без scale), потом ставим в пределах экрана с полями 16 px
@@ -2467,13 +2621,20 @@ function openPopMenu(kind, anchor){
   popScrim.classList.add('show');
   requestAnimationFrame(()=> popMenu.classList.add('show'));
 }
-function closePopMenu(){ popMenu.classList.remove('show'); popScrim.classList.remove('show'); }
+function closePopMenu(){
+  popMenu.classList.remove('show'); popScrim.classList.remove('show');
+  if(window.ctxOn) ctxClose();
+  if(beanMenuOn){ beanMenuOn = false; document.getElementById('calcBeanCard').setAttribute('aria-expanded', 'false');
+    setTimeout(()=>{ if(!beanMenuOn){ popMenu.classList.remove('bean-menu'); popMenu.style.width = ''; } }, 200); }
+}
 popScrim.addEventListener('click', closePopMenu);
 popScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
 document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closePopMenu(); });
 popMenu.addEventListener('click', e=>{
   const b = e.target.closest('.mi'); if(!b) return;
   const kind = b.dataset.kind, k = b.dataset.k;
+  if(kind === 'bean'){ beanMenuPick(k); return; }
+  if(kind === 'ctx'){ ctxPick(k); return; }
   if(k !== (kind === 'mode' ? state.mode : state.recipe)) haptics('selection');
   closePopMenu();
   if(kind === 'mode'){ if(k !== state.mode){ setMode(k); track('mode_selected', { mode:k }); } }
@@ -2556,7 +2717,35 @@ function updateSliderFill(){
   const pct = ((parseFloat(volSlider.value)-min)/(max-min))*100;
   volSlider.style.setProperty('--range-p', pct + '%');
   volSlider.style.setProperty('--range-c', accent);
+  volLensPlace();
 }
+/* ---- «Свой»: бегунок-линза ----
+   Нативный бегунок невидим (жест и доступность — его), поверх — свой кружок. Пока палец на ползунке,
+   кружок раздувается в стеклянную линзу: в ней та же дорожка и деления, увеличенные вокруг пальца. */
+const VL_SCALE = 1.35;
+let vlTicksHTML = '';
+function volLensPlace(){
+  const body = volSlider.parentNode, knob = document.getElementById('volKnob'), lens = document.getElementById('volLens'), mag = document.getElementById('volMag');
+  if(!knob || !volSlider.offsetWidth) return;
+  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max), f = (parseFloat(volSlider.value) - min) / (max - min);
+  const cx = volSlider.offsetLeft + 11 + f * (volSlider.offsetWidth - 22), cy = volSlider.offsetTop + 14;
+  knob.style.transform = lens.style.transform = '';
+  knob.style.left = lens.style.left = cx + 'px'; knob.style.top = lens.style.top = cy + 'px';
+  // копия лица ползунка, увеличенная вокруг центра линзы
+  const tk = document.getElementById('volTicks');
+  if(!mag.firstChild || vlTicksHTML !== tk.innerHTML){
+    vlTicksHTML = tk.innerHTML;
+    mag.innerHTML = '<span class="vm-track"><i></i></span><div class="ticks">' + vlTicksHTML + '</div>';
+  }
+  const lx = cx - 32, ly = cy - 18, tr = mag.firstChild, mt = mag.lastChild;
+  mag.style.width = body.clientWidth + 'px'; mag.style.height = body.clientHeight + 'px';
+  mag.style.left = -lx + 'px'; mag.style.top = -ly + 'px';
+  mag.style.transformOrigin = cx + 'px ' + cy + 'px'; mag.style.transform = 'scale(' + VL_SCALE + ')';
+  tr.style.left = volSlider.offsetLeft + 'px'; tr.style.top = (cy - 2) + 'px'; tr.style.width = volSlider.offsetWidth + 'px';
+  tr.firstChild.style.width = (f * 100).toFixed(2) + '%'; tr.firstChild.style.background = accentVar(state.mode);
+  mt.style.left = tk.offsetLeft + 'px'; mt.style.top = tk.offsetTop + 'px'; mt.style.width = tk.offsetWidth + 'px';
+}
+addEventListener('resize', ()=> volLensPlace());
 
 volSlider.oninput = ()=>{
   let v = parseFloat(volSlider.value), detent = false;
@@ -3063,6 +3252,8 @@ function odoKill(el){ if(el._odo){ ODO.delete(el); el._odo = null; } }
 function sliderGrab(on){
   const anim = on && !moReduce() && isBrewMode() && brewPhase === 'idle';
   volSlider.classList.toggle('grab', anim);
+  volSlider.parentNode.classList.toggle('lens-on', on && !moReduce() && !volSlider.disabled);
+  if(on) volLensPlace();
   const els = [[document.getElementById('resWater'), state.water, 0, 3], [document.getElementById('resCoffee'), state.coffee, 1, 2]];
   if(anim) els.forEach(([el, v, dec, ints])=> odoStart(el, v, dec, ints));
   else els.forEach(([el])=> odoRelease(el));
@@ -5752,7 +5943,7 @@ function renderEditSheet(){
         (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + e.ratio + (e.ice ? ' · лёд ' + fmt(e.ice) + '\u00a0г' : '') + '</div>' +
     '</div>' +
     '<div class="js-rate" id="jsRate">' + [1,2,3,4,5].map(i=> '<button type="button" class="' + (i <= e.rating ? 'on' : '') + '" data-jstar="' + i + '" aria-label="' + i + ' из 5">' + star + '</button>').join('') + '</div>' +
-    '<div class="js-rate-l" id="jsRateL">' + (e.rating ? JS_RATE_LABELS[e.rating] : 'Как получилось?') + '</div>' +
+    '<div class="js-rate-l gl-roll" id="jsRateL"><span>' + (e.rating ? JS_RATE_LABELS[e.rating] : 'Как получилось?') + '</span></div>' +
     '<div class="js-metrics">' +
       '<div><b>' + fmt(e.coffee || 0) + '\u00a0г</b><span>кофе</span></div>' +
       '<div><b id="jsWaterVal">' + fmt(water) + '\u00a0мл</b><span>вода</span></div>' +
@@ -5760,7 +5951,7 @@ function renderEditSheet(){
     '</div>' +
 
     '<div class="bs-cap">Вкус и помол</div><div class="bs-group">' +
-      '<div class="js-taste"><div class="js-taste-top"><span>Баланс</span><b id="jsTasteL">' + TASTE_LABELS[e.taste + 2] + '</b></div>' +
+      '<div class="js-taste"><div class="js-taste-top"><span>Баланс</span><b class="gl-roll" id="jsTasteL"><span>' + TASTE_LABELS[e.taste + 2] + '</span></b></div>' +
         '<div class="js-track" id="jsTaste" style="--t:' + (e.taste + 2) + '"><div class="js-thumb"></div>' +
           [0,1,2,3,4].map(i=> '<button type="button" data-jtaste="' + (i-2) + '" aria-label="' + TASTE_LABELS[i] + '"></button>').join('') + '</div>' +
         '<div class="js-ends"><span>Кисло</span><span>Горько</span></div></div>' +
@@ -5823,17 +6014,23 @@ function repeatEntryRecipe(e){
     if(sheetMode !== 'edit' || !e) return;
     const st = ev.target.closest('[data-jstar]');
     if(st){
+      const r0 = e.rating || 0;
       e.rating = Number(st.dataset.jstar);
-      body.querySelectorAll('[data-jstar]').forEach(x=> x.classList.toggle('on', Number(x.dataset.jstar) <= e.rating));
-      document.getElementById('jsRateL').textContent = JS_RATE_LABELS[e.rating];
-      navHapticTick();
+      if(e.rating === r0) return;
+      // новые звёзды загораются с подпрыгиванием, по очереди
+      body.querySelectorAll('[data-jstar]').forEach(x=>{ const n = Number(x.dataset.jstar), on = n <= e.rating; x.classList.toggle('on', on);
+        if(on && n > r0 && !reduceMotion()){ x.classList.add('pop'); setTimeout(()=> x.classList.remove('pop'), 110 + (n - r0 - 1) * 45); } });
+      glRoll(document.getElementById('jsRateL'), JS_RATE_LABELS[e.rating], e.rating > r0 ? 1 : -1);
+      haptics(e.rating === 5 ? 'light' : 'selection');
       return;
     }
     const ta = ev.target.closest('[data-jtaste]');
     if(ta){
+      const t0 = e.taste;
       e.taste = Number(ta.dataset.jtaste);
+      if(e.taste === t0) return;
       document.getElementById('jsTaste').style.setProperty('--t', e.taste + 2);
-      document.getElementById('jsTasteL').textContent = TASTE_LABELS[e.taste + 2];
+      glRoll(document.getElementById('jsTasteL'), TASTE_LABELS[e.taste + 2], e.taste > t0 ? 1 : -1);
       navHapticTick();
       return;
     }
@@ -6772,8 +6969,89 @@ function slotHTMLEmpty(){
     '<div class="bc-chips" aria-hidden="true"><span class="bc-chip muted">остаток —</span><span class="bc-chip muted"><span class="s">★</span>—</span></div></div>';
 }
 
-document.getElementById('calcBeanCard').addEventListener('click', ()=>{ if(beanLand.finish) beanLand.finish(); openBeanPickSheet(); });
-document.getElementById('calcBeanCard').addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openBeanPickSheet(); } });
+/* ---- Зерно на «Кофе»: меню из плитки ----
+   Тап — список вырастает из плитки (выбор тапом). Подержал ~0,2 с, не двигая, — список открывается под
+   пальцем, дальше веди по пачкам: подсветка за пальцем, щелчок на каждой; отпустил на пачке — выбрано,
+   мимо — отмена. Сдвинул палец раньше — это скролл. Посадка зерна на плитке — прежняя (beanPickLand).
+   Пачек больше шести — последней строкой «Все зерна…» (шторка со всеми). */
+const BEAN_MENU_MAX = 6;
+const BEAN_MENU_TICK = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+var beanMenuOn = false;   // var: closePopMenu объявлен выше и может прийти раньше этой строки
+function beanMenuOpen(){
+  const pickable = beans.filter(b=> !b.archived && !b.finishedAt);
+  if(!pickable.length || brewPhase !== 'idle'){ openBeanPickSheet(); return false; }
+  if(beanLand.finish) beanLand.finish();
+  const tile = document.getElementById('calcBeanCard');
+  const sorted = sortCurrentBeans(pickable, activeBeanId);
+  const shown = sorted.length > BEAN_MENU_MAX ? sorted.slice(0, BEAN_MENU_MAX - 1) : sorted;
+  const row = (k, checked, title, sub, ic, cls)=> '<button class="mi' + (cls ? ' ' + cls : '') + '" type="button" role="' + (cls ? 'menuitem' : 'menuitemradio') + '"' + (cls ? '' : ' aria-checked="' + checked + '"') + ' data-kind="bean" data-k="' + k + '">' +
+    '<span class="ck">' + (checked ? BEAN_MENU_TICK : '') + '</span><span class="t"><b>' + title + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>' + (ic ? '<span class="ic">' + ic + '</span>' : '') + '</button>';
+  popMenu.innerHTML = shown.map(b=>{
+    const n = beanNumbers(b);
+    const sub = n.low ? '<span class="warn">' + Math.round(n.remain) + '\u00a0г · скоро закончится</span>' : (b.roaster ? escapeHTML(b.roaster) + ' · ' : '') + Math.round(n.remain) + '\u00a0г';
+    return row(b.id, b.id === activeBeanId, escapeHTML(b.name || 'Без названия'), sub, beanRingSVG(n.pct, n.low, n.finished, 22, 3));
+  }).join('') +
+    (sorted.length > BEAN_MENU_MAX ? row('all', false, 'Все зерна…', 'ещё ' + (sorted.length - shown.length), '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>', 'more') : '') +
+    '<div class="mi-sep" role="separator"></div>' +
+    row('none', activeBeanId == null, 'Без зерна', '', '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></svg>').replace('role="menuitemradio" aria-checked', 'role="menuitemradio" aria-checked') +
+    row('add', false, 'Добавить зерно', '', '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>', 'add');
+  popMenu.classList.add('bean-menu'); popMenu.classList.remove('right');
+  const r = tile.getBoundingClientRect();
+  popMenu.style.width = r.width + 'px'; popMenu.style.right = 'auto';
+  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
+  const mh = popMenu.offsetHeight;
+  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
+  const down = r.bottom + 8 + mh <= window.innerHeight - 90 || r.top - 8 - mh < 12;
+  popMenu.style.left = Math.round(r.left) + 'px';
+  popMenu.style.top = Math.round(down ? r.bottom + 8 : r.top - 8 - mh) + 'px';
+  popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' center';
+  popScrim.classList.add('show');
+  tile.setAttribute('aria-expanded', 'true');
+  beanMenuOn = true;
+  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  return true;
+}
+function beanMenuPick(k){
+  closePopMenu();
+  if(k === 'add'){ navGoTo(0, true); openBeanAddSheet(); return; }
+  if(k === 'all'){ openBeanPickSheet(); return; }
+  const id = k === 'none' ? null : Number(k);
+  if(id === activeBeanId) return;
+  navHapticTick();
+  ua('bean_pick', { bean: id == null ? 'none' : 'bean' });
+  beanPickLand(id);
+}
+(function(){
+  const tile = document.getElementById('calcBeanCard');
+  let d = null, holdT = 0, hot = null;
+  const setHot = b=>{ if(b === hot) return; if(hot) hot.classList.remove('hot'); hot = b; if(b){ b.classList.add('hot'); haptics('selection'); } };
+  tile.addEventListener('touchstart', e=>{
+    if(beanMenuOn || brewPhase !== 'idle') return;
+    const t = e.touches[0]; d = { x:t.clientX, y:t.clientY, scrub:false, moved:false };
+    holdT = setTimeout(()=>{ if(!d) return; if(beanMenuOpen()){ d.scrub = true; haptics('soft'); } else d = null; }, 200);
+  }, { passive:true });
+  tile.addEventListener('touchmove', e=>{
+    if(!d) return;
+    const t = e.touches[0];
+    if(!d.scrub){ if(Math.hypot(t.clientX - d.x, t.clientY - d.y) > 8){ clearTimeout(holdT); d = null; } return; }
+    if(e.cancelable) e.preventDefault();
+    if(Math.hypot(t.clientX - d.x, t.clientY - d.y) > 6) d.moved = true;
+    const n = document.elementFromPoint(t.clientX, t.clientY);
+    setHot(n && n.closest ? n.closest('#popMenu .mi') : null);
+  }, { passive:false });
+  tile.addEventListener('touchend', e=>{
+    clearTimeout(holdT);
+    const dd = d; d = null;
+    if(!dd || !dd.scrub) return;
+    if(e.cancelable) e.preventDefault();   // без досланного клика
+    const b = hot; setHot(null);
+    if(b && dd.moved) setTimeout(()=> b.click(), 80);   // короткая вспышка подсветки
+    else if(dd.moved) closePopMenu();
+  });
+  tile.addEventListener('touchcancel', ()=>{ clearTimeout(holdT); d = null; setHot(null); });
+  tile.addEventListener('click', ()=>{ if(beanMenuOn) closePopMenu(); else beanMenuOpen(); });
+  tile.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); beanMenuOpen(); } });
+})();
 
 /* ---- Зёрна: форматирование ---- */
 function todayISO(){
@@ -6997,6 +7275,11 @@ function beanSelectRow(label, key, items){
     '</select></label></div>';
 }
 
+// Обжарка и обработка — стеклянный сегмент (обработка — сеткой 2×2: «Натуральная» и «Анаэробная» целиком)
+function beanSegRow(label, key, items, cols){
+  return '<div class="bs-blk"><span class="t">' + label + '</span>' +
+    gsegHTML(items, sheetEntry[key], it=> 'data-bseg="' + key + '" data-v="' + it.id + '" aria-label="' + label + ': ' + it.label + '"', cols) + '</div>';
+}
 function renderBeanSheet(){
   const isAdd = sheetMode === 'bean-add';
   const e = sheetEntry;
@@ -7029,12 +7312,12 @@ function renderBeanSheet(){
     '</div>' +
 
     '<div class="bs-cap">Профиль</div><div class="bs-group">' +
-      beanSelectRow('Обжарка', 'roast', ROASTS) +
-      beanSelectRow('Обработка', 'process', PROCESSES) +
+      beanSegRow('Обжарка', 'roast', ROASTS) +
+      beanSegRow('Обработка', 'process', PROCESSES, 2) +
       '<div class="bs-row"><span class="bs-l"><span class="t">Температура воды</span>' +
         '<button class="bs-why" type="button" data-bwhy aria-expanded="' + beanWhyOpen + '">' + (beanWhyOpen ? 'Скрыть' : 'Почему такая?') + '</button></span>' +
-        '<span class="bs-v"><b>' + temp + '\u00a0°C</b></span></div>' +
-      (beanWhyOpen ? '<div class="bs-why-text">' + beanTempNoteHTML(e.process) + '</div>' : '') +
+        '<span class="bs-v"><b class="gl-roll" id="bsTempV"><span>' + temp + '\u00a0°C</span></b></span></div>' +
+      (beanWhyOpen ? '<div class="bs-why-text" id="bsWhyText">' + beanTempNoteHTML(e.process) + '</div>' : '') +
     '</div>' +
 
     (st && st.brews ? (
@@ -7054,6 +7337,7 @@ function renderBeanSheet(){
   const body = document.getElementById('sheetBean');
   body.querySelector('[data-btxt="name"]').value = e.name || '';
   body.querySelector('[data-btxt="roaster"]').value = e.roaster || '';
+  body.querySelectorAll('.gseg').forEach(g=> gsegPaint(g, true));
   updateBeanSheetSave();
 }
 function updateBeanSheetSave(){
@@ -7094,6 +7378,21 @@ function refreshBeanHero(){
   body.addEventListener('click', (ev)=>{
     const e = sheetEntry;
     if(!e) return;
+    // Профиль: сегмент меняется на месте (шторку не пересобираем — палец ведёт дальше по опциям)
+    const sg = ev.target.closest('[data-bseg]');
+    if(sg){
+      const k = sg.dataset.bseg, v = sg.dataset.v;
+      if(e[k] === v) return;
+      const t0 = computeBrewTemp(e.roast, e.process);
+      e[k] = v; haptics('selection');
+      sg.parentNode.querySelectorAll('button').forEach(b=> b.classList.toggle('on', b === sg));
+      gsegPaint(sg.parentNode);
+      const t1 = computeBrewTemp(e.roast, e.process);
+      glRoll(document.getElementById('bsTempV'), t1 + '\u00a0°C', t1 >= t0 ? 1 : -1);
+      const why = document.getElementById('bsWhyText'); if(why && k === 'process') why.innerHTML = beanTempNoteHTML(e.process);
+      refreshBeanHero();
+      return;
+    }
     const st = ev.target.closest('[data-bstep]');
     if(st){
       const k = st.dataset.bstep;
@@ -7230,8 +7529,8 @@ function navSetTransform(percent, animate){
 /* position — непрерывная координата в "страницах" (0..NAV_COUNT-1):
    линза стоит между вкладками, пока палец в пути; активной считается ближайшая. */
 function navUpdateIndicator(position, animate){
-  tabLens.classList.toggle('anim', !!animate);
   tabbarEl.style.setProperty('--pos', String(position));
+  if(window.__tlReady) tlTo(position, animate);   // линза на пружинах объявлена ниже; до неё — только --pos
   const near = Math.round(position);
   tabEls.forEach((t, i)=>{
     const on = i === near;
@@ -7264,7 +7563,7 @@ tabEls.forEach(t=>{
 navViewport.addEventListener('touchstart', (e)=>{
   // Пока открыта шторка или алерт, страницы под ними не листаются ни при каком жесте.
   const overlayOpen = sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
-  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.slider-row') || !!e.target.closest('.j-row') || !!e.target.closest('.jr-row') || !!e.target.closest('.b-row');
+  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.slider-row') || !!e.target.closest('.j-row') || !!e.target.closest('.jr-row') || !!e.target.closest('.b-row') || !!e.target.closest('.gseg') || !!e.target.closest('.js-rate') || !!e.target.closest('.js-track');
   if(navExcluded) return;
   const t = e.touches[0];
   navStartX = t.clientX; navStartY = t.clientY;
@@ -7503,6 +7802,366 @@ function enOnLeave(i){
 })();
 // подсказка «Почему столько?» убрана — её флажок в хранилище больше не нужен
 try{ localStorage.removeItem('tempTipSeen'); }catch(e){}
+
+/* ================= Стеклянные контролы ================= */
+/* ---- Степпер ±: нажатие, удержание с разгоном, упор ----
+   Общий слой поверх обработчиков мест (cold brew, мягче/крепче, порции, шторки): шаг по-прежнему делает
+   их click. Здесь — физика: вдавливание на касании, повтор с разгоном через 0,42 с (до ~16 шагов/с),
+   финальный клик после удержания глотаем. Шаг, который ничего не изменил, — упор: капсула вздрагивает
+   в сторону этой кнопки, мягкий хаптик, кнопка тускнеет до первого шага в обратную сторону. */
+(function(){
+  const SEL = '.stepper button, .vstep button, .bs-step button, .str button';
+  const valEl = b=>{ const c = b.closest('.stepper-field') || b.closest('.vstep, .bs-step'); return c ? (c.querySelector('input') || c.querySelector('.v')) : null; };
+  const read = el=> el ? (el.tagName === 'INPUT' ? el.value : el.textContent) : null;
+  const capsule = b=> b.closest('.stepper, .vstep, .bs-step, .str');
+  let hold = null, swallow = null, swallowTs = 0;
+  function bump(b){
+    const c = capsule(b); if(!c) return;
+    b.classList.add('gs-lim'); haptics('soft');
+    if(reduceMotion() || !c.animate) return;
+    const x = b === c.querySelector('button') ? -1 : 1;
+    c.animate([{ transform:'none' }, { transform:'translateX(' + 4 * x + 'px)', offset:.25 }, { transform:'translateX(' + -2 * x + 'px)', offset:.55 }, { transform:'translateX(' + x + 'px)', offset:.8 }, { transform:'none' }], { duration:360, easing:'ease-out' });
+  }
+  // шаг + проверка, сдвинулось ли значение; false — упёрлись
+  function stepped(b, before){
+    if(!b.isConnected) return true;
+    const el = valEl(b); if(!el) return true;
+    if(read(el) === before){ bump(b); return false; }
+    const c = capsule(b); if(c) c.querySelectorAll('.gs-lim').forEach(x=> x.classList.remove('gs-lim'));
+    return true;
+  }
+  function stop(){
+    if(!hold) return;
+    clearTimeout(hold.t); hold.b.classList.remove('gs-down');
+    if(hold.n){ swallow = hold.b; swallowTs = performance.now(); }
+    hold = null;
+  }
+  document.addEventListener('pointerdown', e=>{
+    const b = e.target.closest(SEL); if(!b || b.disabled) return;
+    stop();
+    b.classList.add('gs-down');
+    const h = hold = { b, x:e.clientX, y:e.clientY, n:0, t:0 };
+    const rep = ()=>{
+      if(hold !== h || !b.isConnected || b.disabled){ stop(); return; }
+      h.n++;
+      const before = read(valEl(b));
+      b.click();
+      if(!stepped(b, before)){ stop(); return; }
+      h.t = setTimeout(rep, Math.max(60, 170 - h.n * 12));
+    };
+    h.t = setTimeout(rep, 420);
+  }, true);
+  document.addEventListener('pointermove', e=>{ if(hold && (Math.abs(e.clientY - hold.y) > 14 || Math.abs(e.clientX - hold.x) > 24)) stop(); }, true);
+  ['pointerup', 'pointercancel'].forEach(t=> document.addEventListener(t, stop, true));
+  document.addEventListener('click', e=>{
+    const b = e.target.closest && e.target.closest(SEL); if(!b) return;
+    if(swallow === b && e.isTrusted && performance.now() - swallowTs < 600){ swallow = null; e.stopImmediatePropagation(); e.preventDefault(); return; }
+    if(!e.isTrusted) return;   // повторы удержания проверяет rep
+    const before = read(valEl(b));
+    setTimeout(()=> stepped(b, before), 0);
+  }, true);
+})();
+
+/* ---- Смена подписи с блюром вверх/вниз (подсказки пропорций, вкуса, температуры) ---- */
+function glRoll(box, text, dir){
+  if(!box) return;
+  const cur = box.lastElementChild;
+  if(cur && cur.textContent === text) return;
+  if(reduceMotion() || !cur || !box.animate){ box.innerHTML = ''; const sp = document.createElement('span'); sp.textContent = text; box.appendChild(sp); return; }
+  [...box.children].slice(0, -1).forEach(n=> n.remove());
+  const nx = document.createElement('span'); nx.textContent = text; box.appendChild(nx);
+  cur.animate([{ transform:'none', opacity:1, filter:'blur(0)' }, { transform:'translateY(' + (-60 * dir) + '%)', opacity:0, filter:'blur(3px)' }], { duration:220, easing:'cubic-bezier(.23,1,.32,1)', fill:'forwards' })
+    .finished.then(()=> cur.remove()).catch(()=>{});
+  nx.animate([{ transform:'translateY(' + (60 * dir) + '%)', opacity:0, filter:'blur(3px)' }, { transform:'none', opacity:1, filter:'blur(0)' }], { duration:320, easing:'cubic-bezier(.23,1,.32,1)' });
+}
+/* ---- Стеклянный сегмент ----
+   Разметка: .gseg > .gseg-th + кнопки; выбранная — .on. Выбор делает click кнопки (обработчик места),
+   здесь — ведение пальцем: кнопка под пальцем получает click, подложка едет за ней. gsegPaint — после
+   смены .on. cols — сетка (обработка 2×2): тогда и вертикальный жест — выбор. */
+function gsegHTML(items, cur, attr, cols){
+  const C = cols || items.length, R = Math.ceil(items.length / C);
+  return '<div class="gseg' + (cols ? ' grid' : '') + '" role="radiogroup" style="--n:' + items.length + ';--c:' + C + ';--r:' + R + '"><span class="gseg-th" aria-hidden="true"></span>' +
+    items.map(it=> '<button type="button" role="radio" ' + attr(it) + ' class="' + (it.id === cur ? 'on' : '') + '" aria-checked="' + (it.id === cur) + '">' + it.label + '</button>').join('') + '</div>';
+}
+function gsegPaint(el, instant){
+  if(!el) return;
+  const bs = [...el.querySelectorAll('button')], i = Math.max(0, bs.findIndex(b=> b.classList.contains('on')));
+  const C = parseInt(el.style.getPropertyValue('--c'), 10) || bs.length;
+  if(instant) el.classList.add('idle');
+  el.style.setProperty('--ci', i % C); el.style.setProperty('--ri', Math.floor(i / C));
+  bs.forEach((b, k)=>{ b.setAttribute('aria-checked', k === i); b.tabIndex = k === i ? 0 : -1; });
+  if(instant){ void el.offsetWidth; el.classList.remove('idle'); }
+}
+function gsegWire(root){
+  // делегирование: сегменты пересоздаются вместе с карточкой/шторкой
+  let d = null;
+  const idxAt = (el, x, y)=>{
+    const bs = [...el.querySelectorAll('button')], r = el.getBoundingClientRect(), C = parseInt(el.style.getPropertyValue('--c'), 10) || bs.length, R = Math.ceil(bs.length / C);
+    const c = Math.max(0, Math.min(C - 1, Math.floor((x - r.left - 2) / ((r.width - 4) / C)))), w = Math.max(0, Math.min(R - 1, Math.floor((y - r.top - 2) / ((r.height - 4) / R))));
+    return bs[Math.min(bs.length - 1, w * C + c)];
+  };
+  root.addEventListener('touchstart', e=>{
+    const el = e.target.closest('.gseg'); if(!el || el.closest('[disabled]')) return;
+    const t = e.touches[0]; d = { el, x:t.clientX, y:t.clientY, on:false, grid:el.classList.contains('grid') }; el.classList.add('down');
+  }, { passive:true });
+  root.addEventListener('touchmove', e=>{
+    if(!d) return; const t = e.touches[0];
+    if(!d.on){
+      if(!d.grid && Math.abs(t.clientY - d.y) > 10 && Math.abs(t.clientY - d.y) > Math.abs(t.clientX - d.x)){ d.el.classList.remove('down'); d = null; return; }
+      if(Math.hypot(t.clientX - d.x, t.clientY - d.y) < 4) return;
+      d.on = true;
+    }
+    if(e.cancelable) e.preventDefault();
+    if(!d.el.isConnected){ d = null; return; }
+    const b = idxAt(d.el, t.clientX, t.clientY);
+    if(b && !b.classList.contains('on')) b.click();
+  }, { passive:false });
+  const end = e=>{ if(!d) return; d.el.classList.remove('down'); if(d.on && e && e.cancelable) e.preventDefault(); d = null; };
+  root.addEventListener('touchend', end); root.addEventListener('touchcancel', ()=>{ if(d) d.el.classList.remove('down'); d = null; });
+  root.addEventListener('keydown', e=>{
+    const b = e.target.closest && e.target.closest('.gseg button'); if(!b) return;
+    const bs = [...b.parentNode.querySelectorAll('button')], i = bs.indexOf(b);
+    const n = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? bs[i + 1] : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? bs[i - 1] : null;
+    if(n){ e.preventDefault(); n.click(); n.focus(); }
+  });
+}
+gsegWire(document);
+
+/* ---- Звёзды и баланс: ведение пальцем ----
+   Палец ведёт по звёздам или делениям баланса — кнопка под пальцем получает click (обработчик шторки
+   делает остальное: звёзды загораются с подпрыгиванием, подпись перекатывается). Горизонтальный жест —
+   выбор, вертикальный — скролл шторки. На балансе бегунок под пальцем раздувается в стекло. */
+(function(){
+  let d = null;
+  const near = (box, x)=>{ let best = null, bd = 1e9; box.querySelectorAll('button').forEach(b=>{ const r = b.getBoundingClientRect(), dd = Math.abs(x - (r.left + r.width / 2)); if(dd < bd){ bd = dd; best = b; } }); return best; };
+  document.addEventListener('touchstart', e=>{
+    const box = e.target.closest && e.target.closest('.js-rate, .js-track'); if(!box){ d = null; return; }
+    const t = e.touches[0]; d = { box, x:t.clientX, y:t.clientY, on:false, last:null };
+  }, { passive:true });
+  document.addEventListener('touchmove', e=>{
+    if(!d) return; const t = e.touches[0];
+    if(!d.on){
+      if(Math.abs(t.clientY - d.y) > 10 && Math.abs(t.clientY - d.y) > Math.abs(t.clientX - d.x)){ d = null; return; }
+      if(Math.abs(t.clientX - d.x) < 4) return;
+      d.on = true; if(d.box.classList.contains('js-track')) d.box.classList.add('grab');
+    }
+    if(e.cancelable) e.preventDefault();
+    if(!d.box.isConnected){ d = null; return; }
+    const b = near(d.box, t.clientX);
+    if(b && b !== d.last){ d.last = b; b.click(); }
+  }, { passive:false });
+  const end = e=>{ if(!d) return; d.box.classList.remove('grab'); if(d.on && e && e.cancelable) e.preventDefault(); d = null; };
+  document.addEventListener('touchend', end); document.addEventListener('touchcancel', ()=>{ if(d) d.box.classList.remove('grab'); d = null; });
+})();
+
+/* ---- Таб-бар: линза на пружинах ----
+   x — положение линзы в вкладках (0…3). Линза догоняет цель пружиной: под пальцем — жёсткой, с лёгким
+   отставанием; после отпускания и на тапе — мягкой, со скоростью пальца и небольшим перелётом. lift —
+   подъём в стекло (пока ведёшь пальцем по бару): плотный слой, увеличенная копия вкладок в акценте,
+   еле заметный радужный обод. Скорость вытягивает линзу по ходу и сплющивает по высоте, как каплю.
+   Листание страниц пальцем ставит линзу напрямую — она идёт за страницами без пружины. */
+const TL = { x:1, v:0, tx:1, k:380, z:.72, lift:0, lv:0, tlift:0, st:0, raf:0, last:0 };
+(function(){
+  tabLens.innerHTML = '<span class="tl-glass"></span><span class="tl-clip"><span class="tl-row" id="tlRow"></span></span>';
+  // копия вкладок — простые span со своим классом: не путается с настоящими .tab ни в стилях, ни в селекторах
+  document.getElementById('tlRow').innerHTML = tabEls.map(t=> '<span class="tl-tab" aria-hidden="true">' + t.innerHTML + '</span>').join('');
+})();
+const tlRow = document.getElementById('tlRow');
+function tlPaint(){
+  const W = tabbarEl.clientWidth, cw = (W - 8) / 4;
+  const st = Math.min(.22, Math.abs(TL.v) * cw / 2600);
+  TL.st += (st - TL.st) * .35;
+  const lift = Math.max(0, Math.min(1, TL.lift)), base = 1 + .1 * lift, sx = base * (1 + TL.st), sy = base * (1 - TL.st * .5);
+  tabLens.style.transform = 'translateX(' + (TL.x * 100).toFixed(3) + '%) scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ')';
+  tabLens.style.setProperty('--lift', lift.toFixed(3));
+  tabLens.classList.toggle('lifted', lift > .01);
+  tlRow.style.width = W + 'px'; tlRow.style.height = tabbarEl.clientHeight + 'px';
+  tlRow.style.left = (-TL.x * cw - 4).toFixed(2) + 'px';
+}
+function tlStep(now){
+  const dt = Math.min(.032, TL.last ? (now - TL.last) / 1000 : .016); TL.last = now;
+  const c = 2 * Math.sqrt(TL.k) * TL.z;
+  TL.v += (TL.k * (TL.tx - TL.x) - c * TL.v) * dt; TL.x += TL.v * dt;
+  const lk = 520, lc = 2 * Math.sqrt(lk) * .78;
+  TL.lv += (lk * (TL.tlift - TL.lift) - lc * TL.lv) * dt; TL.lift += TL.lv * dt;
+  tlPaint();
+  const calm = Math.abs(TL.tx - TL.x) < .002 && Math.abs(TL.v) < .03 && Math.abs(TL.tlift - TL.lift) < .005 && Math.abs(TL.lv) < .02 && TL.st < .002;
+  if(calm && !tlDrag){ TL.x = TL.tx; TL.v = 0; TL.lift = TL.tlift; TL.lv = 0; TL.st = 0; tlPaint(); TL.raf = 0; TL.last = 0; return; }
+  TL.raf = requestAnimationFrame(tlStep);
+}
+function tlKick(){
+  if(reduceMotion()){ TL.x = TL.tx; TL.v = 0; TL.lift = TL.tlift; TL.lv = 0; TL.st = 0; tlPaint(); return; }
+  if(!TL.raf){ TL.last = 0; TL.raf = requestAnimationFrame(tlStep); }
+}
+// Сюда приходят все смены раздела: тап, свайп страниц, программный переход
+function tlTo(pos, animate){
+  if(tlDrag) return;
+  if(!animate){ cancelAnimationFrame(TL.raf); TL.raf = 0; TL.x = TL.tx = pos; TL.v = 0; tlPaint(); return; }
+  if(Math.abs(pos - TL.tx) > .01 && !tlRelease){
+    // тап по другой вкладке: линза приподнимается и перелетает, по дороге вытягиваясь
+    TL.k = 300; TL.z = .78; TL.tlift = .55;
+    setTimeout(()=>{ if(!tlDrag){ TL.tlift = 0; tlKick(); } }, 170);
+  }
+  TL.tx = pos; tlKick();
+}
+let tlDrag = null, tlRelease = false, tlSuppressClick = 0;
+tabbarEl.addEventListener('touchstart', e=>{
+  if(navLocked) return;
+  const t = e.touches[0]; tlDrag = { x0:t.clientX, y0:t.clientY, on:false, hot:navIndex, lx:0, lt:0, fv:0 };
+}, { passive:true });
+tabbarEl.addEventListener('touchmove', e=>{
+  const d = tlDrag; if(!d) return;
+  const t = e.touches[0], dx = t.clientX - d.x0, dy = t.clientY - d.y0;
+  if(!d.on){
+    if(Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)){ tlDrag = null; return; }
+    if(Math.abs(dx) < 5) return;
+    d.on = true; TL.tlift = 1; TL.k = 900; TL.z = .85;
+  }
+  if(e.cancelable) e.preventDefault();
+  const r = tabbarEl.getBoundingClientRect(), cw = (r.width - 8) / 4, now = performance.now();
+  const u = Math.max(0, Math.min(3, (t.clientX - r.left - 4 - cw / 2) / cw));
+  if(d.lt){ const v = (u - d.lx) / Math.max(.008, (now - d.lt) / 1000); d.fv = d.fv * .6 + v * .4; }
+  d.lx = u; d.lt = now;
+  TL.tx = u; tlKick();
+  const n = Math.round(u); if(n !== d.hot){ d.hot = n; navHapticTick(); }
+}, { passive:false });
+function tlEnd(){
+  const d = tlDrag; tlDrag = null;
+  if(!d || !d.on) return;
+  tlSuppressClick = performance.now();
+  if(performance.now() - d.lt > 80) d.fv = 0;   // подержал палец — броска нет
+  // вкладка — там, куда линза долетела бы по инерции
+  const n = Math.max(0, Math.min(3, Math.round(d.lx + d.fv * .1)));
+  TL.v = Math.max(-12, Math.min(12, d.fv * .9)); TL.k = 380; TL.z = .7; TL.tlift = 0;
+  if(n !== navIndex) haptics('light');
+  tlRelease = true; navGoTo(n, true); tlRelease = false;
+  TL.tx = n; tlKick();
+}
+tabbarEl.addEventListener('touchend', tlEnd);
+tabbarEl.addEventListener('touchcancel', tlEnd);
+// клик, который браузер досылает после протяжки, не переключает раздел второй раз
+tabbarEl.addEventListener('click', e=>{ if(performance.now() - tlSuppressClick < 450){ e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+addEventListener('resize', ()=> tlPaint());
+requestAnimationFrame(()=>{ TL.x = TL.tx = navIndex; tlPaint(); });
+window.__tlReady = true;
+
+/* ---- Долгое нажатие: зерно в «Зернах» и запись в «Журнале» ----
+   Держишь ~0,45 с, не двигая, — щелчок, карточка приподнимается над размытым фоном, под ней меню.
+   Можно не отпускать и вести палец на пункт: отпустил на пункте — выбрано; отпустил на месте — меню
+   остаётся для тапа. Сдвинул палец раньше — это скролл или свайп удаления, меню не будет.
+   Карточка поднимается копией в слое над размытием: настоящая лежит внутри листающихся страниц
+   (transform), и поднять её саму над фиксированной подложкой нельзя. */
+var ctxOn = false;
+const ctxScrim = document.createElement('div'); ctxScrim.className = 'ctx-scrim'; document.body.appendChild(ctxScrim);
+let ctxState = null;   // { kind, id, el, clone }
+const CTX_IC = {
+  edit:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+  done:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="4" rx="1"/><path d="M5 8.5V19a1 1 0 001 1h12a1 1 0 001-1V8.5M10 12.5h4"/></svg>',
+  trash:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  again:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>'
+};
+function ctxItems(kind, id){
+  const it = (k, t, ic, cls, dis)=> '<button class="mi ctx' + (cls ? ' ' + cls : '') + '" type="button" role="menuitem" data-kind="ctx" data-k="' + k + '"' + (dis ? ' disabled' : '') + '><span class="t"><b>' + t + '</b></span><span class="ic">' + CTX_IC[ic] + '</span></button>';
+  const sep = '<div class="mi-sep" role="separator"></div>';
+  if(kind === 'bean'){
+    const b = beans.find(x=> x.id === id); if(!b) return '';
+    return it('edit', 'Изменить', 'edit') + it('finish', b.finishedAt ? 'Убрать в архив' : 'Зерно закончилось', 'done') + sep + it('delete', 'Удалить', 'trash', 'danger');
+  }
+  const e = journalEntries.find(x=> x.id === id); if(!e) return '';
+  return it('repeat', 'Повторить рецепт', 'again', '', brewPhase !== 'idle' || !(e.pours || []).length) + it('edit', (e.rating || 0) > 0 ? 'Изменить запись' : 'Оценить', 'edit') + sep + it('delete', 'Удалить', 'trash', 'danger');
+}
+function ctxOpen(kind, id, el){
+  const html = ctxItems(kind, id); if(!html) return false;
+  if(typeof jSw !== 'undefined') jSw = null;   // свайп удаления этой строки больше не наш жест
+  const r = el.getBoundingClientRect();
+  const clone = el.cloneNode(true);
+  clone.removeAttribute('id'); clone.querySelectorAll('[id]').forEach(n=> n.removeAttribute('id'));
+  clone.classList.add('ctx-clone'); clone.setAttribute('aria-hidden', 'true');
+  Object.assign(clone.style, { left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', height:r.height + 'px', transform:'none' });
+  document.body.appendChild(clone);
+  el.style.visibility = 'hidden';
+  ctxState = { kind, id, el, clone }; ctxOn = true;
+  haptics('medium');
+  ctxScrim.classList.add('show');
+  requestAnimationFrame(()=>{ ctxScrim.classList.add('on'); clone.classList.add('lift'); });
+  // меню — то же, что у режима; под карточкой, а если не влезает над доком — над ней
+  popMenu.innerHTML = html;
+  popMenu.classList.remove('bean-menu', 'right'); popMenu.classList.add('ctx-menu'); popMenu.style.width = '';
+  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
+  const mw = popMenu.offsetWidth, mh = popMenu.offsetHeight;
+  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
+  const down = r.bottom + 14 + mh <= window.innerHeight - 96 || r.top - 14 - mh < 12;
+  popMenu.style.left = Math.round(Math.max(16, Math.min(window.innerWidth - 16 - mw, r.left + 6))) + 'px';
+  popMenu.style.top = Math.round(down ? r.bottom + 14 : r.top - 14 - mh) + 'px';
+  popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' left';
+  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  return true;
+}
+function ctxClose(){
+  const st = ctxState; ctxState = null; ctxOn = false;
+  ctxScrim.classList.remove('on');
+  popMenu.classList.remove('ctx-menu');
+  if(!st) return;
+  st.clone.classList.remove('lift');
+  setTimeout(()=>{ st.clone.remove(); if(st.el.isConnected) st.el.style.visibility = ''; if(!ctxOn) ctxScrim.classList.remove('show'); }, 260);
+}
+async function ctxPick(k){
+  const st = ctxState; if(!st) return;
+  const { kind, id } = st;
+  closePopMenu();
+  if(kind === 'bean'){
+    if(k === 'edit') return openBeanEditSheet(id);
+    if(k === 'delete') return openDeleteAlert(id, 'bean');
+    const b = beans.find(x=> x.id === id); if(!b) return;
+    if(b.finishedAt) return openArchiveAlert(id);
+    haptics('light');
+    b.remaining = 0; b.finishedAt = todayISO();
+    await beanUpdateEntry(b); await deactivateBean(b.id);
+    track('bean_finished'); renderBeans(); updateBeanPickRow();
+    return;
+  }
+  if(k === 'edit') return openEditSheet(id);
+  if(k === 'delete') return openDeleteAlert(id, 'journal');
+  if(k === 'repeat'){ const e = journalEntries.find(x=> x.id === id); if(e) repeatEntryRecipe(JSON.parse(JSON.stringify(e))); }
+}
+ctxScrim.addEventListener('click', ()=> closePopMenu());
+ctxScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
+(function(){
+  const TARGETS = [['#beansList', '.b-row', 'bean', r=> r.querySelector('.b-row-content') || r, r=> Number(r.dataset.id)],
+                   ['#journalList', '.jr', 'journal', r=> r, r=> Number(r.dataset.id)]];
+  TARGETS.forEach(([listSel, rowSel, kind, liftOf, idOf])=>{
+    const list = document.querySelector(listSel); if(!list) return;
+    let d = null, t = 0, hot = null;
+    const setHot = b=>{ if(b === hot) return; if(hot) hot.classList.remove('hot'); hot = b; if(b){ b.classList.add('hot'); haptics('selection'); } };
+    list.addEventListener('touchstart', e=>{
+      const row = e.target.closest(rowSel); if(!row || ctxOn || e.target.closest('.jr-act')) return;
+      if(kind === 'journal' && jSwipeOpenRow) return;   // открыт свайп — тап его закроет
+      const p = e.touches[0]; d = { row, x:p.clientX, y:p.clientY, open:false };
+      clearTimeout(t);
+      t = setTimeout(()=>{ if(!d) return; d.open = ctxOpen(kind, idOf(d.row), liftOf(d.row)); if(!d.open) d = null; }, 450);
+    }, { passive:true });
+    list.addEventListener('touchmove', e=>{
+      if(!d) return; const p = e.touches[0];
+      if(!d.open){ if(Math.hypot(p.clientX - d.x, p.clientY - d.y) > 8){ clearTimeout(t); d = null; } return; }
+      if(e.cancelable) e.preventDefault();
+      const n = document.elementFromPoint(p.clientX, p.clientY);
+      const b = n && n.closest ? n.closest('#popMenu .mi') : null;
+      setHot(b && !b.disabled ? b : null);
+    }, { passive:false });
+    list.addEventListener('touchend', e=>{
+      clearTimeout(t);
+      const dd = d; d = null;
+      if(!dd || !dd.open) return;
+      if(e.cancelable) e.preventDefault();   // без досланного клика — он открыл бы карточку
+      const b = hot; setHot(null);
+      if(b) setTimeout(()=> b.click(), 60);
+    });
+    list.addEventListener('touchcancel', ()=>{ clearTimeout(t); d = null; setHot(null); });
+    // мышь / трекпад: правый клик
+    list.addEventListener('contextmenu', e=>{ const row = e.target.closest(rowSel); if(!row || ctxOn) return; e.preventDefault(); ctxOpen(kind, idOf(row), liftOf(row)); });
+  });
+})();
+/* @@glass-js-end */
 window.__enReady = true;
 </script>
 </body>
