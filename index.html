@@ -2917,10 +2917,10 @@ const ODO = new Set(); let odoRaf = 0, odoLast = 0, odoDt = .016;
 function odoStart(el, value, dec, ints, run){
   if(el._odo){
     // палец перехватывает пробег — лента продолжает с того места, где она сейчас
-    const o = el._odo; o.release = false; o.tw = null;
+    const o = el._odo; o.release = false; o.tw = null; o.tail = null;
     if(o.frac && o.ff !== 1){ o.ff = 1; o.frac.style.width = ''; o.frac.style.opacity = ''; o.frac.classList.remove('clip'); }
     if(o.cm){ o.cm.style.opacity = ''; o.cm.style.filter = ''; }
-    o.slots.forEach(s=>{ s.lastChild.style.opacity = ''; s._op = 1; });
+    o.slots.forEach(s=>{ s.lastChild.style.opacity = ''; s.lastChild.style.filter = ''; s._op = 1; });
     return;
   }
   const hadComma = String(el._t != null ? el._t : el.textContent).indexOf(',') >= 0;
@@ -2945,8 +2945,23 @@ function odoStart(el, value, dec, ints, run){
   ODO.add(el); odoPaint(el);
   if(!odoRaf) odoRaf = requestAnimationFrame(odoTick);
 }
-function odoSet(el, value){ const o = el._odo; o.tw = null; o.T = Math.round(value * o.k); if(!odoRaf) odoRaf = requestAnimationFrame(odoTick); }
-function odoRelease(el){ if(el._odo){ el._odo.release = true; if(!odoRaf) odoRaf = requestAnimationFrame(odoTick); } }
+function odoTailUndo(o){
+  o.tail = null; o.ff = 1;
+  if(o.frac){ o.frac.style.width = ''; o.frac.classList.remove('clip'); o.cm.style.opacity = ''; o.cm.style.filter = ''; }
+  o.slots.forEach(s=>{ s.lastChild.style.opacity = ''; s.lastChild.style.filter = ''; });
+}
+function odoSet(el, value){ const o = el._odo; o.tw = null; o.T = Math.round(value * o.k);
+  if(o.tail && o.T % o.k !== 0) odoTailUndo(o);   // число снова дробное — хвост остаётся
+  if(!odoRaf) odoRaf = requestAnimationFrame(odoTick); }
+// Отпустил на целом числе («23,0» → «23»): хвост «,0» уходит прямо в доезде — запятая и ноль тают
+// с блюром, место под них мягко сжимается, к остановке ленты на экране уже «23», без второго движения.
+function odoRelease(el){
+  const o = el._odo; if(!o) return;
+  o.release = true;
+  if(o.frac && !o.tw && o.ff === 1 && String(el._t).indexOf(',') < 0 && o.T % o.k === 0) o.tail = { t0:performance.now(), done:false };
+  if(!odoRaf) odoRaf = requestAnimationFrame(odoTick);
+}
+const ODO_TAIL_FADE = 150, ODO_TAIL_SHRINK = [40, 300];
 function odoPaint(el){
   const o = el._odo, D = Math.max(0, o.D), dec = o.slots.length - o.ints;
   // Пробег: десятые не крутятся (неслись бы в 10 раз быстрее единиц и дёргались). Целые бегут
@@ -2960,7 +2975,7 @@ function odoPaint(el){
     if(calm && i < dec){
       // от целого числа десятая стартует невидимой — вместе с запятой
       const q = Math.pow(10, i), from = s._dig0 != null ? s._dig0 : Math.floor(tw.a / q) % 10, to = Math.floor(tw.b / q) % 10, tp = tw.tp || 0, f0 = s._op0 != null ? s._op0 : Math.min(1, tw.f0);
-      if(from === to && f0 === 1){ y = -to * o.h; st.style.opacity = ''; st.style.filter = ''; s._dig = to; s._op = 1; }
+      if(from === to && f0 === 1 && !tw.endInt){ y = -to * o.h; st.style.opacity = ''; st.style.filter = ''; s._dig = to; s._op = 1; }
       else {
         const op = tp < .15 ? f0 * (1 - tp / .15) : tw.endInt ? 0 : Math.min(1, Math.max(0, (tp - .5) / .4));
         const e = op * op * (3 - 2 * op);
@@ -2996,6 +3011,15 @@ function odoPaint(el){
     const lead = o.slots[dec - 1], ce = tw.endInt || tw.f0 < 1 ? (lead._op != null ? lead._op : 1) : 1;
     o.cm.style.opacity = ce < 1 ? ce.toFixed(3) : '';
     o.cm.style.filter = ce < .98 ? 'blur(' + (o.bp * .8 * (1 - ce)).toFixed(2) + 'px)' : '';
+  } else if(o.tail && o.frac){
+    const t = performance.now() - o.tail.t0, sm = x=>{ x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+    const e = 1 - sm(t / ODO_TAIL_FADE), f = 1 - sm((t - ODO_TAIL_SHRINK[0]) / (ODO_TAIL_SHRINK[1] - ODO_TAIL_SHRINK[0]));
+    const bl = o.bp * .8 * (1 - e);
+    o.ff = f; o.frac.classList.add('clip'); o.frac.style.width = (o.fw * f).toFixed(2) + 'px';
+    o.cm.style.opacity = e.toFixed(3); o.cm.style.filter = bl > .05 ? 'blur(' + bl.toFixed(2) + 'px)' : '';
+    o.slots.slice(0, dec).forEach(s=>{ const st = s.lastChild, b = Math.max(bl, s._b || 0);
+      st.style.opacity = e.toFixed(3); st.style.filter = b > .15 ? 'blur(' + b.toFixed(2) + 'px)' : ''; });
+    if(t >= ODO_TAIL_SHRINK[1]) o.tail.done = true;
   } else if(o.cm && o.cm.style.opacity !== ''){ o.cm.style.opacity = ''; o.cm.style.filter = ''; }
   if(o.ints > 1){   // старший целый разряд, пока он ноль, спрятан шириной
     const lead = o.slots[o.slots.length - 1], on = (calm ? I : D / o.k) >= Math.pow(10, o.ints - 1) - 1 / o.k;
@@ -3017,13 +3041,14 @@ function odoTick(now){
       if(Math.abs(o.T - o.D) < .004 && Math.abs(o.V) < .05){ o.D = o.T; o.V = 0; }
     }
     odoPaint(el);
-    if(o.release && o.D === o.T) odoEnd(el);
+    if(o.release && o.D === o.T && (!o.tail || o.tail.done)) odoEnd(el);
   });
   if(ODO.size) odoRaf = requestAnimationFrame(odoTick); else { odoRaf = 0; odoLast = 0; }
 }
 function odoEnd(el){
   const o = el._odo; ODO.delete(el); el._odo = null;
-  if(o.frac && String(el._t).indexOf(',') < 0){
+  if(o.tail) el.textContent = el._t;   // хвост уже растаял в доезде
+  else if(o.frac && String(el._t).indexOf(',') < 0){
     // «,0» больше не нужно — хвост схлопывается (после пробега он уже свёрнут), потом разряды снова текст
     const w = o.frac.getBoundingClientRect().width; o.frac.classList.add('clip');
     moA(o.frac, [{ width:w + 'px', opacity:+o.frac.style.opacity || 1 }, { width:'0px', opacity:0 }], { duration:w > .5 ? 220 : 1, easing:MO_OUT, fill:'forwards' })
@@ -3055,6 +3080,8 @@ function odoRun(el, from, to, dec, ints, dur, delay){
   if(el._odo && el._odo.ints < ints){ const o = el._odo; ODO.delete(el); el._odo = null; from = Math.max(0, o.D) / o.k; el.textContent = el._t; }
   if(!el._odo){ rnFlat(el); odoStart(el, from, dec, ints, true); }
   const o = el._odo;
+  // пресет посреди растворения «,0» — пробег продолжает с той прозрачности, где хвост сейчас
+  if(o.tail){ const e = +(o.cm.style.opacity || 1); o.tail = null; o.slots.forEach((s, i)=>{ if(i < o.slots.length - o.ints){ s._dig = 0; s._op = e; } }); o.tw = o.tw || { tp:0 }; }
   o.T = Math.round(to * o.k);
   o.slots.forEach(s=>{ s._dig0 = o.tw ? s._dig : null; s._op0 = o.tw ? s._op : null; });
   o.tw = { f0:o.ff, endInt:o.k > 1 && o.T % o.k === 0, a:o.D, b:o.T, t0:performance.now() + (delay || 0), dur };
