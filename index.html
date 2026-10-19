@@ -1409,11 +1409,23 @@
   /* Цифры-барабаны (дискретные смены) и одометр (под пальцем) */
   .dg{ display:inline-block; position:relative; clip-path:inset(0 -0.04em); white-space:pre; }
   .dg-out{ position:absolute; left:0; top:0; }
-  .od{ display:inline-block; position:relative; clip-path:inset(0 -0.04em); white-space:pre; transition:width .18s var(--ease-out), opacity .18s ease; }
-  .od .ph{ visibility:hidden; }
-  .od .strip{ position:absolute; left:0; top:0; will-change:transform; }
+  /* окошко разряда — мягкая маска, а не обрезка: размытая лента тает у края без горизонтальной кромки;
+     поля .26em/.14em (с отрицательными отступами) дают блюру место, раскладка не меняется */
+  .od{ display:inline-block; position:relative; white-space:pre; padding:.26em .14em; margin:-.26em -.14em;
+    -webkit-mask-image:linear-gradient(to bottom, transparent .26em, #000 .4em, #000 calc(100% - .4em), transparent calc(100% - .26em));
+            mask-image:linear-gradient(to bottom, transparent .26em, #000 .4em, #000 calc(100% - .4em), transparent calc(100% - .26em));
+    transition:width .18s var(--ease-out), opacity .18s ease; }
+  .od .ph{ display:block; visibility:hidden; }
+  .od .strip{ position:absolute; left:.14em; top:.26em; will-change:transform, filter; }
   .od .strip i{ display:block; font-style:normal; }
   .od-frac{ display:inline-block; white-space:pre; }
+  /* хвост «,x» сворачивается шириной: режем только по горизонтали — overflow:hidden у inline-block
+     переносит базовую линию на нижний край, и вся строка «г → мл» прыгала вниз */
+  .od-frac.clip{ clip-path:inset(-0.5em 0); }
+  /* смена цифры с блюром (пропорция) — без обрезки: уход прячут блюр и прозрачность */
+  .rg{ display:inline-flex; justify-content:center; position:relative; white-space:pre; }
+  .rg-g{ display:inline-block; will-change:transform, filter, opacity; }
+  .rg-out{ position:absolute; top:0; pointer-events:none; }
   .res-nums .arrow{ color:var(--label-3); font-size:20px; margin:0 2px; }
   .res-ice{ font-size:13px; color:var(--label-2); margin-top:8px; font-variant-numeric:tabular-nums; }
   .res-ice b{ color:var(--accent, var(--teal)); font-weight:600; }
@@ -2748,16 +2760,104 @@ function moRoll(el, text, dir, o){
   }
 }
 
-/* ---- Одометр под пальцем на «Своём» ----
-   Пока палец на ползунке, показываемое число догоняет настоящее по пружине (критическое затухание,
-   ~150 мс), а разряды — непрерывные ленты 0…9, как в механическом счётчике: младший крутится всё
-   время, старший сдвигается только на переносе 9 → 0. DOM не пересобирается, поэтому на любой
-   скорости ничего не скачет. Десятые граммов на время касания видны всегда («19,0»), десятки граммов
-   проявляются на 9,9 → 10. Отпустил — число доезжает, «,0» схлопывается, остаётся простой текст. */
-const ODO = new Set(); let odoRaf = 0, odoLast = 0;
-function odoStart(el, value, dec, ints){
-  if(el._odo){ el._odo.release = false; return; }
-  el._gen = (el._gen || 0) + 1;
+/* ---- Смена цифры с блюром (пропорция «1:16» на мягче / крепче) ----
+   По скиллу rolling-digits: выравнивание по запятой, больше — снизу, волна от младшего разряда, как
+   у moRoll. Каждая цифра — свой глиф в постоянном разряде: уходящая замораживается там, где её застал
+   новый вызов, и уезжает размываясь (быстрые тапы не обрываются, а доезжают стопкой); входящая
+   выезжает размытой, сжатой по высоте и садится с перелётом ~5 %. Обрезки нет — прячут блюр и прозрачность. */
+const RN_EASE = 'cubic-bezier(.25,.8,.35,1)', RN_EXIT = 'cubic-bezier(.4,0,.6,1)', RN_DIST = 60, RN_BLUR = .17; // блюр — доля кегля: ~6,5 px на 38 px
+function rnW(el, ch){ const c = el._wc || (el._wc = {}); return c[ch] != null ? c[ch] : (c[ch] = moCharW(el, ch)); }
+function rnSlot(ch){
+  const s = { el:document.createElement('span'), ch:'', g:null };
+  s.el.className = 'rg';
+  if(ch){ s.g = document.createElement('span'); s.g.className = 'rg-g'; s.g.textContent = ch; s.el.appendChild(s.g); s.ch = ch; }
+  return s;
+}
+function rnFlat(el){ if(el._rn){ el._rn = null; el.textContent = el._t != null ? el._t : el.textContent; } }
+function rnLeave(g, up, delay, dur, bp){
+  const cs = getComputedStyle(g);
+  const from = { transform:cs.transform === 'none' ? 'none' : cs.transform, filter:cs.filter === 'none' ? 'blur(0px)' : cs.filter, opacity:cs.opacity };
+  const w = g.getBoundingClientRect().width;
+  g.getAnimations().forEach(a=> a.cancel());
+  g.classList.add('rg-out'); g.style.left = '50%'; g.style.marginLeft = (-w / 2) + 'px';
+  const a = moA(g, [from, { transform:'translateY(' + (-up * RN_DIST) + '%) scaleY(1.25) scale(.85)', filter:'blur(' + bp + 'px)', opacity:0 }],
+    { duration:dur * .8, delay, easing:RN_EXIT, fill:'both' });
+  if(a === MO_STUB) g.remove(); else a.finished.then(()=> g.remove()).catch(()=>{});
+}
+function rnEnter(g, up, delay, dur, bp){
+  moA(g, [
+    { transform:'translateY(' + (up * RN_DIST) + '%) scaleY(1.25) scale(.85)', filter:'blur(' + bp + 'px)', opacity:0 },
+    { offset:.6, transform:'translateY(' + (-up * 5) + '%)', filter:'blur(' + (bp * .45).toFixed(2) + 'px)', opacity:1 },
+    { transform:'none', filter:'blur(0px)', opacity:1 }
+  ], { duration:dur, delay, easing:RN_EASE, fill:'backwards' });
+}
+function rnRoll(el, text, dir, o){
+  o = o || {}; text = String(text);
+  const prev = el._t != null ? el._t : el.textContent;
+  el._t = text;
+  if(!o.animate || moReduce() || !el.animate){ el._rn = null; el.textContent = text; return; }
+  if(prev === text) return;
+  let R = el._rn;
+  if(!R){
+    const [pi, pf] = moSplit(prev);
+    el.textContent = '';
+    R = el._rn = { ints:pi.map(rnSlot), fracs:pf.map(rnSlot), gen:0 };
+    [...R.ints, ...R.fracs].forEach(s=> el.appendChild(s.el));
+  }
+  const [bi, bf] = moSplit(text);
+  const dur = o.dur || 260, stag = o.stagger == null ? 22 : o.stagger, d0 = o.delay || 0, up = dir >= 0 ? 1 : -1;
+  const bp = el._bp || (el._bp = +(parseFloat(getComputedStyle(el).fontSize) * RN_BLUR).toFixed(2));
+  // разряды по краям: целые растут / уходят слева, дробные — справа
+  while(R.ints.length < bi.length){ const s = rnSlot(''); el.insertBefore(s.el, R.ints.length ? R.ints[0].el : (R.fracs[0] ? R.fracs[0].el : null)); R.ints.unshift(s); }
+  const dropI = R.ints.length > bi.length ? R.ints.splice(0, R.ints.length - bi.length) : [];
+  while(R.fracs.length < bf.length){ const s = rnSlot(''); const last = R.fracs.length ? R.fracs[R.fracs.length - 1].el : (R.ints.length ? R.ints[R.ints.length - 1].el : null);
+    el.insertBefore(s.el, last ? last.nextSibling : null); R.fracs.push(s); }
+  const dropF = R.fracs.length > bf.length ? R.fracs.splice(bf.length) : [];
+  const jobs = [...dropI.map(s=> [s, '', true]), ...R.ints.map((s, i)=> [s, bi[i]]), ...R.fracs.map((s, i)=> [s, bf[i]]), ...dropF.map(s=> [s, '', true])];
+  const w0 = jobs.map(([s])=> s.el.getBoundingClientRect().width);
+  let rank = 0;
+  for(let j = jobs.length - 1; j >= 0; j--){
+    const [s, ch, drop] = jobs[j];
+    if(s.ch === ch && !drop) continue;
+    const delay = d0 + rank++ * stag;
+    if(s.ch !== ch){
+      if(s.g) rnLeave(s.g, up, delay, dur, bp);
+      s.g = null; s.ch = ch;
+      if(ch){ const g = document.createElement('span'); g.className = 'rg-g'; g.textContent = ch; s.el.appendChild(g); s.g = g; rnEnter(g, up, delay, dur, bp); }
+    }
+    const w1 = ch ? rnW(el, ch) : 0;
+    moCancel(s.el, 'w');
+    if(drop){
+      const a = moTag(moA(s.el, [{ width:w0[j] + 'px' }, { width:'0px' }], { duration:dur, delay, easing:MO_OUT, fill:'both' }), 'w');
+      a.finished.then(()=> s.el.remove()).catch(()=>{});
+    } else if(Math.abs(w0[j] - w1) > .5){
+      moTag(moA(s.el, [{ width:w0[j] + 'px' }, { width:w1 + 'px' }], { duration:dur, delay, easing:MO_OUT, fill:'backwards' }), 'w');
+    }
+  }
+  // всё доехало и нового значения не пришло — снова простой текст (как у moRoll)
+  const gen = ++R.gen;
+  setTimeout(()=>{ if(el._rn === R && R.gen === gen) rnFlat(el); }, d0 + Math.max(0, rank - 1) * stag + dur + 60);
+}
+
+/* ---- Одометр: под пальцем на «Своём» и пробег от пресета ----
+   Показываемое число — непрерывные ленты 0…9, как в механическом счётчике: младший разряд крутится
+   всё время, старший сдвигается только на переносе 9 → 0. DOM не пересобирается, поэтому на любой
+   скорости ничего не скачет. Лента размывается по своей скорости (быстро — смазана, на остановке
+   резкая), окошко разряда — мягкая маска, а не обрезка: у блюра нет горизонтальных кромок.
+   Под пальцем число догоняет настоящее по пружине (~150 мс), десятые граммов видны всё касание,
+   десятки граммов проявляются на 9,9 → 10. Отпустил — число доезжает, «,0» схлопывается.
+   Пробег (odoRun) — см. ниже. */
+const ODO = new Set(); let odoRaf = 0, odoLast = 0, odoDt = .016;
+function odoStart(el, value, dec, ints, run){
+  if(el._odo){
+    // палец перехватывает пробег — лента продолжает с того места, где она сейчас
+    const o = el._odo; o.release = false; o.tw = null;
+    if(o.frac && o.ff !== 1){ o.ff = 1; o.frac.style.width = ''; o.frac.style.opacity = ''; o.frac.classList.remove('clip'); }
+    o.slots.forEach(s=>{ s.lastChild.style.opacity = ''; });
+    return;
+  }
+  const hadComma = String(el._t != null ? el._t : el.textContent).indexOf(',') >= 0;
+  rnFlat(el); el._gen = (el._gen || 0) + 1;
   if(el._t == null) el._t = el.textContent;
   const k = Math.pow(10, dec), T = Math.round(value * k);
   el.textContent = '';
@@ -2767,33 +2867,82 @@ function odoStart(el, value, dec, ints){
   for(let i = 0; i < ints; i++){ const s = mk(); el.appendChild(s); slots.unshift(s); }   // slots[0] — младший разряд
   let frac = null;
   if(dec){ frac = document.createElement('span'); frac.className = 'od-frac'; frac.textContent = ','; for(let i = 0; i < dec; i++){ const s = mk(); frac.appendChild(s); slots.unshift(s); } el.appendChild(frac); }
-  const h = slots[0].getBoundingClientRect().height || 20, dw = slots[0].offsetWidth;
+  const h = slots[0].firstChild.getBoundingClientRect().height || 20, dw = slots[0].offsetWidth;
   slots.forEach(s=> s.querySelectorAll('.strip i').forEach(i=>{ i.style.height = h + 'px'; i.style.lineHeight = h + 'px'; }));
-  el._odo = { k, ints, T, D:T, V:0, slots, frac, h, dw, release:false };
+  const fw = frac ? frac.getBoundingClientRect().width : 0;
+  // пробег от целого числа: «,0» не выскакивает — хвост раскрывается по ходу пробега (odoPaint)
+  const ff = run && frac && !hadComma ? 0 : 1;
+  if(frac && !ff){ frac.classList.add('clip'); frac.style.width = '0px'; frac.style.opacity = 0; }
+  el._odo = { k, ints, T, D:T, V:0, slots, frac, fw, ff, h, dw, release:false, bp:parseFloat(getComputedStyle(el).fontSize) * RN_BLUR };
   ODO.add(el); odoPaint(el);
   if(!odoRaf) odoRaf = requestAnimationFrame(odoTick);
 }
-function odoSet(el, value){ const o = el._odo; o.T = Math.round(value * o.k); if(!odoRaf) odoRaf = requestAnimationFrame(odoTick); }
+function odoSet(el, value){ const o = el._odo; o.tw = null; o.T = Math.round(value * o.k); if(!odoRaf) odoRaf = requestAnimationFrame(odoTick); }
 function odoRelease(el){ if(el._odo){ el._odo.release = true; if(!odoRaf) odoRaf = requestAnimationFrame(odoTick); } }
 function odoPaint(el){
-  const o = el._odo, D = Math.max(0, o.D);
+  const o = el._odo, D = Math.max(0, o.D), dec = o.slots.length - o.ints;
+  // Пробег: десятые не крутятся (неслись бы в 10 раз быстрее единиц и дёргались). Целые бегут
+  // своей непрерывной лентой, а десятая один раз уходит в расфокус и проявляется уже новой.
+  const tw = o.tw, calm = !!(tw && dec);
+  let I = D / o.k;
+  if(calm){ const ia = Math.floor(tw.a / o.k), ib = Math.floor(tw.b / o.k); I = Math.max(0, ia + (ib - ia) * (tw.sp || 0)); }
   o.slots.forEach((s, i)=>{
-    const p = Math.pow(10, i), base = Math.floor(D / p) % 10;
-    const f = i === 0 ? D - Math.floor(D) : Math.max(0, (D % p) - (p - 1));
-    s.lastChild.style.transform = 'translateY(' + (-(base + f) * o.h).toFixed(2) + 'px)';
+    const st = s.lastChild;
+    let y, own = false;
+    if(calm && i < dec){
+      const q = Math.pow(10, i), from = s._dig0 != null ? s._dig0 : Math.floor(tw.a / q) % 10, to = Math.floor(tw.b / q) % 10, tp = tw.tp || 0, f0 = s._op0 != null ? s._op0 : 1;
+      if(from === to && f0 === 1){ y = -to * o.h; st.style.opacity = ''; st.style.filter = ''; s._dig = to; s._op = 1; }
+      else {
+        const op = tp < .15 ? f0 * (1 - tp / .15) : tw.endInt ? 0 : Math.min(1, Math.max(0, (tp - .5) / .4));
+        const e = op * op * (3 - 2 * op);
+        y = -(tp < .15 ? from : to) * o.h;
+        s._dig = tp < .15 ? from : to; s._op = e;
+        st.style.opacity = e.toFixed(3);
+        st.style.filter = e < .98 ? 'blur(' + (o.bp * .8 * (1 - e)).toFixed(2) + 'px)' : '';
+      }
+      own = true;
+    } else {
+      const j = calm ? i - dec : i, V = calm ? I : D, p = Math.pow(10, j), base = Math.floor(V / p) % 10;
+      const f = j === 0 ? V - Math.floor(V) : Math.max(0, (V % p) - (p - 1));
+      y = -(base + f) * o.h;
+      if(i < dec) st.style.opacity = '';
+    }
+    st.style.transform = 'translateY(' + y.toFixed(2) + 'px)';
+    // блюр от скорости ленты: ~6,5 px на полном ходу (≈ 15 цифр/с), сглажен, чтобы не мерцал
+    let d = s._y == null ? 0 : Math.abs(y - s._y); if(d > o.h * 5 || own) d = 0;   // перескок ленты 9 → 0 — не скорость
+    s._y = y;
+    if(own){ s._b = 0; return; }
+    const v = d / o.h / Math.max(.004, odoDt);
+    s._b = (s._b || 0) * .6 + Math.min(o.bp * .7, v / 15 * o.bp) * .4;
+    st.style.filter = s._b > .15 ? 'blur(' + s._b.toFixed(2) + 'px)' : '';
   });
+  // хвост «,x»: раскрывается в начале пробега, если число стало дробным; сворачивается к финишу,
+  // если число приходит целым («20,0» → «20» без отдельного рывка после остановки)
+  if(calm && o.frac){
+    const tp = tw.tp || 0, sm = x=>{ x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+    const f = tw.endInt ? tw.f0 * (1 - sm((tp - .45) / .5)) : tw.f0 + (1 - tw.f0) * sm(tp / .3);
+    o.ff = f; o.frac.classList.add('clip');
+    o.frac.style.width = (o.fw * f).toFixed(2) + 'px'; o.frac.style.opacity = f.toFixed(3);
+  }
   if(o.ints > 1){   // старший целый разряд, пока он ноль, спрятан шириной
-    const lead = o.slots[o.slots.length - 1], on = D / o.k >= Math.pow(10, o.ints - 1) - 1 / o.k;
+    const lead = o.slots[o.slots.length - 1], on = (calm ? I : D / o.k) >= Math.pow(10, o.ints - 1) - 1 / o.k;
     lead.style.width = on ? o.dw + 'px' : '0px'; lead.style.opacity = on ? 1 : 0;
   }
 }
 function odoTick(now){
-  const dt = Math.min(.05, odoLast ? (now - odoLast) / 1000 : .016); odoLast = now;
+  const dt = Math.min(.05, odoLast ? (now - odoLast) / 1000 : .016); odoLast = now; odoDt = dt;
   const w = 26;
   ODO.forEach(el=>{
     const o = el._odo;
-    o.V += (w * w * (o.T - o.D) - 2 * w * o.V) * dt; o.D += o.V * dt;
-    if(Math.abs(o.T - o.D) < .004 && Math.abs(o.V) < .05){ o.D = o.T; o.V = 0; }
+    if(o.tw){
+      const p = (now - o.tw.t0) / o.tw.dur;
+      if(p >= 1){ o.tw.tp = 1; o.tw.sp = 1; o.D = o.T; odoPaint(el); o.tw = null; }
+      else if(p > 0){ o.tw.tp = p; o.tw.sp = RUN_EASE(p); o.D = o.tw.a + (o.tw.b - o.tw.a) * o.tw.sp; }
+      o.V = 0;
+    } else {
+      o.V += (w * w * (o.T - o.D) - 2 * w * o.V) * dt; o.D += o.V * dt;
+      if(Math.abs(o.T - o.D) < .004 && Math.abs(o.V) < .05){ o.D = o.T; o.V = 0; }
+    }
     odoPaint(el);
     if(o.release && o.D === o.T) odoEnd(el);
   });
@@ -2802,18 +2951,48 @@ function odoTick(now){
 function odoEnd(el){
   const o = el._odo; ODO.delete(el); el._odo = null;
   if(o.frac && String(el._t).indexOf(',') < 0){
-    // «,0» больше не нужно — хвост схлопывается, потом разряды снова становятся текстом
-    const w = o.frac.getBoundingClientRect().width; o.frac.style.overflow = 'hidden';
-    moA(o.frac, [{ width:w + 'px', opacity:1 }, { width:'0px', opacity:0 }], { duration:220, easing:MO_OUT, fill:'forwards' })
-      .finished.then(()=>{ if(!el._odo) el.textContent = el._t; }).catch(()=>{});
+    // «,0» больше не нужно — хвост схлопывается (после пробега он уже свёрнут), потом разряды снова текст
+    const w = o.frac.getBoundingClientRect().width; o.frac.classList.add('clip');
+    moA(o.frac, [{ width:w + 'px', opacity:+o.frac.style.opacity || 1 }, { width:'0px', opacity:0 }], { duration:w > .5 ? 220 : 1, easing:MO_OUT, fill:'forwards' })
+      .finished.then(()=>{ if(!el._odo && !el._editing) el.textContent = el._t; }).catch(()=>{});
   } else el.textContent = el._t;
 }
+function odoKill(el){ if(el._odo){ ODO.delete(el); el._odo = null; } }
 function sliderGrab(on){
   const anim = on && !moReduce() && isBrewMode() && brewPhase === 'idle';
   volSlider.classList.toggle('grab', anim);
   const els = [[document.getElementById('resWater'), state.water, 0, 3], [document.getElementById('resCoffee'), state.coffee, 1, 2]];
   if(anim) els.forEach(([el, v, dec, ints])=> odoStart(el, v, dec, ints));
   else els.forEach(([el])=> odoRelease(el));
+}
+
+/* ---- Пробег: S · M · L, «‹» и мягче / крепче крутят тот же одометр, что и ползунок ----
+   Число пробегает все промежуточные значения (320 → 321 → … → 420): лента разгоняется, размывается
+   и тормозит точно в цель — без перелёта: пресеты круглые, и откат 320 → 319,6 → 320 качал сразу
+   две цифры. Длительность растёт с дистанцией. Новый тап посреди пробега продолжает с текущего места. */
+function cubicBez(x1, y1, x2, y2){
+  const bx = t=> 3 * x1 * t * (1 - t) * (1 - t) + 3 * x2 * t * t * (1 - t) + t * t * t;
+  const by = t=> 3 * y1 * t * (1 - t) * (1 - t) + 3 * y2 * t * t * (1 - t) + t * t * t;
+  return x=>{ if(x <= 0) return 0; if(x >= 1) return 1; let lo = 0, hi = 1, t = x;
+    for(let i = 0; i < 24; i++){ t = (lo + hi) / 2; if(bx(t) < x) lo = t; else hi = t; } return by(t); };
+}
+const RUN_EASE = cubicBez(.3, 0, .12, 1);
+function odoRun(el, from, to, dec, ints, dur, delay){
+  // разрядов не хватает (холодный: 1000 мл) — пересобираем ленты с текущего показанного числа
+  if(el._odo && el._odo.ints < ints){ const o = el._odo; ODO.delete(el); el._odo = null; from = Math.max(0, o.D) / o.k; el.textContent = el._t; }
+  if(!el._odo){ rnFlat(el); odoStart(el, from, dec, ints, true); }
+  const o = el._odo;
+  o.T = Math.round(to * o.k);
+  o.slots.forEach(s=>{ s._dig0 = o.tw ? s._dig : null; s._op0 = o.tw ? s._op : null; });
+  o.tw = { f0:o.ff, endInt:o.k > 1 && o.T % o.k === 0, a:o.D, b:o.T, t0:performance.now() + (delay || 0), dur };
+  o.release = true;
+  if(!odoRaf) odoRaf = requestAnimationFrame(odoTick);
+}
+function runResNum(el, prev, v, dec, delay){
+  const ints = Math.max(1, String(Math.floor(Math.max(prev, v))).length);
+  // +1 г — ~420 мс, S → L — ~700 мс
+  const steps = Math.abs(v - prev) * (dec ? 10 : 1);
+  odoRun(el, prev, v, dec, ints, Math.min(720, 380 + Math.sqrt(steps) * 28), delay || 0);
 }
 
 /* ---- Плитки: подложка выбора и наполнение сервера ---- */
@@ -3024,6 +3203,7 @@ function cupStartEdit(b){
   inp.setAttribute('aria-label', g ? 'Граммы кофе' : 'Объём воды, мл');
   inp.value = g ? fmt(state.coffee) : String(Math.round(state.water));
   Object.assign(cupEdit, { on:true, b, inp, g, before:Math.round(cup.custom) });
+  odoKill(b); rnFlat(b);   // число ещё добегало — ввод начинается с настоящего значения
   b._editing = true; b.textContent = ''; b.appendChild(inp); b.classList.add('editing');
   document.querySelector('#calcRes .res-adj').classList.add('editing');
   document.getElementById('cupDone').tabIndex = 0;
@@ -3119,7 +3299,7 @@ function renderResult(coffee, water){
   const lbl = '1:' + fmtRatio(state.ratio).replace('.', ',');
   const prevR = rv._v; rv._v = state.ratio;
   // крепче — число после «1:» уменьшается: цифры едут вниз; дробная часть выезжает своим разрядом
-  moRoll(rv, lbl, prevR == null || state.ratio >= prevR ? 1 : -1, an && an.ratio ? { animate:true, dur:an.dur } : {});
+  rnRoll(rv, lbl, prevR == null || state.ratio >= prevR ? 1 : -1, an && an.ratio ? { animate:true, dur:an.dur } : {});
   el.querySelector('.cold-note').innerHTML = state.mode === 'cold' ? ' <span style="font-weight:400;color:var(--label-2)">· ' + (state.ratio <= 6 ? 'концентрат' : 'готов к питью') + '</span>' : '';
   const mod = ratioModified(), was = btn.classList.contains('mod');
   btn.classList.toggle('mod', mod);
@@ -3140,9 +3320,17 @@ function renderResult(coffee, water){
 function setResNum(el, txt, v, an){
   if(el._editing){ el._t = txt; el._v = v; return; }   // в числе сейчас печатают — не трогаем
   if(window.__enHold){ el._enTxt = txt; el._v = v; return; }   // первый вход в «Кофе» ещё не показан
+  // действие человека (плитка, «‹», мягче / крепче) — число добегает; под пальцем лента ведётся ползунком
+  if(an && el.animate && !(el._odo && !el._odo.release)){
+    const prev = el._v; el._v = v;
+    if(prev == null || Math.abs(prev - v) < 1e-9){ el._t = txt; if(!el._odo) el.textContent = txt; return; }
+    runResNum(el, prev, v, txt.indexOf(',') >= 0 || (el.id === 'resCoffee' && isBrewMode()) ? 1 : 0, an.delay);
+    el._t = txt;
+    return;
+  }
   if(el._odo){ el._t = txt; el._v = v; odoSet(el, v); return; }
-  const prev = el._v; el._v = v;
-  moRoll(el, txt, prev == null || v >= prev ? 1 : -1, an ? { animate:true, dur:an.dur, delay:an.delay } : {});
+  el._v = v;
+  moRoll(el, txt, 1, {});
 }
 
 function fmtRatio(r){
