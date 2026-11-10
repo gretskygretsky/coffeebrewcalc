@@ -1686,6 +1686,14 @@
   .pop-menu .mi-sep{ height:.5px; background:var(--separator); margin:5px 12px; }
   .pop-menu .mi-cap{ font-size:12.5px; color:var(--label-2); padding:8px 12px 4px 40px; line-height:1.35; }
   .pop-menu .mi.arch{ opacity:.55; }
+  .pop-menu .mi[data-kind="proc"] .t span{ white-space:normal; }   /* пояснение к обработке — переносом, на 320 не влезает
+  .pop-menu .mi .mi-mod{ font-size:13px; font-weight:600; color:var(--label-2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .bs-pick{ display:inline-flex; align-items:center; gap:6px; flex-shrink:0; height:36px; padding:0 12px 0 14px; border:none; border-radius:999px;
+    background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; touch-action:manipulation;
+    transition:transform .16s var(--ease-out); }
+  .bs-pick svg{ color:var(--label-2); }
+  .bs-pick:active{ transform:scale(.96); }
+  .bs-pick:focus-visible{ outline:2px solid var(--blue); outline-offset:2px; }
   #calcBeanCard{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 
   /* ---------- Долгое нажатие: подъём карточки над размытием ---------- */
@@ -2384,10 +2392,10 @@ const ROASTS = [
   { id:'dark',   label:'Тёмная',  base:89 }
 ];
 const PROCESSES = [
-  { id:'washed',    label:'Мытая',       mod: 1 },
-  { id:'natural',   label:'Натуральная', mod:-2 },
-  { id:'honey',     label:'Хани',        mod: 0 },
-  { id:'anaerobic', label:'Анаэробная',  mod:-3 }
+  { id:'washed',    label:'Мытая',       mod: 1, d:'Чистая, яркая кислотность' },
+  { id:'natural',   label:'Натуральная', mod:-2, d:'Ягодная сладость, плотное тело' },
+  { id:'honey',     label:'Хани',        mod: 0, d:'Сочно и сладко — между ними' },
+  { id:'anaerobic', label:'Анаэробная',  mod:-3, d:'Ферментация, ликёрные ноты' }
 ];
 const TEMP_MIN = 88, TEMP_MAX = 96;
 
@@ -2689,6 +2697,7 @@ popMenu.addEventListener('click', e=>{
   const kind = b.dataset.kind, k = b.dataset.k;
   if(kind === 'bean'){ beanMenuPick(k); return; }
   if(kind === 'jbean'){ entryBeanPick(k); return; }
+  if(kind === 'proc'){ procPick(k); return; }
   if(kind === 'ctx'){ ctxPick(k); return; }
   if(k !== (kind === 'mode' ? state.mode : state.recipe)) haptics('selection');
   closePopMenu();
@@ -7425,7 +7434,46 @@ function beanSelectRow(label, key, items){
     '</select></label></div>';
 }
 
-// Обжарка и обработка — стеклянный сегмент (обработка — сеткой 2×2: «Натуральная» и «Анаэробная» целиком)
+// Обжарка — стеклянный сегмент (три коротких слова); обработка — строка с выпадающим меню:
+// четыре длинных названия в сетку 2×2 читались плохо, а в меню у каждого пояснение и сдвиг температуры
+function beanProcRow(){
+  const cur = PROCESSES.find(x=> x.id === sheetEntry.process) || PROCESSES[0];
+  return '<div class="bs-row"><span class="bs-l"><span class="t">Обработка</span></span>' +
+    '<button class="bs-pick" type="button" data-bproc aria-haspopup="menu" aria-expanded="false" aria-label="Обработка: ' + cur.label + '">' +
+      '<span class="gl-roll" id="bsProcV"><span>' + cur.label + '</span></span>' +
+      '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>' +
+    '</button></div>';
+}
+const fmtTempMod = m=> m > 0 ? '+' + m + '\u00a0°C' : m < 0 ? '\u2212' + (-m) + '\u00a0°C' : '\u00b10\u00a0°C';
+function openProcMenu(anchor){
+  const cur = sheetEntry.process;
+  popMenu.innerHTML = PROCESSES.map(p=> '<button class="mi" type="button" role="menuitemradio" aria-checked="' + (p.id === cur) + '" data-kind="proc" data-k="' + p.id + '">' +
+    '<span class="ck">' + (p.id === cur ? BEAN_MENU_TICK : '') + '</span><span class="t"><b>' + p.label + '</b><span>' + p.d + '</span></span>' +
+    '<span class="ic mi-mod">' + fmtTempMod(p.mod) + '</span></button>').join('');
+  popMenu.classList.remove('bean-menu', 'right', 'ctx-menu'); popMenu.style.width = ''; popMenu.style.right = 'auto';
+  const r = anchor.getBoundingClientRect(), vw = window.innerWidth;
+  const { mw, mh } = popMeasure();
+  popMenu.style.left = Math.round(Math.max(16, Math.min(vw - 16 - mw, r.right - mw))) + 'px';
+  const down = popPlace(r, mh, 8, 24);
+  popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' right';
+  anchor.setAttribute('aria-expanded', 'true');
+  popScrim.classList.add('show');
+  requestAnimationFrame(()=> popMenu.classList.add('show'));
+}
+function procPick(k){
+  closePopMenu();
+  const btn = document.querySelector('#sheetBean [data-bproc]'); if(btn) btn.setAttribute('aria-expanded', 'false');
+  const e = sheetEntry; if(!e || e.process === k) return;
+  const t0 = computeBrewTemp(e.roast, e.process), i0 = PROCESSES.findIndex(x=> x.id === e.process);
+  e.process = k; haptics('selection');
+  const p = PROCESSES.find(x=> x.id === k);
+  const v = document.getElementById('bsProcV'); if(v) glRoll(v, p.label, PROCESSES.indexOf(p) >= i0 ? 1 : -1);
+  if(btn) btn.setAttribute('aria-label', 'Обработка: ' + p.label);
+  const t1 = computeBrewTemp(e.roast, e.process);
+  glRoll(document.getElementById('bsTempV'), t1 + '\u00a0°C', t1 >= t0 ? 1 : -1);
+  const why = document.getElementById('bsWhyText'); if(why) why.innerHTML = beanTempNoteHTML(e.process);
+  refreshBeanHero();
+}
 function beanSegRow(label, key, items, cols){
   return '<div class="bs-blk"><span class="t">' + label + '</span>' +
     gsegHTML(items, sheetEntry[key], it=> 'data-bseg="' + key + '" data-v="' + it.id + '" aria-label="' + label + ': ' + it.label + '"', cols) + '</div>';
@@ -7463,7 +7511,7 @@ function renderBeanSheet(){
 
     '<div class="bs-cap">Профиль</div><div class="bs-group">' +
       beanSegRow('Обжарка', 'roast', ROASTS) +
-      beanSegRow('Обработка', 'process', PROCESSES, 2) +
+      beanProcRow() +
       '<div class="bs-row"><span class="bs-l"><span class="t">Температура воды</span>' +
         '<button class="bs-why" type="button" data-bwhy aria-expanded="' + beanWhyOpen + '">' + (beanWhyOpen ? 'Скрыть' : 'Почему такая?') + '</button></span>' +
         '<span class="bs-v"><b class="gl-roll" id="bsTempV"><span>' + temp + '\u00a0°C</span></b></span></div>' +
@@ -7529,6 +7577,8 @@ function refreshBeanHero(){
     const e = sheetEntry;
     if(!e) return;
     // Профиль: сегмент меняется на месте (шторку не пересобираем — палец ведёт дальше по опциям)
+    const pb = ev.target.closest('[data-bproc]');
+    if(pb){ if(popMenu.classList.contains('show')) closePopMenu(); else openProcMenu(pb); return; }
     const sg = ev.target.closest('[data-bseg]');
     if(sg){
       const k = sg.dataset.bseg, v = sg.dataset.v;
