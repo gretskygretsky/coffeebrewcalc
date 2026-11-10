@@ -1711,6 +1711,32 @@
   #beansList .b-row-content, #journalList .jr{ -webkit-touch-callout:none; }
   @media (prefers-reduced-motion: reduce){ .ctx-clone, .ctx-scrim{ transition:none !important; } }
   /* @@glass-css-end */
+
+  /* ================= Полировка ================= */
+  /* Выделение текста и каретка — в акцент, а не системный синий */
+  ::selection{ background:color-mix(in srgb, var(--acc) 26%, transparent); }
+  input, textarea{ caret-color:var(--acc); }
+  /* Подписи таб-бара: 11 px — нижняя граница читаемости на расстоянии вытянутой руки */
+  .tab, .tab-lens .tl-tab{ font-size:11px; }
+  /* Пропорции в «Еще»: название режима не переносится («Cold / brew»), переносится подсказка справа */
+  .ratio-set .nm b{ font-weight:inherit; white-space:nowrap; flex-shrink:0; }
+  /* Пояснения под строками шторки зерна («поставится сама, когда выберешь…») — переносом, не многоточием */
+  .bs-l .s{ white-space:normal; text-wrap:pretty; }
+  /* Длинное меню на низком экране листается внутри, а не уходит под край и кнопки Telegram */
+  .pop-menu.scroll{ overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+  /* Узкие телефоны (320): степперы компактнее, чтобы подписи «Вес пачки, г», «Помол, клики»,
+     «Маленькая» не ломались и не обрезались; ячейки сводки месяца — с меньшими полями */
+  @media (max-width: 359px){
+    .bs-step button, .vstep button{ width:30px; }
+    .bs-step input{ width:44px; }
+    .vstep .v{ min-width:56px; }
+    .bs-row{ gap:8px; padding-right:10px; }
+    .set-row{ gap:6px; padding:10px 6px 10px 12px; }
+    .set-name b{ margin-right:4px; }
+    .jm-sum > div{ padding:11px 8px 11px 10px; }
+    .jm-sum > div > span{ font-size:11.5px; }
+    .set-name{ font-size:14px; }
+  }
 </style>
 <!-- Umami (cloud.umami.is) — вторая аналитика, параллельно Метрике -->
 <script defer id="umamiScript" src="https://cloud.umami.is/script.js" data-website-id="a6b50b1f-5857-4b6e-b020-7d3cf0adf4bd"></script>
@@ -2538,7 +2564,7 @@ function renderRatioSettings(){
   if(!wrap) return;
   if(!wrap.querySelector('.gseg')){
     wrap.innerHTML = Object.keys(MODE_META).map(m=>
-      '<div class="ratio-set"><p class="nm">' + MODE_META[m].t + '<span class="gl-roll" data-rh="' + m + '"><span>' + ratioHint(m, ratioPref[m]) + '</span></span></p>' +
+      '<div class="ratio-set"><p class="nm"><b>' + MODE_META[m].t + '</b><span class="gl-roll" data-rh="' + m + '"><span>' + ratioHint(m, ratioPref[m]) + '</span></span></p>' +
       gsegHTML(RATIOS[m].map(r=> ({ id:r, label:'1:' + r })), ratioPref[m], it=> 'data-m="' + m + '" data-r="' + it.id + '" style="--accent:var(' + ACCENT[m] + ')"') +
       (m === 'cold' ? '<div class="gseg-ends"><span>концентрат</span><span>готов к питью</span></div>' : '') + '</div>').join('');
     wrap.querySelectorAll('.gseg').forEach(g=> gsegPaint(g, true));
@@ -2594,6 +2620,43 @@ document.getElementById('resRatio').addEventListener('click', e=>{
 
 /* ---- Выпадающее меню: режим и схема пролива ---- */
 const popMenu = document.getElementById('popMenu'), popScrim = document.getElementById('popScrim');
+/* Где поставить меню: под якорем, если влезает, иначе над ним. Верхняя граница — не край экрана,
+   а безопасная зона (статус-бар и плавающие кнопки Telegram в полноэкранном режиме). Если на низком
+   экране меню не влезает ни туда, ни туда — встаёт с той стороны, где места больше, и листается внутри. */
+let popProbe = null;
+function appSafeTop(){
+  if(!popProbe){
+    popProbe = document.createElement('div');
+    popProbe.setAttribute('aria-hidden', 'true');
+    popProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:var(--app-safe-top, 0px);visibility:hidden;pointer-events:none';
+    document.body.appendChild(popProbe);
+  }
+  return popProbe.offsetHeight;
+}
+function popMeasure(){
+  popMenu.classList.remove('scroll'); popMenu.style.maxHeight = '';
+  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
+  const mw = popMenu.offsetWidth, mh = popMenu.offsetHeight;
+  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
+  return { mw, mh };
+}
+function popPlace(r, mh, gap, reserve){
+  const floor = appSafeTop() + 8, ceil = window.innerHeight - reserve;
+  const below = ceil - (r.bottom + gap), above = (r.top - gap) - floor;
+  let down, top, h = 0;
+  if(mh <= below){ down = true; top = r.bottom + gap; }
+  else if(mh <= above){ down = false; top = r.top - gap - mh; }
+  else {
+    down = below > above;
+    h = Math.max(132, down ? below : above);
+    top = down ? r.bottom + gap : Math.max(floor, r.top - gap - h);
+  }
+  popMenu.style.top = Math.round(top) + 'px';
+  popMenu.style.maxHeight = h ? Math.round(h) + 'px' : '';
+  popMenu.classList.toggle('scroll', !!h);
+  if(h) popMenu.scrollTop = down ? 0 : popMenu.scrollHeight;   // ближние к якорю пункты — сразу на виду
+  return down;
+}
 const POP_TICK = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
 function openPopMenu(kind, anchor){
   if(brewPhase !== 'idle') return;
@@ -2609,14 +2672,11 @@ function openPopMenu(kind, anchor){
   popMenu.classList.toggle('right', right);
   popMenu.style.right = 'auto';
   // Меряем в покое (без scale), потом ставим в пределах экрана с полями 16 px
-  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
-  const mw = popMenu.offsetWidth, mh = popMenu.offsetHeight;
-  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
+  const { mw, mh } = popMeasure();
   const left = Math.max(16, Math.min(vw - 16 - mw, right ? r.right - mw : r.left));
   popMenu.style.left = Math.round(left) + 'px';
   // Не влезает вниз — раскрываем вверх от кнопки
-  const down = r.bottom + 8 + mh <= window.innerHeight - 90;
-  popMenu.style.top = Math.round(down ? r.bottom + 8 : Math.max(12, r.top - 8 - mh)) + 'px';
+  const down = popPlace(r, mh, 8, 90);
   popMenu.style.transformOrigin = (down ? 'top ' : 'bottom ') + (right ? 'right' : 'left');
   popScrim.classList.add('show');
   requestAnimationFrame(()=> popMenu.classList.add('show'));
@@ -5052,7 +5112,7 @@ function renderAccentPick(){
   const wrap = document.getElementById('accentPick'); if(!wrap) return;
   if(!wrap.firstChild){
     wrap.innerHTML = ACCENT_KEYS.map(k=> '<button type="button" class="acc-opt" role="radio" data-acc="' + k + '"><span class="sw" aria-hidden="true"></span><b>' +
-      ACCENTS[k].name + '</b><small>' + ACCENTS[k].note + '</small></button>').join('');
+      ACCENTS[k].name + '</b><small>' + ACCENTS[k].note.replace(' → ', ' →<br>') + '</small></button>').join('');
     wrap.addEventListener('click', e=>{
       const b = e.target.closest('.acc-opt'); if(!b || b.dataset.acc === accentKey) return;
       setAccent(b.dataset.acc, accentGrad);
@@ -5240,7 +5300,6 @@ async function journalDeleteEntry(id){
 }
 
 /* ---- Дневник: форматирование ---- */
-const MONTHS_RU = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
 /* Даты и время — через Intl.DateTimeFormat (ru-RU), а не ручную сборку */
 const DTF_TIME = new Intl.DateTimeFormat('ru-RU', { hour:'2-digit', minute:'2-digit' });
 const DTF_DAY_SHORT = new Intl.DateTimeFormat('ru-RU', { day:'numeric', month:'short' });
@@ -5363,7 +5422,7 @@ function journalRowHTML(e, prev){
       '<span class="jr-day' + (today ? ' today' : '') + (same ? ' same' : '') + '"><b>' + d.getDate() + '</b><span>' + JR_WD[d.getDay()] + '</span></span>' +
       '<span class="jr-mid"><div class="jr-name' + (beanName ? '' : ' none') + '">' + (beanName ? escapeHTML(beanName) : 'Без зерна') + '</div>' +
         '<div class="jr-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
-          fmt(e.coffee || 0) + '\u00a0г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + '\u00a0мл · 1:' + e.ratio + '</div></span>' +
+          fmt(e.coffee || 0) + '\u00a0г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + '\u00a0мл · 1:' + fmtRatio(e.ratio || 16).replace('.', ',') + '</div></span>' +
       '<span class="jr-r"><div class="jr-rate' + (rated ? '' : ' none') + '">' + (rated ? '<span class="st">★</span>' + e.rating : 'оценить') + '</div>' +
         '<div class="jr-time">' + journalTimeLabel(e.id) + '</div></span>' +
     '</button></div>';
@@ -5558,6 +5617,9 @@ function projectMomentum(v, rate){ rate = rate || 0.99; return (v / 1000) * rate
 function rubberband(over, dim, k){ k = k || 0.55; return (over * dim * k) / (dim + k * Math.abs(over)); }
 window.addEventListener('pointerup', jEndSwipe);
 window.addEventListener('pointercancel', jEndSwipe);
+/* Горизонтальный свайп строки — целиком наш. Без этого быстрый смахивающий жест браузер
+   досчитывает как инерцию «в никуда», и следующий тап (по «Удалить» в алерте) не даёт клика. */
+journalList.addEventListener('touchmove', (e)=>{ if(jSw && jSw.drag && e.cancelable) e.preventDefault(); }, { passive:false });
 
 journalList.addEventListener('click', (e)=>{
   const del = e.target.closest('[data-jdel]');
@@ -5929,7 +5991,10 @@ function renderEditSheet(){
   const star = '<svg aria-hidden="true" viewBox="0 0 24 24" width="42" height="42" fill="currentColor"><path d="M12 2.5l2.76 5.94 6.24.62-4.68 4.5 1.2 6.44L12 16.9l-5.52 3.1 1.2-6.44-4.68-4.5 6.24-.62z"/></svg>';
   const trash = '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
   const repeatIcon = '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>';
-  const water = jsWater(e);
+  // Как в строке журнала: нет пролива по шагам (заваривание остановили до первого шага, старые записи) —
+  // показываем записанный объём, а не «0 мл»
+  const water = jsWater(e) || e.water || 0;
+  const hasPours = (e.pours || []).length > 0;
   const noteLeft = NOTE_MAX - (e.note || '').length;
 
   document.getElementById('sheetJournal').innerHTML =
@@ -5940,7 +6005,7 @@ function renderEditSheet(){
         '<span class="c"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9l5 5 5-5"/></svg></span></button>' +
       (orphan ? '<div class="js-note-bean">' + (id != null ? 'зерно удалено' : 'не привязано к зерну') + '</div>' : '') +
       '<div class="js-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
-        (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + e.ratio + (e.ice ? ' · лёд ' + fmt(e.ice) + '\u00a0г' : '') + '</div>' +
+        (e.mode === 'v60ice' ? 'Iced V60' : 'V60') + ' · 1:' + fmtRatio(e.ratio || 16).replace('.', ',') + (e.ice ? ' · лёд ' + fmt(e.ice) + '\u00a0г' : '') + '</div>' +
     '</div>' +
     '<div class="js-rate" id="jsRate">' + [1,2,3,4,5].map(i=> '<button type="button" class="' + (i <= e.rating ? 'on' : '') + '" data-jstar="' + i + '" aria-label="' + i + ' из 5">' + star + '</button>').join('') + '</div>' +
     '<div class="js-rate-l gl-roll" id="jsRateL"><span>' + (e.rating ? JS_RATE_LABELS[e.rating] : 'Как получилось?') + '</span></div>' +
@@ -5961,9 +6026,11 @@ function renderEditSheet(){
         '<button type="button" data-jgrind="1" aria-label="Помол: больше">+</button></span></div>' +
     '</div>' +
 
+    // Без шагов пролива график был бы пустой рамкой со шкалой «0 · 1 · 1» — блок не показываем
+    (hasPours ?
     '<div class="bs-cap js-cap"><span>Пролив</span><button type="button" data-jpedit>' + (jsPoursEdit ? 'Готово' : 'Изменить') + '</button></div>' +
     '<div class="js-chart" id="jsChart">' + journalChartSVG(e) + '</div>' +
-    '<div class="bs-group js-pours" id="jsPours">' + jsPoursHTML(e) + '</div>' +
+    '<div class="bs-group js-pours" id="jsPours">' + jsPoursHTML(e) + '</div>' : '') +
 
     '<div class="bs-cap">Заметка</div>' +
     '<textarea class="js-note" data-jnote maxlength="' + NOTE_MAX + '" placeholder="Ощущения от чашки…" aria-label="Заметка"></textarea>' +
@@ -6998,12 +7065,9 @@ function beanMenuOpen(){
   popMenu.classList.add('bean-menu'); popMenu.classList.remove('right');
   const r = tile.getBoundingClientRect();
   popMenu.style.width = r.width + 'px'; popMenu.style.right = 'auto';
-  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
-  const mh = popMenu.offsetHeight;
-  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
-  const down = r.bottom + 8 + mh <= window.innerHeight - 90 || r.top - 8 - mh < 12;
+  const { mh } = popMeasure();
   popMenu.style.left = Math.round(r.left) + 'px';
-  popMenu.style.top = Math.round(down ? r.bottom + 8 : r.top - 8 - mh) + 'px';
+  const down = popPlace(r, mh, 8, 90);
   popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' center';
   popScrim.classList.add('show');
   tile.setAttribute('aria-expanded', 'true');
@@ -7030,17 +7094,35 @@ function beanMenuPick(k){
     const t = e.touches[0]; d = { x:t.clientX, y:t.clientY, scrub:false, moved:false };
     holdT = setTimeout(()=>{ if(!d) return; if(beanMenuOpen()){ d.scrub = true; haptics('soft'); } else d = null; }, 200);
   }, { passive:true });
+  // Меню, которое на низком экране листается внутри: палец у края — оно само едет, как в iOS
+  let edgeRaf = 0;
+  const edgeTick = ()=>{
+    edgeRaf = 0;
+    if(!d || !d.scrub || !popMenu.classList.contains('scroll')) return;
+    const r = popMenu.getBoundingClientRect(), Z = 22;   // уже середины строки — крайнюю строку можно выбрать, не листая
+    const v = d.ly < r.top + Z ? -Math.min(1.6, (r.top + Z - d.ly) / Z) : d.ly > r.bottom - Z ? Math.min(1.6, (d.ly - r.bottom + Z) / Z) : 0;
+    if(!v) return;
+    const before = popMenu.scrollTop;
+    popMenu.scrollTop += v * 9;
+    if(popMenu.scrollTop === before) return;
+    const n = document.elementFromPoint(Math.max(r.left + 1, Math.min(r.right - 1, d.lx)), Math.max(r.top + 1, Math.min(r.bottom - 1, d.ly)));
+    setHot(n && n.closest ? n.closest('#popMenu .mi') : null);
+    edgeRaf = requestAnimationFrame(edgeTick);
+  };
   tile.addEventListener('touchmove', e=>{
     if(!d) return;
     const t = e.touches[0];
     if(!d.scrub){ if(Math.hypot(t.clientX - d.x, t.clientY - d.y) > 8){ clearTimeout(holdT); d = null; } return; }
     if(e.cancelable) e.preventDefault();
     if(Math.hypot(t.clientX - d.x, t.clientY - d.y) > 6) d.moved = true;
+    d.lx = t.clientX; d.ly = t.clientY;
     const n = document.elementFromPoint(t.clientX, t.clientY);
     setHot(n && n.closest ? n.closest('#popMenu .mi') : null);
+    if(!edgeRaf) edgeRaf = requestAnimationFrame(edgeTick);
   }, { passive:false });
   tile.addEventListener('touchend', e=>{
     clearTimeout(holdT);
+    cancelAnimationFrame(edgeRaf); edgeRaf = 0;
     const dd = d; d = null;
     if(!dd || !dd.scrub) return;
     if(e.cancelable) e.preventDefault();   // без досланного клика
@@ -7048,7 +7130,7 @@ function beanMenuPick(k){
     if(b && dd.moved) setTimeout(()=> b.click(), 80);   // короткая вспышка подсветки
     else if(dd.moved) closePopMenu();
   });
-  tile.addEventListener('touchcancel', ()=>{ clearTimeout(holdT); d = null; setHot(null); });
+  tile.addEventListener('touchcancel', ()=>{ clearTimeout(holdT); cancelAnimationFrame(edgeRaf); edgeRaf = 0; d = null; setHot(null); });
   tile.addEventListener('click', ()=>{ if(beanMenuOn) closePopMenu(); else beanMenuOpen(); });
   tile.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); beanMenuOpen(); } });
 })();
@@ -8087,12 +8169,9 @@ function ctxOpen(kind, id, el){
   // меню — то же, что у режима; под карточкой, а если не влезает над доком — над ней
   popMenu.innerHTML = html;
   popMenu.classList.remove('bean-menu', 'right'); popMenu.classList.add('ctx-menu'); popMenu.style.width = '';
-  popMenu.style.transition = 'none'; popMenu.style.visibility = 'hidden'; popMenu.classList.add('show');
-  const mw = popMenu.offsetWidth, mh = popMenu.offsetHeight;
-  popMenu.classList.remove('show'); popMenu.style.visibility = ''; void popMenu.offsetWidth; popMenu.style.transition = '';
-  const down = r.bottom + 14 + mh <= window.innerHeight - 96 || r.top - 14 - mh < 12;
+  const { mw, mh } = popMeasure();
   popMenu.style.left = Math.round(Math.max(16, Math.min(window.innerWidth - 16 - mw, r.left + 6))) + 'px';
-  popMenu.style.top = Math.round(down ? r.bottom + 14 : r.top - 14 - mh) + 'px';
+  const down = popPlace(r, mh, 14, 96);
   popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' left';
   requestAnimationFrame(()=> popMenu.classList.add('show'));
   return true;
