@@ -1922,7 +1922,7 @@
   </div>
 
 
-  <audio id="brewMusic" preload="none" src="brew.mp3"></audio>
+  <audio id="brewMusic" preload="none"></audio>
 
   <div class="fold"><div>
   <div class="tip" id="notes">
@@ -4280,7 +4280,8 @@ const musicMuteBtn = document.getElementById('musicMuteBtn');
 let musicMuted = localStorage.getItem('musicMuted') === '1';
 
 function applyMusicMuteState(){
-  brewMusic.muted = musicMuted;
+  // На отсчёте элемент «прогревается» беззвучно — мьют снимается только в startBrewMusic
+  brewMusic.muted = musicMuted || brewPhase === 'counting';
   musicMuteBtn.classList.toggle('muted', musicMuted);
   musicMuteBtn.setAttribute('aria-pressed', String(musicMuted));
   musicMuteBtn.setAttribute('aria-label', musicMuted ? 'Включить музыку' : 'Выключить музыку');
@@ -4291,6 +4292,79 @@ musicMuteBtn.onclick = ()=>{
   applyMusicMuteState();
 };
 applyMusicMuteState();
+
+/* Плейлист: записи из общественного достояния (Musopen). Файлы выровнены по громкости
+   (~−22 LUFS), mp3 96 кбит/с моно. Каждое заваривание — случайный трек, но не тот,
+   что играл в прошлый раз; если брю длиннее трека — следом случайный другой. */
+const MUSIC_TRACKS = [
+  'music/chopin-nocturne-op9-2.mp3',   // Шопен — Ноктюрн ми-бемоль мажор, op. 9 №2 · Frank Levy
+  'music/chopin-nocturne-op9-1.mp3',   // Шопен — Ноктюрн си-бемоль минор, op. 9 №1
+  'music/beethoven-moonlight-1.mp3',   // Бетховен — «Лунная соната», I. Adagio sostenuto · Paul Pitman
+  'music/vivaldi-spring.mp3',          // Вивальди — «Весна», op. 8 №1
+  'music/track-2bcc.mp3',
+  'music/track-9f2c.mp3'
+];
+const MUSIC_FADE_MS = 900;
+let musicFadeRAF = 0;
+/* iOS не даёт менять громкость <audio> из JS (volume всегда 1) — там затухания нет,
+   музыка останавливается сразу, как раньше. Проверяем один раз на пустом элементе. */
+const musicCanFade = (()=>{ try{ const a = new Audio(); a.volume = 0.5; return Math.abs(a.volume - 0.5) < 0.01; }catch(e){ return false; } })();
+
+function pickMusicTrack(){
+  let last = null;
+  try{ last = localStorage.getItem('musicLast'); }catch(e){}
+  const pool = MUSIC_TRACKS.filter(t => t !== last);
+  const t = (pool.length ? pool : MUSIC_TRACKS)[Math.floor(Math.random() * (pool.length || MUSIC_TRACKS.length))];
+  try{ localStorage.setItem('musicLast', t); }catch(e){}
+  return t;
+}
+function cancelMusicFade(){
+  if(musicFadeRAF) cancelAnimationFrame(musicFadeRAF);
+  musicFadeRAF = 0;
+  try{ brewMusic.volume = 1; }catch(e){}
+}
+/* Нажатие «Начать» — жест пользователя: выбираем трек и «разблокируем» элемент
+   беззвучным play/pause. Сам старт музыки — после отсчёта, уже без жеста,
+   и без этого Telegram на iOS мог бы его не пропустить. Заодно трек успевает подгрузиться. */
+function prepareBrewMusic(){
+  cancelMusicFade();
+  brewMusic.src = pickMusicTrack();
+  brewMusic.muted = true;
+  try{
+    const p = brewMusic.play();
+    if(p && p.then) p.then(()=>{ if(brewPhase !== 'running'){ brewMusic.pause(); try{ brewMusic.currentTime = 0; }catch(e){} } }).catch(()=>{});
+  }catch(e){}
+}
+function startBrewMusic(){
+  cancelMusicFade();
+  if(!brewMusic.getAttribute('src')) brewMusic.src = pickMusicTrack();
+  try{ brewMusic.currentTime = 0; }catch(e){}
+  brewMusic.muted = musicMuted;
+  try{ const p = brewMusic.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+}
+/* fade=true — мягкое затухание (конец и ручная остановка брю), иначе сразу. */
+function stopBrewMusic(fade){
+  cancelMusicFade();
+  const halt = ()=>{
+    musicFadeRAF = 0;
+    brewMusic.pause();
+    try{ brewMusic.currentTime = 0; }catch(e){}
+    try{ brewMusic.volume = 1; }catch(e){}
+  };
+  if(!fade || !musicCanFade || brewMusic.paused || brewMusic.muted){ halt(); return; }
+  const t0 = performance.now();
+  const step = (now)=>{
+    const k = Math.min(1, (now - t0) / MUSIC_FADE_MS);
+    try{ brewMusic.volume = Math.max(0, (1 - k) * (1 - k)); }catch(e){}
+    if(k < 1) musicFadeRAF = requestAnimationFrame(step); else halt();
+  };
+  musicFadeRAF = requestAnimationFrame(step);
+}
+brewMusic.addEventListener('ended', ()=>{
+  if(brewPhase !== 'running') return;
+  brewMusic.src = pickMusicTrack();
+  startBrewMusic();
+});
 
 function lockControls(locked){
   document.getElementById('modeBtn').disabled = locked;
@@ -4704,6 +4778,7 @@ function beginCountdown(){
   setDockBrewing(true);
   lockControls(true);
   requestWakeLock();
+  prepareBrewMusic();
   tickCountdown();
 }
 
@@ -4758,11 +4833,7 @@ function launchBrew(){
   settleCardHeight(()=>{ tf.note.hidden = true; });
   stageAlert();
   if(brewCanAnimate()) brewLaunchAnim();
-  try{
-    brewMusic.currentTime = 0;
-    brewMusic.muted = musicMuted;
-    brewMusic.play().catch(()=>{});
-  }catch(e){}
+  startBrewMusic();
   tickBrew();
 }
 
@@ -5051,8 +5122,7 @@ function finishBrew(stopped){
   brewPhase = 'done';
   brewing = false;
   releaseWakeLock();
-  brewMusic.pause();
-  try{ brewMusic.currentTime = 0; }catch(e){}
+  stopBrewMusic(true);
   const rows = state.schedule || [];
   const elapsed = Math.max(0, brewElapsed());
   const end = rows.length ? rows[rows.length-1].time : 0;
@@ -5146,8 +5216,7 @@ function closeBrew(silent){
   brewPhase = 'idle';
   brewing = false;
   releaseWakeLock();
-  brewMusic.pause();
-  try{ brewMusic.currentTime = 0; }catch(e){}
+  stopBrewMusic(false);
   setDockBrewing(false);
   if(!silent) showBrewCard(false);
   else { clearTimeout(showBrewCard.t); document.body.classList.remove('brew-card', 'brew-fading'); swapFaces(false); }
