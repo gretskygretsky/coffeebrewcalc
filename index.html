@@ -33,7 +33,7 @@
        на них завязаны режимы и разделы. */
     --acc: #E0245A;
     --g1: #F0285A;
-    --g2: #FF7A45;
+    --g2: #EE5A2C;
     --on-acc: #FFFFFF;
     --on-grad: #FFFFFF;
     --grad: linear-gradient(120deg, var(--g1), var(--g2));
@@ -81,8 +81,8 @@
       --card-shadow: 0 24px 48px -24px rgba(0,0,0,0.8);
       --warn: #FF9F0A;
       --acc: #FF5C85;
-      --g1: #FF4D7A;
-      --g2: #FF8A5C;
+      --g1: #F0285A;
+      --g2: #EE5A2C;
       --seg-thumb: #636366;
       --seg-thumb-text: #FFFFFF;
       --pill-text: #FFFFFF;
@@ -150,14 +150,6 @@
   }
   .screen{ width:100%; max-width:420px; height:100%; display:flex; flex-direction:column; min-height:0; }
 
-  .eyebrow{
-    font-size:13px;
-    font-weight:600;
-    color: var(--accent, var(--orange));
-    text-transform:uppercase;
-    letter-spacing:.02em;
-    margin:0 0 2px 4px;
-  }
   h1, .bs-title, .sheet-title, .alert-title{ text-wrap:balance; }
   h1{
     font-family:var(--display);
@@ -1244,7 +1236,6 @@
   .size.on .rail-on{ stroke:var(--accent, var(--orange)); }
   .size:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
   .custom-row{ transition:opacity .2s var(--ease-out), transform .24s var(--ease-out); }
-  .set-art .liquid{ transform:none; }
 
   /* Подсказка про лёд — тонирована в цвет режима: это шаг подготовки, а не справка */
   .tip.ice{ margin:0 0 12px; color:var(--label); background:color-mix(in srgb, var(--accent, var(--teal)) 14%, transparent); }
@@ -1254,7 +1245,8 @@
   .set-row{ display:flex; align-items:center; gap:12px; padding:10px 12px 10px 16px; min-height:58px; border-bottom:0.5px solid var(--separator); }
   .set-row:last-child{ border-bottom:none; }
   .set-art{ width:30px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-  .set-art .liquid{ opacity:0; } /* в настройках — только контур, заливка значит «выбрано» на Кофе */
+  /* В настройках заливка показывает объём порции: 100 мл — на донышке, 600 мл — до края; едет на ± */
+  .set-art .liquid{ transition:transform .42s var(--gl-spring, cubic-bezier(.34,1.56,.55,1)); }
   .set-name{ flex:1; min-width:0; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .set-name b{ font-weight:700; margin-right:6px; }
   .vstep{ display:flex; align-items:center; flex-shrink:0; background:var(--fill); border-radius:999px; height:36px; padding:0 2px; }
@@ -1333,14 +1325,15 @@
   /* На время брю зерно, подсказки и заголовок «Кофе» складываются — шаги встают под таймер */
   .fold{ transition:opacity .12s var(--ease-out); }  body.brew-fading .fold{ opacity:0; pointer-events:none; }
   body.brew-card .fold{ display:none; }
-  body.brew-card #eyebrow{ margin-bottom:10px; }
+  /* Заголовок сложился — у карточки таймера остаётся воздух сверху, как был у надписи */
+  body.brew-card #recipeCard{ margin-top:12px; }
   body.brew-card .pour-cap #schemeBtn{ display:none; }
   /* Кнопка графика в брю не раздувает строку заголовка — таблица шагов остаётся над капсулой */
   body.brew-card .pour-cap .chart-tg{ margin:-8px 0; }
   body.brew-card .pour-cap{ margin-top:16px; }
   /* Невысокие экраны: таймер компактнее, чтобы все шаги помещались над капсулой */
   @media (max-height: 760px){
-    body.brew-card #eyebrow{ margin-bottom:6px; }
+    body.brew-card #recipeCard{ margin-top:6px; }
     body.brew-card .timer-face{ padding:14px; }
     body.brew-card .tf-grid{ grid-template-columns:minmax(0,1fr) 84px; row-gap:8px; margin-top:10px; }
     body.brew-card .tf-ring{ width:84px; height:84px; }
@@ -1448,7 +1441,7 @@
   .res-nums.pick .drv{ opacity:1; }
   .res-nums.pick b{ position:relative; z-index:1; cursor:pointer; padding:4px 6px; margin:-4px -6px; border-radius:12px; }
   .res-nums.pick b:focus-visible{ outline:2px solid var(--blue); outline-offset:0; }
-  .res-nums.pick b.on::after{ content:""; position:absolute; left:6px; right:6px; bottom:-3px; height:2.5px; border-radius:2px; background:var(--accent, var(--orange)); }
+  .res-nums.pick b.on::after{ content:""; position:absolute; left:var(--ul-l, 6px); right:var(--ul-r, 6px); bottom:-3px; height:2.5px; border-radius:2px; background:var(--accent, var(--orange)); }
   .cup-hint{ font-size:12px; color:var(--label-3); margin-top:8px; }
   /* Точный ввод: второй тап по ведущему числу — печатаешь прямо в нём (весы показали 18,4 г) */
   .res-nums b .cup-ed{ font:inherit; letter-spacing:inherit; color:inherit; background:none; border:none; padding:0; margin:0; outline:none; width:3ch;
@@ -1691,6 +1684,8 @@
   .pop-menu .mi .t b, .pop-menu .mi .t span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pop-menu .mi .ic .bc-ring svg{ width:22px; height:22px; }
   .pop-menu .mi-sep{ height:.5px; background:var(--separator); margin:5px 12px; }
+  .pop-menu .mi-cap{ font-size:12.5px; color:var(--label-2); padding:8px 12px 4px 40px; line-height:1.35; }
+  .pop-menu .mi.arch{ opacity:.55; }
   #calcBeanCard{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 
   /* ---------- Долгое нажатие: подъём карточки над размытием ---------- */
@@ -1713,6 +1708,9 @@
   /* @@glass-css-end */
 
   /* ================= Полировка ================= */
+  /* Интерфейс — не текст: двойной тап по числу или подписи не выделяет его; печатать и выделять — только в полях */
+  body{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  input, textarea{ -webkit-user-select:text; user-select:text; }
   /* Выделение текста и каретка — в акцент, а не системный синий */
   ::selection{ background:color-mix(in srgb, var(--acc) 26%, transparent); }
   input, textarea{ caret-color:var(--acc); }
@@ -1771,7 +1769,6 @@
   <div class="pages-viewport">
     <div class="pages" id="navPages">
       <div class="page" id="pageBeans">
-        <p class="eyebrow" style="color:var(--blue);">Зерна</p>
         <h1>Мои зерна</h1>
 
         <div id="beansListWrap" style="display:none;">
@@ -1787,7 +1784,6 @@
       </div>
 
       <div class="page" id="pageCalc">
-  <p class="eyebrow" id="eyebrow">Калькулятор</p>
   <div class="fold"><div><h1>Кофе</h1></div></div>
 
   <!-- Карточка рецепта: режим → объём → итог. Пропорция по умолчанию — в «Еще»,
@@ -1929,7 +1925,6 @@
       </div>
 
       <div class="page" id="pageJournal">
-        <p class="eyebrow" style="color:var(--blue);">Журнал</p>
         <h1>История</h1>
         <div id="journalListCard" style="margin-bottom:8px; display:none;">
           <div id="journalList"></div>
@@ -1942,7 +1937,6 @@
 
 
       <div class="page" id="pageMore">
-        <p class="eyebrow" style="color:var(--blue);">Приложение</p>
         <h1>Настройки</h1>
         <p class="section-header">Оформление</p>
         <div class="card">
@@ -2139,7 +2133,6 @@ const ACCENT = { v60:'--orange', v60ice:'--teal', cold:'--brown' };
 const DEFAULT_RATIO = { v60:16, v60ice:16, cold:5 };
 const MAX_SCALE = { v60:500, v60ice:600, cold:1200 };
 const MAX_COFFEE = { v60:30, v60ice:30 };
-const EYEBROW = { v60:'Калькулятор', v60ice:'Калькулятор · лёд', cold:'Долгий настой' };
 /* Пропорция по умолчанию — своя для каждого режима, правится в «Еще».
    На Калькуляторе state.ratio — фактическая: «мягче / крепче» её сдвигают, ↺ возвращает. */
 const ratioPref = Object.assign({}, DEFAULT_RATIO);
@@ -2689,11 +2682,13 @@ function closePopMenu(){
 }
 popScrim.addEventListener('click', closePopMenu);
 popScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
-document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closePopMenu(); });
+// Esc при открытом меню закрывает только меню (меню бывает и поверх шторки)
+document.addEventListener('keydown', e=>{ if(e.key !== 'Escape') return; if(popMenu.classList.contains('show')) e.stopImmediatePropagation(); closePopMenu(); });
 popMenu.addEventListener('click', e=>{
   const b = e.target.closest('.mi'); if(!b) return;
   const kind = b.dataset.kind, k = b.dataset.k;
   if(kind === 'bean'){ beanMenuPick(k); return; }
+  if(kind === 'jbean'){ entryBeanPick(k); return; }
   if(kind === 'ctx'){ ctxPick(k); return; }
   if(k !== (kind === 'mode' ? state.mode : state.recipe)) haptics('selection');
   closePopMenu();
@@ -2729,8 +2724,6 @@ function setMode(mode, animate){
   // V60 и Iced V60 считаются от порции: объём чашки фиксирован, граммы — производные
   state.value = isBrewMode(mode) ? cupWater() : coldWater;
   document.getElementById('modeLabel').textContent = MODE_META[mode].t;
-  document.getElementById('eyebrow').textContent = EYEBROW[mode];
-  document.getElementById('eyebrow').style.setProperty('--accent', accentVar(mode));
   document.getElementById('pageCalc').style.setProperty('--accent', accentVar(mode));
   document.getElementById('classicInput').style.display = isBrewMode(mode) ? 'none' : 'block';
   document.getElementById('cupInput').style.display = isBrewMode(mode) ? 'block' : 'none';
@@ -3485,10 +3478,47 @@ function syncPickUI(keepLabel){
   document.getElementById('cupHint').hidden = !(on && !cupUnitHintSeen);
   placeDrv(false);
 }
+/* Подложка и подчёркивание ведомого числа — по видимым цифрам, а не по коробке текста: у «1» широкий
+   левый отступ в моноширинных цифрах, а трекинг −0,05em съедает место справа, поэтому по коробке поля
+   выходили неровными. Отступы глифов меряем канвасом в том же шрифте. */
+let drvCtx = null, drvProbe = null;
+function drvInsets(b){
+  const cs = getComputedStyle(b), pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
+  const inp = b.querySelector('.cup-ed');
+  const txt = (inp ? inp.value : (b._t != null ? b._t : b.textContent)) || '0';
+  if(!drvCtx){ try{ drvCtx = document.createElement('canvas').getContext('2d'); }catch(e){} }
+  if(!drvCtx || !document.createRange) return { l:pl, r:pr };
+  // Ячейки символов — из DOM (моноширинные цифры, трекинг), сами глифы — из канваса: в ячейке глиф по центру
+  if(!drvProbe){
+    drvProbe = document.createElement('span'); drvProbe.setAttribute('aria-hidden', 'true');
+    drvProbe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;white-space:pre';
+    document.body.appendChild(drvProbe);
+  }
+  const ps = drvProbe.style;
+  ps.fontFamily = cs.fontFamily; ps.fontSize = cs.fontSize; ps.fontWeight = cs.fontWeight;
+  ps.letterSpacing = cs.letterSpacing; ps.fontVariantNumeric = cs.fontVariantNumeric;
+  drvProbe.textContent = txt;
+  const tn = drvProbe.firstChild, n = txt.length, rg = document.createRange(), base = drvProbe.getBoundingClientRect();
+  rg.setStart(tn, 0); rg.setEnd(tn, 1); const c0 = rg.getBoundingClientRect();
+  rg.setStart(tn, n - 1); rg.setEnd(tn, n); const c1 = rg.getBoundingClientRect();
+  drvCtx.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+  if('letterSpacing' in drvCtx) drvCtx.letterSpacing = '0px';
+  const ls = parseFloat(cs.letterSpacing) || 0, m0 = drvCtx.measureText(txt[0]), m1 = drvCtx.measureText(txt[n - 1]);
+  const inkL = (c0.left - base.left) + ((c0.width - ls) - m0.width) / 2 - m0.actualBoundingBoxLeft;
+  const inkR = (c1.left - base.left) + ((c1.width - ls) - m1.width) / 2 + m1.actualBoundingBoxRight;
+  // ширина текста: в поле ввода — живая; в числе — по итоговому тексту (пока бегут цифры, коробка ещё тянется)
+  const content = inp ? b.offsetWidth - pl - pr : base.width;
+  return { l: pl + Math.max(0, inkL), r: pr + Math.max(0, content - inkR) };
+}
+function drvBox(b){
+  const PAD = 9, ins = drvInsets(b);
+  b.style.setProperty('--ul-l', Math.round(ins.l) + 'px'); b.style.setProperty('--ul-r', Math.round(ins.r) + 'px');
+  return { x: b.offsetLeft + ins.l - PAD, y: b.offsetTop, w: Math.max(24, b.offsetWidth - ins.l - ins.r + PAD * 2), h: b.offsetHeight };
+}
 function placeDrv(animate){
   const d = document.getElementById('cupDrv'), b = cupDrivenEl();
   if(!d || !b || !b.offsetWidth) return;
-  const x = b.offsetLeft, y = b.offsetTop, w = b.offsetWidth, h = b.offsetHeight;
+  const { x, y, w, h } = drvBox(b);
   const cs = getComputedStyle(d), fx = (window.DOMMatrix && cs.transform !== 'none') ? new DOMMatrix(cs.transform).m41 : x, fw = parseFloat(cs.width) || w;
   moCancel(d, 'drv');
   d.style.transform = 'translate(' + x + 'px,' + y + 'px)'; d.style.width = w + 'px'; d.style.height = h + 'px';
@@ -3550,7 +3580,18 @@ function cupApplyWater(w){
   volSlider.value = w; volSlider._detent = null; updateSliderFill();
   compute();
 }
-function cupEdFit(){ const i = cupEdit.inp; i.style.width = Math.max(1, i.value.length) + 0.4 + 'ch'; placeDrv(false); }
+function cupEdFit(){
+  // Поле — ровно по набранному тексту (в тех же моноширинных цифрах и трекинге) плюс место под каретку
+  const i = cupEdit.inp, cs = getComputedStyle(i);
+  if(!drvProbe){ drvProbe = document.createElement('span'); drvProbe.setAttribute('aria-hidden', 'true');
+    drvProbe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;white-space:pre'; document.body.appendChild(drvProbe); }
+  const ps = drvProbe.style;
+  ps.fontFamily = cs.fontFamily; ps.fontSize = cs.fontSize; ps.fontWeight = cs.fontWeight;
+  ps.letterSpacing = cs.letterSpacing; ps.fontVariantNumeric = cs.fontVariantNumeric;
+  drvProbe.textContent = i.value || '0';
+  i.style.width = Math.ceil(drvProbe.getBoundingClientRect().width + 3) + 'px';
+  placeDrv(false);
+}
 function cupStartEdit(b){
   const g = b.id === 'resCoffee', inp = document.createElement('input');
   inp.className = 'cup-ed'; inp.type = 'text'; inp.autocomplete = 'off';
@@ -3564,7 +3605,22 @@ function cupStartEdit(b){
   document.getElementById('cupDone').tabIndex = 0;
   cupEdFit();
   // фокус — синхронно в тапе: иначе iOS не поднимет клавиатуру
-  inp.focus(); inp.select();
+  // Без системного выделения (некрасивая заливка поверх цифр): каретка в конце, а первая набранная
+  // цифра заменяет число целиком — как будто оно было выделено. Тап внутрь поля — обычная правка.
+  inp.focus();
+  try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){}
+  inp._fresh = true;
+  inp.addEventListener('pointerdown', ()=>{ inp._fresh = false; });
+  inp.addEventListener('beforeinput', e=>{
+    if(!inp._fresh) return;
+    inp._fresh = false;
+    if(e.inputType === 'insertText' && e.data != null){
+      e.preventDefault();
+      inp.value = e.data;
+      try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(err){}
+      cupEdInput();
+    }
+  });
   inp.addEventListener('input', cupEdInput);
   inp.addEventListener('keydown', e=>{
     if(e.key === 'Enter'){ e.preventDefault(); cupEndEdit(true); }
@@ -3668,6 +3724,7 @@ function fitResNums(cTxt, wTxt){
 }
 addEventListener('resize', ()=>{ rnFitKey = ''; fitResNums(document.getElementById('resCoffee')._t, document.getElementById('resWater')._t); });
 try{ document.fonts && document.fonts.ready.then(()=>{ rnFitKey = ''; fitResNums(document.getElementById('resCoffee')._t, document.getElementById('resWater')._t); }); }catch(e){}
+try{ document.fonts && document.fonts.ready.then(()=> placeDrv(false)); }catch(e){}
 
 function renderResult(coffee, water){
   const an = moReduce() ? null : calcAnim; calcAnim = null;
@@ -4017,13 +4074,15 @@ const PALETTE = {
 /* Акцент — часть той же палитры: светлая и тёмная версия у каждого цвета своя (у Мёда в светлой теме
    текстовый оттенок темнее заливки, иначе жёлтый текст не читается). acc — текст и сплошные заливки,
    g1→g2 — градиент для главного (кнопка старта, кольцо, «налить до»), on — цвет поверх них. */
+/* Концы градиентов под белым текстом подобраны на контраст ≥3,3:1 (кнопки «Оценить», старт); в тёмной
+   теме заливка та же, что в светлой: светлые варианты давали ~2,3:1. */
 const ACCENTS = {
   raspberry:{ name:'Малина', note:'ягоды → цитрус',
-    light:{ acc:'#E0245A', g1:'#F0285A', g2:'#FF7A45', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
-    dark: { acc:'#FF5C85', g1:'#FF4D7A', g2:'#FF8A5C', onAcc:'#FFFFFF', onGrad:'#FFFFFF' } },
+    light:{ acc:'#E0245A', g1:'#F0285A', g2:'#EE5A2C', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
+    dark: { acc:'#FF5C85', g1:'#F0285A', g2:'#EE5A2C', onAcc:'#FFFFFF', onGrad:'#FFFFFF' } },
   ice:{ name:'Лёд', note:'синий → бирюза',
-    light:{ acc:'#1A62F0', g1:'#1F6BFF', g2:'#16B4E3', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
-    dark: { acc:'#5C97FF', g1:'#4C8DFF', g2:'#22C6EE', onAcc:'#FFFFFF', onGrad:'#FFFFFF' } },
+    light:{ acc:'#1A62F0', g1:'#1F6BFF', g2:'#1597CC', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
+    dark: { acc:'#5C97FF', g1:'#2E74FF', g2:'#1597CC', onAcc:'#FFFFFF', onGrad:'#FFFFFF' } },
   honey:{ name:'Мёд', note:'солнце → янтарь',
     light:{ acc:'#A87200', g1:'#FFC21A', g2:'#FF8A00', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#FFC83A', g1:'#FFCB3D', g2:'#FF9A1F', onAcc:'#1A1200', onGrad:'#1A1200' } }
@@ -5138,6 +5197,12 @@ function setAccent(k, grad){
   applyPalette(themeDark);   // тот же атомарный путь, что и смена темы
 }
 
+/* Уровень жидкости в кольце: 100 мл — у донышка, 600 мл — под самый край (кольцо в viewBox от y≈3 до y≈39) */
+function setArtLevel(row, ml){
+  const liq = row && row.querySelector('.liquid'); if(!liq) return;
+  const f = 0.1 + 0.9 * Math.max(0, Math.min(1, (ml - CUP_MIN) / (CUP_MAX - CUP_MIN)));
+  liq.style.transform = 'translateY(' + (23 - 35 * f).toFixed(2) + 'px)';
+}
 function renderSizeSettings(){
   const wrap = document.getElementById('sizeSettings');
   wrap.innerHTML = CUP_KEYS.map(k=>
@@ -5150,6 +5215,7 @@ function renderSizeSettings(){
         '<button type="button" data-k="'+k+'" data-d="10" aria-label="'+CUP_NAMES[k]+': больше">+</button>' +
       '</div>' +
     '</div>').join('');
+  wrap.querySelectorAll('.set-row').forEach((row, i)=> setArtLevel(row, cup.sizes[CUP_KEYS[i]]));
   wrap.querySelectorAll('button[data-k]').forEach(b=> b.addEventListener('click', ()=>{
     const k = b.dataset.k;
     const next = Math.max(CUP_MIN, Math.min(CUP_MAX, cup.sizes[k] + Number(b.dataset.d)));
@@ -5158,6 +5224,7 @@ function renderSizeSettings(){
     cup.sizes[k] = next;
     saveCupPrefs();
     wrap.querySelector('[data-v="'+k+'"]').textContent = next + '\u00a0мл';
+    setArtLevel(b.closest('.set-row'), next);
     track('cup_sizes_edited', { cup_size: k, cup_ml: next });
     if(cup.size === k && isBrewMode() && brewPhase === 'idle'){ state.inputType = 'water'; state.value = next; }
     compute();
@@ -5733,7 +5800,7 @@ sheetGrindInput.addEventListener('input', ()=> setSheetGrind(parseInt(sheetGrind
 
 sheetBeanPickBtn.addEventListener('click', ()=>{
   if(sheetMode !== 'edit') return;
-  openEntryBeanPick();
+  openEntryBeanMenu(sheetBeanPickBtn);
 });
 
 sheetNoteInput.addEventListener('input', ()=>{
@@ -6108,7 +6175,8 @@ function repeatEntryRecipe(e){
       navHapticTick();
       return;
     }
-    if(ev.target.closest('[data-jbean]')){ openEntryBeanPick(); return; }
+    const jb = ev.target.closest('[data-jbean]');
+    if(jb){ if(popMenu.classList.contains('show')) closePopMenu(); else openEntryBeanMenu(jb); return; }
     if(ev.target.closest('[data-jpedit]')){
       jsPoursEdit = !jsPoursEdit;
       ev.target.closest('[data-jpedit]').textContent = jsPoursEdit ? 'Готово' : 'Изменить';
@@ -6147,46 +6215,49 @@ function updateSheetBeanPick(){
   sheetBeanPickNote.textContent = id != null ? 'зерно удалено' : 'не привязано';
 }
 
-/* Пикер зерна для записи: текущие зёрна + приглушённая группа «Архив» —
-   чтобы исправить запись задним числом на уже закончившееся зерно. */
-function openEntryBeanPick(){
-  sheetMode = 'entry-bean-pick';
-  document.getElementById('sheetPills').style.display = 'none';
-  sheetTabSeg.style.display = 'none';
-  sheetTabRate.style.display = 'none';
-  sheetTabRecipe.style.display = 'none';
-  sheetFieldsEl.style.display = 'none';
-  sheetTitleEl.textContent = 'Зерно для заваривания';
+/* Зерно для записи — то же стеклянное меню, что у плитки зерна на Кофе: текущие зёрна, ниже приглушённый
+   «Архив» (исправить запись задним числом на закончившееся зерно). Сверху — что будет с граммами. */
+function openEntryBeanMenu(anchor){
+  const selId = normId(sheetEntry.beanId);
   const stored = journalEntries.find(e=> e.id === sheetEntry.id);
   const storedId = stored ? normId(stored.beanId) : null;
   const hadBean = storedId != null && beans.some(b=> b.id === storedId);
   const g = fmt(sheetEntry.coffee || 0) + '\u00a0г';
-  sheetSubtitleEl.textContent = !beans.length
-    ? 'Сначала добавь зерно на странице «Зерна»'
+  const cap = !beans.length ? 'Сначала добавь зерно на вкладке «Зерна»'
     : (hadBean ? g + ' вернутся прежнему зерну и спишутся с выбранного' : g + ' спишутся с выбранного зерна');
-
-  const selId = normId(sheetEntry.beanId);
-  const current = sortCurrentBeans(beans.filter(b=> !b.archived), null);
-  const archived = beans.filter(b=> b.archived).sort((a,b)=> b.id - a.id);
-  const listEl = document.getElementById('sheetBeanPickList');
-  listEl.style.display = 'block';
-  listEl.innerHTML =
-    current.map(b=> beanPickCardHTML(b, selId, false)).join('') +
-    (archived.length ? '<div class="pick-group-label">Архив</div>' + archived.map(b=> beanPickCardHTML(b, selId, true)).join('') : '');
-  listEl.querySelectorAll('.bean-pick-card').forEach(card=>{
-    card.addEventListener('click', ()=>{
-      const b = beans.find(x=> x.id === Number(card.dataset.id));
-      if(!b) return;
-      sheetEntry.beanId = b.id;
-      sheetEntry.bean = b.name || '';
-      navHapticTick();
-      renderEditSheet('rate');
-    });
-  });
-
-  sheetPrimaryBtn.textContent = 'Готово';
-  sheetGhostBtn.style.display = 'none';
-  showSheet();
+  const current = sortCurrentBeans(beans.filter(b=> !b.archived), selId);
+  const archived = beans.filter(b=> b.archived).sort((a, b)=> b.id - a.id);
+  const row = (b, arch)=>{
+    const n = beanNumbers(b), on = b.id === selId;
+    const sub = (n.finished || n.remain <= 0) ? '<span class="warn">' + Math.round(n.remain) + '\u00a0г · закончилось</span>' : n.low ? '<span class="warn">' + Math.round(n.remain) + '\u00a0г · скоро закончится</span>' : (b.roaster ? escapeHTML(b.roaster) + ' · ' : '') + Math.round(n.remain) + '\u00a0г';
+    return '<button class="mi' + (arch ? ' arch' : '') + '" type="button" role="menuitemradio" aria-checked="' + on + '" data-kind="jbean" data-k="' + b.id + '">' +
+      '<span class="ck">' + (on ? BEAN_MENU_TICK : '') + '</span><span class="t"><b>' + escapeHTML(b.name || 'Без названия') + '</b><span>' + sub + '</span></span>' +
+      '<span class="ic">' + beanRingSVG(n.pct, n.low, n.finished, 22, 3) + '</span></button>';
+  };
+  popMenu.innerHTML = '<div class="mi-cap">' + cap + '</div>' +
+    current.map(b=> row(b, false)).join('') +
+    (archived.length ? '<div class="mi-sep" role="separator"></div><div class="mi-cap">Архив</div>' + archived.map(b=> row(b, true)).join('') : '');
+  popMenu.classList.remove('bean-menu', 'right', 'ctx-menu');
+  const r = anchor.getBoundingClientRect(), vw = window.innerWidth;
+  popMenu.style.width = Math.min(340, vw - 32) + 'px'; popMenu.style.right = 'auto';
+  const { mw, mh } = popMeasure();
+  popMenu.style.left = Math.round(Math.max(16, Math.min(vw - 16 - mw, r.left - 6))) + 'px';
+  // Под шторкой таб-бара не видно — меню можно опускать до самого низа экрана
+  const down = popPlace(r, mh, 8, 24);
+  popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' left';
+  anchor.setAttribute('aria-expanded', 'true');
+  popScrim.classList.add('show');
+  requestAnimationFrame(()=> popMenu.classList.add('show'));
+}
+function entryBeanPick(k){
+  closePopMenu();
+  const a = document.querySelector('#sheetJournal [data-jbean]'); if(a) a.setAttribute('aria-expanded', 'false');
+  const b = beans.find(x=> x.id === Number(k));
+  if(!b || normId(sheetEntry.beanId) === b.id) return;
+  sheetEntry.beanId = b.id;
+  sheetEntry.bean = b.name || '';
+  navHapticTick();
+  renderEditSheet('rate');
 }
 
 function closeSheetAndMaybeStop(){
@@ -6201,8 +6272,6 @@ let sheetOpenedAt = 0;
 function dismissSheet(){
   // Призрачный click от тапа, который открыл шторку, не должен её же и закрыть
   if(performance.now() - sheetOpenedAt < 400) return;
-  // Из пикера зерна тап мимо возвращает к записи, а не выбрасывает черновик правок.
-  if(sheetMode === 'entry-bean-pick'){ renderEditSheet('rate'); return; }
   closeSheetAndMaybeStop();
 }
 sheetScrimEl.addEventListener('click', dismissSheet);
@@ -6346,7 +6415,6 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
     openEditSheet(id);
     return;
   }
-  if(mode === 'entry-bean-pick'){ renderEditSheet('rate'); return; }
   if(mode === 'edit'){
     entry.water = entry.pours.reduce((a,b)=> a+b.add, 0);
     // Смена зерна переносит граммы: вернуть прежнему, списать с нового.
@@ -7055,7 +7123,7 @@ function beanMenuOpen(){
     '<span class="ck">' + (checked ? BEAN_MENU_TICK : '') + '</span><span class="t"><b>' + title + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>' + (ic ? '<span class="ic">' + ic + '</span>' : '') + '</button>';
   popMenu.innerHTML = shown.map(b=>{
     const n = beanNumbers(b);
-    const sub = n.low ? '<span class="warn">' + Math.round(n.remain) + '\u00a0г · скоро закончится</span>' : (b.roaster ? escapeHTML(b.roaster) + ' · ' : '') + Math.round(n.remain) + '\u00a0г';
+    const sub = n.remain <= 0 ? '<span class="warn">0\u00a0г · закончилось</span>' : n.low ? '<span class="warn">' + Math.round(n.remain) + '\u00a0г · скоро закончится</span>' : (b.roaster ? escapeHTML(b.roaster) + ' · ' : '') + Math.round(n.remain) + '\u00a0г';
     return row(b.id, b.id === activeBeanId, escapeHTML(b.name || 'Без названия'), sub, beanRingSVG(n.pct, n.low, n.finished, 22, 3));
   }).join('') +
     (sorted.length > BEAN_MENU_MAX ? row('all', false, 'Все зерна…', 'ещё ' + (sorted.length - shown.length), '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>', 'more') : '') +
