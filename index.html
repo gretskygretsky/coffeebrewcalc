@@ -3970,12 +3970,12 @@ function renderPourSchedule(coffee, water, accent){
   updateScheduleUI();
 }
 
-/* Кастомный рецепт на капсулах — как проливы в записи заваривания: у каждого пролива начало и объём,
-   последний — остаток (приглушённая капсула), строка «Готово» задаёт конец заваривания.
-   Модель прежняя (mult / frac / wait), капсулы только переводят её во «время начала».
-   «Итого» — результат, его не правят. Таблица пересобирается только при смене числа шагов. */
+/* Кастомный рецепт на капсулах. Каждый шаг сам по себе: объём и длительность шага
+   (0:10–1:30, по 10 с). Длительность последнего — стекание. Время шагов не зависит одно от другого.
+   Последний пролив — остаток (приглушённая капсула). «Итого» — результат, его не правят. */
+const CE_WAIT_MIN = 10, CE_WAIT_MAX = 90, CE_WAIT_STEP = 10;
 let ceDrums = {};
-function ceStarts(){ const st = state.custom.steps, out = []; let t = 0; st.forEach(s=>{ out.push(t); t += s.wait; }); return { starts:out, end:t }; }
+const ceWaitNorm = w=> Math.max(CE_WAIT_MIN, Math.min(CE_WAIT_MAX, Math.round((Number(w) || 0) / CE_WAIT_STEP) * CE_WAIT_STEP));
 function renderCustomEditor(coffee, water, accent){
   const wrap = document.getElementById('customEditorWrap');
   if(!isBrewMode() || state.recipe !== 'custom'){
@@ -3988,9 +3988,12 @@ function renderCustomEditor(coffee, water, accent){
 
   const ed = document.getElementById('customEditor');
   const steps = state.custom.steps;
+  // старые рецепты: паузы с шагом 5 с или длиннее 1:30 — приводим к новой сетке один раз
+  let fixed = false;
+  steps.forEach(s=>{ const w = ceWaitNorm(s.wait); if(w !== s.wait){ s.wait = w; fixed = true; } });
+  if(fixed) saveCustom();
   const vals = customValues(coffee, water);
   const canDelete = steps.length > 2;
-  const { starts, end } = ceStarts();
   const n = steps.length;
 
   if(ed.dataset.count !== String(n)){
@@ -3999,21 +4002,18 @@ function renderCustomEditor(coffee, water, accent){
     ed.innerHTML = steps.map((s, i)=>{
       const last = i === n - 1, label = i === 0 ? 'Блум' : 'Пролив ' + i;
       return capRowHTML('ce' + i, label, '',
-        (i === 0 ? '<div class="cap sm static" aria-label="Блум: начало">0:00</div>' : capHTML('ct' + i, label + ': начало', ' sm')) +
         (last ? '<div class="cap sm static" data-rest aria-label="Остаток"></div>' : capHTML('ca' + i, label + ': миллилитры', ' sm')) +
+        capHTML('cw' + i, label + ': длительность', ' sm') +
         (i > 0 && canDelete ? '<button class="rm" type="button" data-rm="' + i + '" aria-label="Убрать пролив ' + i + '"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8" stroke-linecap="round"/></svg></button>' : '<span class="gap"></span>'), 'pour');
-    }).join('') +
-      capRowHTML('ceEnd', 'Готово', 'финиш', capHTML('cte', 'Готово: время', ' sm') + '<span class="cap sm" style="visibility:hidden"></span><span class="gap"></span>', 'pour');
+    }).join('');
     ceDrums = {};
     const C = k=> ed.querySelector('[data-cap="' + k + '"]');
     steps.forEach((s, i)=>{
-      if(i > 0) ceDrums['ct' + i] = new Drum(C('ct' + i), { value:starts[i], step:5, min:0, max:600, fmt:capFmtTime,
-        onChange:v=> ceSetStart(i, v), onTap:()=> capEdit(C('ct' + i), capFmtTime(ceDrums['ct' + i].cur()), 'numeric', capParseTime) });
+      ceDrums['cw' + i] = new Drum(C('cw' + i), { value:s.wait, step:CE_WAIT_STEP, min:CE_WAIT_MIN, max:CE_WAIT_MAX, fmt:capFmtTime,
+        onChange:v=> ceSetWait(i, v), onTap:()=> capEdit(C('cw' + i), capFmtTime(ceDrums['cw' + i].cur()), 'numeric', s=> ceWaitNorm(capParseTime(s))) });
       if(i < n - 1) ceDrums['ca' + i] = new Drum(C('ca' + i), { value:vals[i], step:1, min:0, max:1000,
         onChange:v=> ceSetMl(i, v), onTap:()=> capEdit(C('ca' + i), String(ceDrums['ca' + i].cur()), 'numeric', capParseInt) });
     });
-    ceDrums.cte = new Drum(C('cte'), { value:end, step:5, min:0, max:900, fmt:capFmtTime,
-      onChange:v=> ceSetEnd(v), onTap:()=> capEdit(C('cte'), capFmtTime(ceDrums.cte.cur()), 'numeric', capParseTime) });
   }
 
   // значения — на месте; барабан под пальцем не трогаем
@@ -4022,22 +4022,22 @@ function renderCustomEditor(coffee, water, accent){
   steps.forEach((s, i)=>{
     run += vals[i];
     const sub = document.getElementById('sub-ce' + i); if(sub) sub.textContent = i === n - 1 ? 'остаток' : 'всего ' + fmt(run) + ' мл';
-    const t = ceDrums['ct' + i];
-    if(t){ t.min = starts[i-1] + 5; t.max = (i < n - 1 ? starts[i+1] : end) - 5; if(!t.pressed && !t.anim && t.cur() !== starts[i]) t.set(starts[i]); else t.paint(); }
+    const t = ceDrums['cw' + i];
+    if(t && !t.pressed && !t.anim && t.cur() !== s.wait) t.set(s.wait);
     const a = ceDrums['ca' + i];
     if(a){ a.max = Math.max(0, Math.floor(water - (other - vals[i]))); if(!a.pressed && !a.anim && a.cur() !== vals[i]) a.set(vals[i]); else a.paint(); }
   });
   const rest = ed.querySelector('[data-rest]'); if(rest) rest.textContent = fmt(vals[n - 1]);
-  const te = ceDrums.cte; if(te){ te.min = starts[n - 1] + 10; if(!te.pressed && !te.anim && te.cur() !== end) te.set(end); else te.paint(); }
 
   const addBtn = document.getElementById('ceAddPour');
   addBtn.style.setProperty('--accent', accent);
   addBtn.style.display = (steps.length - 1) >= CUSTOM_MAX_POURS ? 'none' : 'block';
 
   const totalMl = vals.reduce((a,b)=> a + b, 0);
+  const totalSec = steps.reduce((a, s)=> a + s.wait, 0);
   document.getElementById('ceTotalsCard').style.setProperty('--accent', accent);
   document.getElementById('ceTotalWater').textContent = fmt(totalMl) + ' мл';
-  document.getElementById('ceTotalTime').textContent = fmtTime(end);
+  document.getElementById('ceTotalTime').textContent = fmtTime(totalSec);
 
   const warnEl = document.getElementById('ceWarn');
   const warns = customWarnings(coffee, water, vals);
@@ -4049,17 +4049,9 @@ function renderCustomEditor(coffee, water, accent){
     warnEl.style.display = 'none';
   }
 }
-// Начало пролива i: соседние паузы делят время, следующий пролив стоит на месте
-function ceSetStart(i, v){
-  const st = state.custom.steps, { starts, end } = ceStarts();
-  const next = i < st.length - 1 ? starts[i+1] : end;
-  v = Math.max(starts[i-1] + 5, Math.min(next - 5, v));
-  st[i-1].wait = v - starts[i-1]; st[i].wait = next - v;
-  saveCustom(); compute();
-}
-function ceSetEnd(v){
-  const st = state.custom.steps, { starts } = ceStarts(), last = st.length - 1;
-  st[last].wait = Math.max(10, v - starts[last]);
+function ceSetWait(i, v){
+  const st = state.custom.steps; if(!st[i]) return;
+  st[i].wait = ceWaitNorm(v);
   saveCustom(); compute();
 }
 function ceSetMl(i, v){
@@ -4074,8 +4066,6 @@ document.getElementById('customEditor').addEventListener('click', e=>{
   const rm = e.target.closest('[data-rm]'); if(!rm || rm.disabled) return;
   const st = state.custom && state.custom.steps, i = Number(rm.dataset.rm);
   if(!st || st.length <= 2 || i === 0) return;
-  // пауза убранного пролива достаётся предыдущему — остальные начала не сдвигаются
-  st[i-1].wait += st[i].wait;
   st.splice(i, 1);
   haptics('medium');
   saveCustom(); compute();
