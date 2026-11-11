@@ -2616,7 +2616,7 @@ document.getElementById('ratioSettings').addEventListener('click', e=>{
   renderRatioSettings();
   glRoll(document.querySelector('#ratioSettings [data-rh="' + m + '"]'), ratioHint(m, r), r > prev ? 1 : -1);
   track('ratio_default_changed', { mode:m, ratio:r });
-  if(state.mode === m && brewPhase === 'idle'){ state.ratio = r; compute(); }
+  if(state.mode === m && Brew.phase === 'idle'){ state.ratio = r; compute(); }
 });
 // Старое имя: пропорция больше не выбирается на Калькуляторе, оставляем вызовы рабочими
 function renderPills(){ renderRatioSettings(); }
@@ -2624,7 +2624,7 @@ function renderPills(){ renderRatioSettings(); }
 function ratioModified(){ return Math.abs(state.ratio - ratioPref[state.mode]) > 0.05; }
 // «мягче / крепче»: объём на месте, граммы ±шаг — пропорция становится фактической
 function adjustStrength(dir){
-  if(brewPhase !== 'idle' || !state.water) return;
+  if(Brew.phase !== 'idle' || !state.water) return;
   const step = isBrewMode() ? 0.5 : 5;
   const base = Math.round((state.coffee || 0) / step) * step;
   const c = Math.max(step, base + dir * step);
@@ -2641,7 +2641,7 @@ function adjustStrength(dir){
 document.getElementById('coffeeStepUp').onclick = ()=> adjustStrength(1);
 document.getElementById('coffeeStepDown').onclick = ()=> adjustStrength(-1);
 document.getElementById('resRatio').addEventListener('click', e=>{
-  if(!e.target.closest('.ratio-reset') || brewPhase !== 'idle' || !ratioModified()) return;
+  if(!e.target.closest('.ratio-reset') || Brew.phase !== 'idle' || !ratioModified()) return;
   state.ratio = ratioPref[state.mode];
   haptics('light');
   calcAnim = { dur:300, ratio:true };
@@ -2689,7 +2689,7 @@ function popPlace(r, mh, gap, reserve){
 }
 const POP_TICK = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
 function openPopMenu(kind, anchor){
-  if(brewPhase !== 'idle') return;
+  if(Brew.phase !== 'idle') return;
   const items = kind === 'mode'
     ? Object.keys(MODE_META).map(k=> ({ k, t:MODE_META[k].t, d:MODE_META[k].d, icon:MODE_META[k].icon }))
     : RECIPES.map(r=> ({ k:r.id, t:r.label, d:SCHEME_DESC[r.id] || '' }));
@@ -3412,7 +3412,7 @@ function renderPourSchedule(coffee, water, accent){
     document.getElementById('pourHeader').style.display = 'none';
     document.getElementById('iceTip').style.display = 'none';
     document.getElementById('pourChart').style.display = 'none';
-    if(typeof stopBrew === 'function' && brewPhase !== 'idle') stopBrew(true);
+    if(typeof stopBrew === 'function' && Brew.phase !== 'idle') stopBrew(true);
     updateDock();
     return;
   }
@@ -3612,7 +3612,7 @@ function cupScrubEnd(){
 }
 (function wireCupScrub(){
   const nums = document.querySelector('#calcRes .res-nums');
-  const can = ()=> isBrewMode() && brewPhase === 'idle';
+  const can = ()=> isBrewMode() && Brew.phase === 'idle';
   nums.addEventListener('pointerdown', e=>{
     const b = e.target.closest('#resWater, #resCoffee'); if(!b || !can() || e.button > 0) return;
     cancelAnimationFrame(cupScrub.anim); cupScrub.keep = cup.size === 'custom';
@@ -3670,7 +3670,7 @@ function cupScrubEnd(){
     '<span><b>' + r.label + '</b><small>' + (SCHEME_DESC[r.id] || '') + '</small></span><span></span></button>').join(''); };
   const open = on=>{ xp.classList.toggle('open', on); btn.classList.toggle('on', on); btn.setAttribute('aria-expanded', String(on)); };
   btn.setAttribute('aria-expanded', 'false');
-  btn.addEventListener('click', ()=>{ if(brewPhase !== 'idle') return; const on = !xp.classList.contains('open'); if(on) render(); open(on); if(on) haptics('light'); });
+  btn.addEventListener('click', ()=>{ if(Brew.phase !== 'idle') return; const on = !xp.classList.contains('open'); if(on) render(); open(on); if(on) haptics('light'); });
   xp.addEventListener('click', e=>{
     const o = e.target.closest('[data-scheme]'); if(!o) return;
     const k = o.dataset.scheme;
@@ -3862,23 +3862,35 @@ if(window.matchMedia){
 
 /* ---- Живой таймер заваривания ---- */
 let audioCtx = null;
-let brewPhase = 'idle'; // 'idle' | 'counting' | 'running' | 'done'
-let brewing = false;
-let brewStartTs = 0;
-let brewWallClockStart = 0;
-let brewRAF = null;
-let brewLastIdx = -1;
-/* Пауза на смене шага: пока кольцо откатывается, часы брю стоят на моменте смены.
-   brewFloorT — «пол» для прошедшего времени, сдвиг brewStartTs — длительность паузы.
-   Поэтому в общем времени и журнале паузы не видны: время равно времени рецепта. */
-let brewFloorT = 0;
+/* ---- Сеанс заваривания: фазы и часы живут здесь, вид только подписывается ----
+   Фазы: idle → counting → running → done → idle. Часы подменяемы (brewClock.offset),
+   расписание фиксируется снимком на старте отсчёта. Пауза на смене шага — pause():
+   «пол» прошедшего времени и сдвиг старта, поэтому в итоге и журнале пауз не видно. */
+const brewClock = { offset: 0, now(){ return performance.now() + this.offset; } };
+const Brew = (()=>{
+  const fresh = ()=>({ phase:'idle', schedule:null, cdStart:0, startTs:0, wallStart:0, floorT:0, lastIdx:-1 });
+  let s = fresh();
+  return {
+    get phase(){ return s.phase; },
+    get running(){ return s.phase === 'running'; },
+    get schedule(){ return s.schedule; },
+    get wallStart(){ return s.wallStart; },
+    get lastIdx(){ return s.lastIdx; },
+    beginCountdown(schedule){ s = fresh(); s.phase = 'counting'; s.schedule = schedule; s.cdStart = brewClock.now(); },
+    countdownElapsed(){ return (brewClock.now() - s.cdStart) / 1000; },
+    launch(){ s.phase = 'running'; s.startTs = brewClock.now(); s.wallStart = Date.now(); s.floorT = 0; s.lastIdx = -1; },
+    elapsed(){ return Math.max(s.floorT, (brewClock.now() - s.startTs) / 1000); },
+    pause(ms, at){ s.floorT = at; s.startTs += ms; },
+    stepAt(t){ const rows = s.schedule || []; let idx = 0; for(let i=0;i<rows.length;i++){ if(t >= rows[i].time) idx = i; } return idx; },
+    markStep(idx){ const prev = s.lastIdx; s.lastIdx = idx; return prev; },
+    finish(){ s.phase = 'done'; },
+    close(){ s.phase = 'idle'; s.schedule = null; }
+  };
+})();
 let brewStepLockUntil = 0;   // пока идёт анимация смены, текст карточки не переписывается каждый кадр
-let brewRingBusyUntil = 0;   // пока кольцо откатывается, setArc его не трогает
-let brewCdRollUntil = 0;     // пока цифра в кольце откручивается
+let brewRingHoldUntil = 0;   // пока кольцо откатывается и цифра в нём откручивается, setArc/paintCountdown их не трогают
 let brewCdShown = '';
 const BREW_STEP_HOLD = 100, BREW_STEP_REWIND = 480;
-function brewElapsed(){ return Math.max(brewFloorT, (performance.now() - brewStartTs) / 1000); }
-let brewDoneFired = false;
 let journalOfferedThisBrew = false;   // длительность этого брю уже записана в журнал
 let brewDurationPromise = null;
 /* Запись журнала создаётся в момент старта брю (после отсчёта) — id и промис
@@ -4145,7 +4157,7 @@ let musicMuted = localStorage.getItem('musicMuted') === '1';
 
 function applyMusicMuteState(){
   // На отсчёте элемент «прогревается» беззвучно — мьют снимается только в startBrewMusic
-  brewMusic.muted = musicMuted || brewPhase === 'counting';
+  brewMusic.muted = musicMuted || Brew.phase === 'counting';
   musicMuteBtn.classList.toggle('muted', musicMuted);
   musicMuteBtn.setAttribute('aria-pressed', String(musicMuted));
   musicMuteBtn.setAttribute('aria-label', musicMuted ? 'Включить музыку' : 'Выключить музыку');
@@ -4196,7 +4208,7 @@ function prepareBrewMusic(){
   brewMusic.muted = true;
   try{
     const p = brewMusic.play();
-    if(p && p.then) p.then(()=>{ if(brewPhase !== 'running'){ brewMusic.pause(); try{ brewMusic.currentTime = 0; }catch(e){} } }).catch(()=>{});
+    if(p && p.then) p.then(()=>{ if(Brew.phase !== 'running'){ brewMusic.pause(); try{ brewMusic.currentTime = 0; }catch(e){} } }).catch(()=>{});
   }catch(e){}
 }
 function startBrewMusic(){
@@ -4225,7 +4237,7 @@ function stopBrewMusic(fade){
   musicFadeRAF = requestAnimationFrame(step);
 }
 brewMusic.addEventListener('ended', ()=>{
-  if(brewPhase !== 'running') return;
+  if(Brew.phase !== 'running') return;
   brewMusic.src = pickMusicTrack();
   startBrewMusic();
 });
@@ -4273,7 +4285,7 @@ function releaseWakeLock(){
 }
 
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible' && (brewPhase === 'counting' || brewPhase === 'running') && !wakeLock){
+  if(document.visibilityState === 'visible' && (Brew.phase === 'counting' || Brew.phase === 'running') && !wakeLock){
     requestWakeLock();
   }
 });
@@ -4286,7 +4298,6 @@ document.addEventListener('visibilitychange', ()=>{
 const RING_R = 43.5;
 const RING_C = 2 * Math.PI * RING_R;
 const COUNTDOWN_SECS = 5;
-let countdownStartTs = 0;
 let countdownLastSec = -1;
 
 const tfArc = document.getElementById('tfArc');
@@ -4304,7 +4315,7 @@ function setArc(pct){
   tfArc.setAttribute('stroke-dashoffset', (RING_C - len).toFixed(2));
   // Во время брю короткая дуга со скруглёнными концами выглядела кляксой: теперь первые
   // ~2 секунды шага она растёт тонкой линией и набирает толщину и яркость
-  if(brewPhase === 'running'){
+  if(Brew.phase === 'running'){
     const k = Math.max(0, Math.min(1, (len - 1) / 21));
     tfArc.style.opacity = Math.min(1, k * 1.6).toFixed(3);
     tfArc.style.strokeWidth = (2 + 7 * k).toFixed(2);
@@ -4339,7 +4350,7 @@ function paintTrack(idx, frac, done){
 // Строки таблицы: прошедшие — галочка, текущая — подсветка
 function paintRows(idx, done){
   const card = document.getElementById('pourCard');
-  const anim = brewPhase !== 'idle' && !reduceMotion() && typeof card.animate === 'function';
+  const anim = Brew.phase !== 'idle' && !reduceMotion() && typeof card.animate === 'function';
   card.querySelectorAll('.pour-row').forEach(el=>{
     const i = Number(el.dataset.index);
     const isDone = done || (idx >= 0 && i < idx), isCur = !done && i === idx;
@@ -4475,7 +4486,7 @@ function showBrewCard(show){
       body.classList.remove('brew-fading');
       body.classList.add('brew-card');
       if(swapFaces(true)) faceIn(document.getElementById('timerFace'));
-      if(brewPhase === 'counting') brewPrepIn();   // карточка таймера собирается сверху вниз
+      if(Brew.phase === 'counting') brewPrepIn();   // карточка таймера собирается сверху вниз
       pageCalcEl.scrollTop = 0; // таймер — наверху; FLIP сгладит и прокрутку
     }, 320);
     if(reduceMotion() || !document.getElementById('recipeCard').offsetHeight){ apply(); return; }
@@ -4590,7 +4601,7 @@ function updateScheduleUI(){
   }
 
   const isCustom = state.recipe === 'custom';
-  const brewingNow = brewPhase !== 'idle';
+  const brewingNow = Brew.phase !== 'idle';
 
   // «Кастом» в покое: редактор со своими полями заменяет таблицу.
   // Во время брю (и на итоге) — та же таблица, что у Каскада/Поровну:
@@ -4608,9 +4619,8 @@ function updateScheduleUI(){
 
 function beginCountdown(){
   if(!isBrewMode() || !state.schedule || !state.schedule.length) return;
-  if(brewPhase === 'done') closeBrew(true);
-  brewPhase = 'counting';
-  countdownStartTs = performance.now();
+  if(Brew.phase === 'done') closeBrew(true);
+  Brew.beginCountdown(state.schedule);
   countdownLastSec = -1;
   brewStepLockUntil = 0; brewCdShown = '';
   setText(document.getElementById('brewStopLabel'), 'Отменить');
@@ -4639,8 +4649,8 @@ function beginCountdown(){
 /* Отсчёт крутится тем же rAF, что и брю: кольцо заполняется плавно,
    бип срабатывает ровно на смене целой секунды. */
 function tickCountdown(){
-  if(brewPhase !== 'counting') return;
-  const el = (performance.now() - countdownStartTs) / 1000;
+  if(Brew.phase !== 'counting') return;
+  const el = Brew.countdownElapsed();
   const left = Math.max(0, COUNTDOWN_SECS - el);
   const secs = Math.max(1, Math.ceil(left));
   // Каждая секунда — бип, вибро selection и перекат цифры, всё в один кадр
@@ -4664,13 +4674,8 @@ function tickCountdown(){
 }
 
 function launchBrew(){
-  brewPhase = 'running';
-  brewing = true;
-  brewStartTs = performance.now();
-  brewWallClockStart = Date.now();
-  brewLastIdx = -1;
-  brewFloorT = 0; brewStepLockUntil = 0; brewRingBusyUntil = 0; brewCdRollUntil = 0; brewCdShown = '';
-  brewDoneFired = false;
+  Brew.launch();
+  brewStepLockUntil = 0; brewRingHoldUntil = 0; brewCdShown = '';
   journalOfferedThisBrew = false;
   brewDurationPromise = null;
   brewEntryPromise = createBrewEntry();
@@ -4736,11 +4741,9 @@ function paintCountdown(left){
    цифра в центре откручивается 0:00 → длительность шага. Часы брю всё это время стоят на at. */
 function brewRewind(at, secs){
   const total = BREW_STEP_HOLD + BREW_STEP_REWIND, now = performance.now();
-  brewFloorT = at;
-  brewStartTs += total;
+  Brew.pause(total, at);
   brewStepLockUntil = now + total + 60;
-  brewRingBusyUntil = now + total;
-  brewCdRollUntil = now + total;
+  brewRingHoldUntil = now + total;
   setArc(0);
   tfArc.animate([{ strokeDashoffset:0 }, { strokeDashoffset:0, offset:BREW_STEP_HOLD / total, easing:'cubic-bezier(0.65, 0, 0.35, 1)' }, { strokeDashoffset:RING_C }],
     { duration:total, easing:'linear', fill:'backwards' });
@@ -4749,7 +4752,7 @@ function brewRewind(at, secs){
   setTimeout(()=>{
     const s0 = performance.now();
     const f = t=>{
-      if(brewPhase !== 'running') return;
+      if(Brew.phase !== 'running') return;
       const p = Math.min(1, (t - s0) / BREW_STEP_REWIND);
       const e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
       tf.cd.textContent = fmtTime(secs * e);
@@ -4779,7 +4782,7 @@ function brewPrepIn(){
   setTimeout(()=>{
     const s0 = performance.now(), to = first.total;
     const f = t=>{
-      if(brewPhase !== 'counting') return;
+      if(Brew.phase !== 'counting') return;
       const p = Math.min(1, (t - s0) / 420), e = 1 - Math.pow(1 - p, 3);
       tf.n.textContent = fmt(Math.round(to * e));
       if(p < 1) requestAnimationFrame(f); else tf.n.textContent = fmt(to);
@@ -4794,7 +4797,7 @@ function brewPrepIn(){
   });
   document.querySelectorAll('#pourCard .pour-ck').forEach((ck, i)=>
     ck.animate([{ opacity:0, transform:'scale(.5)' }, { opacity:1, transform:'scale(1)' }], { duration:300, delay:260 + i * 40, easing:BREW_OUT, fill:'backwards' }));
-  setTimeout(()=>{ if(brewPhase === 'counting') paintRows(0, false); }, 380);
+  setTimeout(()=>{ if(Brew.phase === 'counting') paintRows(0, false); }, 380);
 }
 // Перекат цифры отсчёта: старая уходит вверх, новая приходит снизу; кольцо чуть «тикает»
 function brewCountdownStep(txt){
@@ -4815,7 +4818,7 @@ function brewLaunchAnim(){
   tf.stage.innerHTML = '<span class="tf-st">Приготовься</span>';
   brewSwapText(tf.stage.querySelector('.tf-st'), cur.action, 0);
   setTimeout(()=>{
-    if(brewPhase !== 'running') return;
+    if(Brew.phase !== 'running') return;
     const st = tf.stage.querySelector('.tf-st');
     tf.stage.insertBefore(document.createElement('i'), st);
     tf.stage._h = finalStage;   // tickBrew после паузы не будет пересобирать пилюлю
@@ -4841,7 +4844,7 @@ function animateBrewStep(prev, idx){
   setTimeout(()=>{
     const s0 = performance.now(), from = was.total, to = cur.total;
     const f = t=>{
-      if(brewPhase !== 'running') return;
+      if(Brew.phase !== 'running') return;
       const p = Math.min(1, (t - s0) / 520), e = 1 - Math.pow(1 - p, 3);
       tf.n.textContent = fmt(Math.round(from + (to - from) * e));
       if(p < 1) requestAnimationFrame(f); else tf.n.textContent = fmt(to);
@@ -4926,24 +4929,22 @@ function brewChartMount(on){
 }
 
 function tickBrew(){
-  if(!brewing) return;
-  const rows = state.schedule;
+  if(!Brew.running) return;
+  const rows = Brew.schedule;
   const now = performance.now();
-  let elapsed = brewElapsed();
+  let elapsed = Brew.elapsed();
 
-  let idx = 0;
-  for(let i=0;i<rows.length;i++){ if(elapsed >= rows[i].time) idx = i; }
+  const idx = Brew.stepAt(elapsed);
   const cur = rows[idx];
   const next = rows[idx+1];
   if(!next){ finishBrew(false); return; }
 
-  if(idx > brewLastIdx){
-    for(let i=brewLastIdx+1; i<=idx; i++){ if(i>0) stageAlert(); }
-    const prev = brewLastIdx;
-    brewLastIdx = idx;
+  if(idx > Brew.lastIdx){
+    for(let i=Brew.lastIdx+1; i<=idx; i++){ if(i>0) stageAlert(); }
+    const prev = Brew.markStep(idx);
     // Ровно один шаг на живом экране — анимируем смену и ставим часы на паузу.
     // Проскочили несколько (Telegram был свёрнут) — сразу текущее состояние, без пауз.
-    if(prev >= 0 && idx - prev === 1 && brewCanAnimate()){ animateBrewStep(prev, idx); elapsed = brewElapsed(); }
+    if(prev >= 0 && idx - prev === 1 && brewCanAnimate()){ animateBrewStep(prev, idx); elapsed = Brew.elapsed(); }
     paintRows(idx, false);
     keepNextStepVisible(idx);
   }
@@ -4959,8 +4960,8 @@ function tickBrew(){
     setText(tf.a, '+' + fmt(cur.add) + '\u00a0мл');
   }
   setHTML(tf.tot, '<b>' + fmtTime(Math.max(0, elapsed)) + '</b> из ~' + fmtTime(end));
-  if(now >= brewCdRollUntil) paintCountdown(Math.max(0, next.time - elapsed));
-  if(now >= brewRingBusyUntil) setArc(frac);
+  if(now >= brewRingHoldUntil) paintCountdown(Math.max(0, next.time - elapsed));
+  if(now >= brewRingHoldUntil) setArc(frac);
   paintTrack(idx, frac, false);
   paintBrewChart(elapsed);
 
@@ -4970,20 +4971,19 @@ function tickBrew(){
 /* Конец брю: последний шаг (stopped=false) или ручная остановка. Таймер
    встаёт на итоге, док и навигация освобождаются, предлагаем оценку. */
 function finishBrew(stopped){
-  const wasRunning = brewPhase === 'running';
+  const wasRunning = Brew.phase === 'running';
   if(brewRAF) cancelAnimationFrame(brewRAF);
   const anim = brewCanAnimate();
-  brewPhase = 'done';
-  brewing = false;
+  Brew.finish();
   releaseWakeLock();
   stopBrewMusic(true);
-  const rows = state.schedule || [];
-  const elapsed = Math.max(0, brewElapsed());
+  const rows = Brew.schedule || [];
+  const elapsed = Math.max(0, Brew.elapsed());
   const end = rows.length ? rows[rows.length-1].time : 0;
-  let idx = 0; rows.forEach((r,i)=>{ if(elapsed >= r.time) idx = i; });
+  const idx = Brew.stepAt(elapsed);
   const poured = stopped ? (rows[idx] ? rows[idx].total : 0) : (rows.length ? rows[rows.length-1].total : 0);
   const totalTime = fmtTime(stopped ? Math.min(elapsed, end) : end);
-  brewStepLockUntil = 0; brewRingBusyUntil = 0; brewCdRollUntil = 0;
+  brewStepLockUntil = 0; brewRingHoldUntil = 0;
 
   // Пилюля этапа: «Готово» с галочкой или серое «Остановлено»
   const CK = '<span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M5 13l4 4L19 7"/></svg></span>';
@@ -5054,9 +5054,9 @@ function saveBrewDuration(elapsedSec){
     const id = brewEntryPromise ? await brewEntryPromise : null;
     const entry = id != null ? journalEntries.find(e=> e.id === id) : null;
     if(!entry) return null;
-    const rows = state.schedule || [];
+    const rows = Brew.schedule || [];
     const last = rows.length ? Math.round(rows[rows.length-1].time) : 0;
-    const el = Math.max(0, Math.round(elapsedSec != null ? elapsedSec : brewElapsed()));
+    const el = Math.max(0, Math.round(elapsedSec != null ? elapsedSec : Brew.elapsed()));
     entry.duration = last ? Math.min(el, last) : el;
     await journalUpdateEntry(entry);
     return entry;
@@ -5067,8 +5067,7 @@ function saveBrewDuration(elapsedSec){
 /* Полный возврат к рецепту: «Закрыть» на итоге, «Отменить» на отсчёте. */
 function closeBrew(silent){
   if(brewRAF) cancelAnimationFrame(brewRAF);
-  brewPhase = 'idle';
-  brewing = false;
+  Brew.close();
   releaseWakeLock();
   stopBrewMusic(false);
   setDockBrewing(false);
@@ -5084,11 +5083,11 @@ function closeBrew(silent){
 
 // Старое имя: «остановить» — на отсчёте отмена, во время брю — итог с оценкой
 function stopBrew(hide){
-  if(brewPhase === 'running') finishBrew(true);
-  else if(brewPhase !== 'idle') closeBrew(false);
+  if(Brew.phase === 'running') finishBrew(true);
+  else if(Brew.phase !== 'idle') closeBrew(false);
 }
 
-document.getElementById('brewStopBtn').addEventListener('click', ()=>{ haptics(brewPhase === 'running' ? 'medium' : 'light'); stopBrew(true); });
+document.getElementById('brewStopBtn').addEventListener('click', ()=>{ haptics(Brew.phase === 'running' ? 'medium' : 'light'); stopBrew(true); });
 document.getElementById('tfCloseBtn').addEventListener('click', ()=>{ haptics('light'); closeBrew(false); });
 document.getElementById('tfRateBtn').addEventListener('click', ()=>{
   haptics('light');
@@ -5158,7 +5157,7 @@ function renderSizeSettings(){
     wrap.querySelector('[data-v="'+k+'"]').textContent = next + '\u00a0мл';
     setArtLevel(b.closest('.set-row'), next);
     track('cup_sizes_edited', { cup_size: k, cup_ml: next });
-    if(cup.size === k && isBrewMode() && brewPhase === 'idle'){ state.inputType = 'water'; state.value = next; }
+    if(cup.size === k && isBrewMode() && Brew.phase === 'idle'){ state.inputType = 'water'; state.value = next; }
     compute();
   }));
 }
@@ -5184,11 +5183,11 @@ function setAction(kind, label){
   actionBtn.setAttribute('aria-disabled', String(kind === 'off'));
 }
 function updateDock(){
-  if(brewPhase === 'counting' || brewPhase === 'running') return;
+  if(Brew.phase === 'counting' || Brew.phase === 'running') return;
   setAction(dockPage === 0 ? 'add' : (dockPage === 1 && isBrewMode()) ? 'play' : 'off');
 }
 actionBtn.onclick = ()=>{
-  if(brewPhase === 'counting' || brewPhase === 'running'){ stopBrew(true); return; }
+  if(Brew.phase === 'counting' || Brew.phase === 'running'){ stopBrew(true); return; }
   if(actionBtn.classList.contains('play')){ haptics('medium'); beginCountdown(); return; }
   if(actionBtn.classList.contains('add')){
     haptics('medium');
@@ -5851,7 +5850,7 @@ async function createBrewEntry(){
   if(!pours.length) return null;
   const activeBean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
   const entry = {
-    id: brewWallClockStart || Date.now(),
+    id: Brew.wallStart || Date.now(),
     mode: state.mode,
     ratio: Math.round(state.ratio * 10) / 10,
     coffee: Math.round((state.coffee || 0) * 10) / 10,
@@ -5983,7 +5982,7 @@ function renderEditSheet(){
     '<textarea class="js-note" data-jnote maxlength="' + NOTE_MAX + '" placeholder="Ощущения от чашки…" aria-label="Заметка"></textarea>' +
     '<div class="js-note-count' + (noteLeft <= 10 ? ' warn' : '') + '" id="jsNoteCount">' + noteLeft + '</div>' +
 
-    '<button class="bs-act" type="button" data-jrepeat' + (brewPhase !== 'idle' ? ' disabled' : '') + '>' + repeatIcon + 'Повторить рецепт</button>' +
+    '<button class="bs-act" type="button" data-jrepeat' + (Brew.phase !== 'idle' ? ' disabled' : '') + '>' + repeatIcon + 'Повторить рецепт</button>' +
     '<button class="bs-act danger" type="button" data-jdelete>' + trash + 'Удалить запись</button>';
   document.querySelector('#sheetJournal [data-jnote]').value = e.note || '';
   jsXp.open = null; jsDrums = {};
@@ -6014,7 +6013,7 @@ function renderEditSheet(){
    в Калькулятор. График кладётся в «Кастом» (доли воды + паузы), граммы
    подстраиваются под текущую порцию сами. */
 function repeatEntryRecipe(e){
-  if(brewPhase !== 'idle' || !e || !(e.pours || []).length) return;
+  if(Brew.phase !== 'idle' || !e || !(e.pours || []).length) return;
   const mode = e.mode === 'v60ice' ? 'v60ice' : 'v60';
   const hot = jsWater(e);
   const cupTotal = Math.round(Recipe.totalFromHot(mode, hot));
@@ -6202,7 +6201,7 @@ function closeSheetAndMaybeStop(){
   if(sheetDirty()){ openDiscardAlert(); return; }
   const wasSaveMode = sheetMode === 'saved';
   closeSheet();
-  if(wasSaveMode && brewing) stopBrew(true);
+  if(wasSaveMode && Brew.running) stopBrew(true);
 }
 
 /* Закрытие жестом (тап мимо или протяжка за ручку) — одна логика на оба жеста. */
@@ -6348,7 +6347,7 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
   if(mode === 'saved'){
     // «Оценить»: брю завершаем, и та же шторка превращается в детальную записи.
     const id = entry.id;
-    if(brewing) stopBrew(true);
+    if(Brew.running) stopBrew(true);
     track('journal_rate_opened');
     openEditSheet(id);
     return;
@@ -6597,7 +6596,7 @@ async function setActiveBean(id){
    ровно те же поля, что раньше выбирались только вручную. Ручной выбор пилюль
    по-прежнему работает как обычно и не трогает данные пачки. */
 function applyActiveBeanProfile(){
-  if(activeBeanId == null || brewing) { updateTempBlock(); return; }
+  if(activeBeanId == null || Brew.running) { updateTempBlock(); return; }
   const bean = beans.find(b=> b.id === activeBeanId);
   if(!bean) return;
   if(ROASTS.some(x=>x.id===bean.roast)) state.roast = bean.roast;
@@ -7055,7 +7054,7 @@ const BEAN_MENU_TICK = '<svg aria-hidden="true" width="16" height="16" viewBox="
 var beanMenuOn = false;   // var: closePopMenu объявлен выше и может прийти раньше этой строки
 function beanMenuOpen(){
   const pickable = beans.filter(b=> !b.archived && !b.finishedAt);
-  if(!pickable.length || brewPhase !== 'idle'){ openBeanPickSheet(); return false; }
+  if(!pickable.length || Brew.phase !== 'idle'){ openBeanPickSheet(); return false; }
   if(beanLand.finish) beanLand.finish();
   const tile = document.getElementById('calcBeanCard');
   const sorted = sortCurrentBeans(pickable, activeBeanId);
@@ -7099,7 +7098,7 @@ function beanMenuPick(k){
   let d = null, holdT = 0, hot = null;
   const setHot = b=>{ if(b === hot) return; if(hot) hot.classList.remove('hot'); hot = b; if(b){ b.classList.add('hot'); haptics('selection'); } };
   tile.addEventListener('touchstart', e=>{
-    if(beanMenuOn || brewPhase !== 'idle') return;
+    if(beanMenuOn || Brew.phase !== 'idle') return;
     const t = e.touches[0]; d = { x:t.clientX, y:t.clientY, scrub:false, moved:false };
     holdT = setTimeout(()=>{ if(!d) return; if(beanMenuOpen()){ d.scrub = true; haptics('soft'); } else d = null; }, 200);
   }, { passive:true });
@@ -8124,7 +8123,7 @@ function ctxItems(kind, id){
     return it('edit', 'Изменить', 'edit') + it('finish', b.finishedAt ? 'Убрать в архив' : 'Зерно закончилось', 'done') + sep + it('delete', 'Удалить', 'trash', 'danger');
   }
   const e = journalEntries.find(x=> x.id === id); if(!e) return '';
-  return it('repeat', 'Повторить рецепт', 'again', '', brewPhase !== 'idle' || !(e.pours || []).length) + it('edit', (e.rating || 0) > 0 ? 'Изменить запись' : 'Оценить', 'edit') + sep + it('delete', 'Удалить', 'trash', 'danger');
+  return it('repeat', 'Повторить рецепт', 'again', '', Brew.phase !== 'idle' || !(e.pours || []).length) + it('edit', (e.rating || 0) > 0 ? 'Изменить запись' : 'Оценить', 'edit') + sep + it('delete', 'Удалить', 'trash', 'danger');
 }
 function ctxOpen(kind, id, el){
   const html = ctxItems(kind, id); if(!html) return false;
