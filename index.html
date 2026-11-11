@@ -2136,8 +2136,6 @@ function cupWater(){ return cup.size === 'custom' ? cup.custom : cup.sizes[cup.s
 function matchCupSize(w){ return CUP_KEYS.find(k=> Math.abs(cup.sizes[k] - w) < 0.5) || 'custom'; }
 // Режимы с графиком пролива и таймером
 function isBrewMode(m){ m = m || state.mode; return m === 'v60' || m === 'v60ice'; }
-// Вода, которая идёт через воронку: для Iced V60 — без льда (лёд уже в сервере, весы обнулены)
-function brewWaterOf(water){ return state.mode === 'v60ice' ? water * (1 - ICE_SHARE) : water; }
 
 const RATIOS = { v60:[15,16,17], v60ice:[15,16,17], cold:[4,5,8,10,12] };
 const COLD_LABELS = {4:'1:4 конц.',5:'1:5 конц.',8:'1:8 готово',10:'1:10 готово',12:'1:12 готово'};
@@ -2218,10 +2216,9 @@ const RECIPES = [
     label:'Кастом',
     // ratio:null — «Кастом» не навязывает пропорцию, остаётся та, что выбрана чипами
     ratio:null,
-    schedule(coffee, water){
-      ensureCustom(coffee, water);
-      const vals = customValues(coffee, water);
-      const steps = state.custom.steps;
+    schedule(coffee, water, custom){
+      const steps = custom.steps;
+      const vals = customStepValues(steps, coffee, water);
       const rows = [];
       let t = 0, total = 0;
       steps.forEach((s,i)=>{
@@ -2267,9 +2264,8 @@ const CUSTOM_STORE_KEY = 'customRecipe';
 // Обработчики полей редактора живут дольше одного рендера, поэтому объём
 // они должны спрашивать в момент ввода, а не брать из замыкания.
 function currentBrewValues(){
-  const r = state.ratio;
-  if(state.inputType === 'coffee') return { coffee: state.value, water: brewWaterOf(state.value * r) };
-  return { coffee: r ? state.value / r : 0, water: brewWaterOf(state.value) };
+  const { coffee, water } = Recipe.amounts(state);
+  return { coffee, water: Recipe.split(state.mode, water).hot };
 }
 
 function saveCustom(){
@@ -2321,8 +2317,8 @@ function ensureCustom(coffee, water){
 
 // Миллилитры каждого шага. Все шаги кроме последнего — целые мл (floor),
 // дробный остаток копится в последний пролив.
-function customValues(coffee, water){
-  const steps = state.custom.steps;
+function customValues(coffee, water){ return customStepValues(state.custom.steps, coffee, water); }
+function customStepValues(steps, coffee, water){
   const vals = [];
   let acc = 0;
   for(let i=0;i<steps.length;i++){
@@ -2339,6 +2335,35 @@ function customValues(coffee, water){
   }
   return vals;
 }
+
+/* ================= Рецепт: чистый расчёт =================
+   Recipe.build(spec) → { coffee, water, ice, hot, schedule }.
+   spec = { mode, ratio, inputType, value, recipe, custom } — берёт только то, что передали:
+   ничего не читает из state и ничего не пишет (ни в state, ни в DOM, ни в localStorage).
+   Лёд считается только здесь: порция Iced V60 — вся вода вместе со льдом (water),
+   через воронку идёт hot, лёд (ice) уже в сервере и весы обнулены.
+   Расписание (schedule) — снимок на эти входные данные: заваривание берёт его на старте
+   и дальше не зависит от того, что происходит с калькулятором. */
+const Recipe = (()=>{
+  const isIced = mode=> mode === 'v60ice';
+  function split(mode, water){
+    return isIced(mode) ? { ice: water * ICE_SHARE, hot: water * (1 - ICE_SHARE) } : { ice: 0, hot: water };
+  }
+  // Обратный счёт: из горячей воды записи журнала — в порцию чашки
+  function totalFromHot(mode, hot){ return isIced(mode) ? hot / (1 - ICE_SHARE) : hot; }
+  function amounts(spec){
+    const r = spec.ratio;
+    if(spec.inputType === 'coffee') return { coffee: spec.value, water: spec.value * r };
+    return { coffee: r ? spec.value / r : 0, water: spec.value };
+  }
+  function build(spec){
+    const { coffee, water } = amounts(spec);
+    const { ice, hot } = split(spec.mode, water);
+    const schedule = isBrewMode(spec.mode) ? getRecipe(spec.recipe).schedule(coffee, hot, spec.custom) : null;
+    return { coffee, water, ice, hot, schedule };
+  }
+  return { split, totalFromHot, amounts, build };
+})();
 
 // Мягкие подсказки: предупреждаем, но ничего не запрещаем — экспериментировать можно.
 function customWarnings(coffee, water, vals){
@@ -2852,7 +2877,7 @@ function syncCupControls(coffee, water){
   else if(!tileAnim.hold && performance.now() - cupCustLeftAt > 540) placeLens(false);   // пока «своя» уезжает — подложка ждёт
 
   const iced = state.mode === 'v60ice';
-  const ice = water * ICE_SHARE, hot = water - ice;
+  const { ice, hot } = Recipe.split(state.mode, water);
   document.getElementById('resIce').style.display = iced ? 'block' : 'none';
   document.getElementById('cupHotVal').textContent = fmt(hot) + ' мл';
   document.getElementById('cupIceVal').textContent = fmt(ice) + ' г';
@@ -3344,19 +3369,19 @@ function fmt(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
 
 function compute(){
   const r = state.ratio;
-  let coffee, water;
-  if(state.inputType==='coffee'){ coffee = state.value; water = coffee*r; }
-  else { water = state.value; coffee = water/r; }
+  const { coffee, water } = Recipe.amounts(state);
+  const brewWater = Recipe.split(state.mode, water).hot;
+  // «Кастом»: первый раз наследует текущую классику, паузы приводятся к сетке — запись в данные до расчёта
+  if(isBrewMode() && state.recipe === 'custom'){ ensureCustom(coffee, brewWater); normalizeCustom(); }
+  const rcp = Recipe.build(state);
 
   const accent = accentVar(state.mode);
 
   document.getElementById('dock').style.setProperty('--accent', accent);
-
-  // Через воронку идёт только горячая вода: для Iced V60 лёд уже в сервере
-  const brewWater = brewWaterOf(water);
   document.getElementById('pageCalc').style.setProperty('--accent', accent);
-  state.coffee = coffee;
-  state.water = water;
+  state.coffee = rcp.coffee;
+  state.water = rcp.water;
+  if(rcp.schedule) state.schedule = rcp.schedule;   // в cold brew расписания нет — прежнее не трогаем
   renderResult(coffee, water);
   updateTempBlock();
   renderNotes();
@@ -3392,8 +3417,7 @@ function renderPourSchedule(coffee, water, accent){
     return;
   }
 
-  const rows = getRecipe(state.recipe).schedule(coffee, water);
-  state.schedule = rows;
+  const rows = state.schedule;   // посчитано в compute() через Recipe.build
 
   // Таблицу строим всегда, даже для «Кастома» — в покое она скрыта (шаги уже
   // видны в редакторе), но во время брю мы её показываем взамен заблокированного
@@ -3434,6 +3458,13 @@ function renderPourSchedule(coffee, water, accent){
 const CE_WAIT_MIN = 10, CE_WAIT_MAX = 90, CE_WAIT_STEP = 10;
 let ceDrums = {};
 const ceWaitNorm = w=> Math.max(CE_WAIT_MIN, Math.min(CE_WAIT_MAX, Math.round((Number(w) || 0) / CE_WAIT_STEP) * CE_WAIT_STEP));
+// Старые рецепты: паузы с шагом 5 с или длиннее 1:30 — приводим к новой сетке один раз.
+// Это данные, а не отрисовка: расписание считается уже по нормализованным паузам (вызывает compute()).
+function normalizeCustom(){
+  let fixed = false;
+  state.custom.steps.forEach(s=>{ const w = ceWaitNorm(s.wait); if(w !== s.wait){ s.wait = w; fixed = true; } });
+  if(fixed) saveCustom();
+}
 function renderCustomEditor(coffee, water, accent){
   const wrap = document.getElementById('customEditorWrap');
   if(!isBrewMode() || state.recipe !== 'custom'){
@@ -3446,10 +3477,6 @@ function renderCustomEditor(coffee, water, accent){
 
   const ed = document.getElementById('customEditor');
   const steps = state.custom.steps;
-  // старые рецепты: паузы с шагом 5 с или длиннее 1:30 — приводим к новой сетке один раз
-  let fixed = false;
-  steps.forEach(s=>{ const w = ceWaitNorm(s.wait); if(w !== s.wait){ s.wait = w; fixed = true; } });
-  if(fixed) saveCustom();
   const vals = customValues(coffee, water);
   const canDelete = steps.length > 2;
   const n = steps.length;
@@ -4589,7 +4616,7 @@ function beginCountdown(){
   setText(document.getElementById('brewStopLabel'), 'Отменить');
   // Iced V60: на отсчёте — последний момент положить лёд и обнулить весы
   if(state.mode === 'v60ice'){
-    tf.note.textContent = 'Положите ' + fmt((state.water || 0) * ICE_SHARE) + '\u00a0г льда в сервер, поставьте на весы и обнулите';
+    tf.note.textContent = 'Положите ' + fmt(Recipe.split(state.mode, state.water || 0).ice) + '\u00a0г льда в сервер, поставьте на весы и обнулите';
     tf.note.hidden = false;
   } else {
     tf.note.hidden = true;
@@ -5830,7 +5857,7 @@ async function createBrewEntry(){
     coffee: Math.round((state.coffee || 0) * 10) / 10,
     water: pours.reduce((a,b)=> a+b.add, 0),
     pours: pours,
-    ice: state.mode === 'v60ice' ? Math.round((state.water || 0) * ICE_SHARE) : 0,
+    ice: Math.round(Recipe.split(state.mode, state.water || 0).ice),
     rating: 0,
     taste: 0,
     grind: 0,
@@ -5990,7 +6017,7 @@ function repeatEntryRecipe(e){
   if(brewPhase !== 'idle' || !e || !(e.pours || []).length) return;
   const mode = e.mode === 'v60ice' ? 'v60ice' : 'v60';
   const hot = jsWater(e);
-  const cupTotal = Math.round(mode === 'v60ice' ? hot / (1 - ICE_SHARE) : hot);
+  const cupTotal = Math.round(Recipe.totalFromHot(mode, hot));
   cup.size = matchCupSize(cupTotal);
   if(cup.size === 'custom') cup.custom = Math.max(CUP_MIN, Math.min(CUP_MAX, cupTotal));
   saveCupPrefs();
