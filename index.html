@@ -1055,7 +1055,40 @@
   .acc-opt .sw{ position:relative; width:46px; height:46px; border-radius:50%; box-shadow:inset 0 1px 0 rgba(255,255,255,0.35); }
   .acc-opt .sw::after{ content:""; position:absolute; inset:-5px; border-radius:50%; box-shadow:0 0 0 2px transparent; transition:box-shadow .3s var(--ease-out); }
   .acc-opt[aria-checked="true"] .sw::after{ box-shadow:0 0 0 2px var(--label); }
+  .acc-pick{ grid-template-columns:repeat(3,1fr); row-gap:2px; }
   .acc-opt b{ font-size:14px; font-weight:600; }
+  /* Закрытая тема — матовое стекло: цвета темы едва проступают, видно только что они разные */
+  .acc-opt.locked .sw{ display:grid; place-items:center; overflow:hidden;
+    background:linear-gradient(135deg, color-mix(in srgb, var(--t1) 20%, transparent), color-mix(in srgb, var(--t2) 20%, transparent)), var(--glass-bg);
+    -webkit-backdrop-filter:blur(12px) saturate(1.5); backdrop-filter:blur(12px) saturate(1.5);
+    box-shadow:inset 0 1px 0 var(--glass-hi), inset 0 0 0 .5px var(--glass-edge), inset 0 -8px 12px -6px var(--glass-lo), 0 8px 16px -10px var(--glass-shadow); }
+  .acc-opt.locked .sw::before{ content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    background:radial-gradient(110% 62% at 50% -8%, var(--glass-sheen), transparent 62%); }
+  .acc-opt.locked .sw svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); fill:none; stroke-width:2; }
+  .acc-opt.locked .sw .trk{ stroke:var(--separator); }
+  .acc-opt.locked .sw .arc{ stroke:var(--label-2); stroke-linecap:round; transition:stroke-dasharray .6s var(--ease-out); }
+  .acc-opt.locked .sw .pg{ position:relative; font-size:11px; font-weight:700; color:var(--label-2); font-variant-numeric:tabular-nums; }
+  .acc-opt.locked b, .acc-opt.locked small{ color:var(--label-2); }
+  .acc-opt.nope .sw{ animation:accNope .36s var(--ease-out); }
+  @keyframes accNope{ 20%{ transform:translateX(-4px); } 50%{ transform:translateX(3px); } 80%{ transform:translateX(-1.5px); } }
+  @media (prefers-reduced-motion:reduce){ .acc-opt.nope .sw{ animation:none; } }
+  .th-toast{ position:fixed; left:50%; top:calc(var(--app-safe-top) + 8px); z-index:60; width:min(calc(100% - 24px), 420px); transform:translate(-50%, -16px); opacity:0;
+    display:flex; align-items:center; gap:10px; padding:10px 10px 10px 16px; border-radius:22px; color:var(--label);
+    background:var(--glass-bg); -webkit-backdrop-filter:blur(22px) saturate(1.7); backdrop-filter:blur(22px) saturate(1.7);
+    box-shadow:inset 0 1px 0 var(--glass-hi), inset 0 0 0 .5px var(--glass-edge), 0 14px 34px -12px var(--glass-shadow);
+    transition:transform .42s var(--gl-spring, cubic-bezier(.34,1.56,.55,1)), opacity .25s ease; }
+  .th-toast.show{ transform:translate(-50%, 0); opacity:1; }
+  .th-toast .tt-x{ flex:1; min-width:0; }
+  .th-toast .tt-t{ display:block; font-size:15px; font-weight:700; }
+  .th-toast .tt-s{ display:block; font-size:12.5px; color:var(--label-2); margin-top:1px; }
+  .th-toast{ pointer-events:none; }
+  .th-toast[hidden], .th-toast:not(.show){ visibility:hidden; }
+  .th-toast[hidden]{ display:none; }
+  .th-toast.show .tt-b{ pointer-events:auto; }
+  .th-toast .tt-b{ flex:none; border:none; border-radius:999px; padding:9px 14px; font:inherit; font-size:14px; font-weight:700; cursor:pointer;
+    background:var(--grad); color:var(--on-grad); }
+  .th-toast .tt-b:active{ transform:scale(.95); }
+  @media (prefers-reduced-motion:reduce){ .th-toast{ transition:opacity .2s; transform:translate(-50%, 0); } }
   .acc-opt small{ font-size:11px; color:var(--label-2); line-height:1.2; text-align:center; }
   .bs-why{ border:none; background:none; color:var(--blue); font-size:12.5px; font-weight:600; padding:2px 0 0; cursor:pointer; font-family:inherit; }
   .bs-why-text{ font-size:12.5px; line-height:1.45; color:var(--label-2); padding:0 16px 12px; margin-top:-2px; }
@@ -1983,6 +2016,8 @@ const Gestures = (()=>{
 </div>
 
 <div class="edge-fade"></div>
+
+<div class="th-toast" id="themeToast" role="status" aria-live="polite" hidden><div class="tt-x"><span class="tt-t"></span><span class="tt-s"></span></div><button class="tt-b" type="button" hidden></button></div>
 
 <!-- Выпадающее меню iOS 26 (режим, схема пролива): стеклянная плашка поверх контента -->
 <div class="pop-scrim" id="popScrim"></div>
@@ -3805,9 +3840,56 @@ const ACCENTS = {
     dark: { acc:'#5C97FF', g1:'#2E74FF', g2:'#1597CC', onAcc:'#FFFFFF', onGrad:'#FFFFFF' } },
   honey:{ name:'Мёд', note:'солнце → янтарь',
     light:{ acc:'#A87200', g1:'#FFC21A', g2:'#FF8A00', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#FFC83A', g1:'#FFCB3D', g2:'#FF9A1F', onAcc:'#1A1200', onGrad:'#1A1200' } }
+    dark: { acc:'#FFC83A', g1:'#FFCB3D', g2:'#FF9A1F', onAcc:'#1A1200', onGrad:'#1A1200' } },
+  /* Темы-ачивки: у каждой, кроме акцента, свои нейтрали (seed: фон, карточка, текст) — всё остальное выводится
+     themeNeutrals(). Условия открытия — в THEME_RULES ниже. Без фиолетового, контраст проверен расчётом. */
+  espresso:{ name:'Эспрессо', note:'крема → шоколад',
+    light:{ acc:'#7A3E1D', g1:'#8F4A24', g2:'#B97A38', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
+    dark: { acc:'#E4A672', g1:'#C98245', g2:'#EDBA82', onAcc:'#1E1410', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#E9DED3', card:'#F7F0E8', ink:'#1E1410' },
+           dark: { bg:'#120C09', card:'#1E1511', ink:'#F4EBE3' } } },
+  latte:{ name:'Латте', note:'молоко → карамель',
+    light:{ acc:'#A85A24', g1:'#C97A3C', g2:'#E3A767', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#F0AC70', g1:'#D88F4F', g2:'#F2C48F', onAcc:'#2A1F18', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#F3ECE2', card:'#FFFDF9', ink:'#2A1F18' },
+           dark: { bg:'#1A1511', card:'#251D18', ink:'#F7EFE6' } } },
+  dawn:{ name:'Рассвет', note:'персик → коралл',
+    light:{ acc:'#C93E22', g1:'#FF6E4A', g2:'#FFAE5A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#FF8A66', g1:'#FF6E4A', g2:'#FFAE5A', onAcc:'#2B1713', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#FBEEE8', card:'#FFFFFF', ink:'#2B1713' },
+           dark: { bg:'#1C1210', card:'#291B18', ink:'#FFF0EA' } } },
+  midnight:{ name:'Полночь', note:'тёмный синий → лампа',
+    light:{ acc:'#A85600', g1:'#FFB547', g2:'#FF7A3D', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#FFB547', g1:'#FFC25E', g2:'#FF8A4A', onAcc:'#0B1020', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#E6EBF3', card:'#FBFCFE', ink:'#0B1020' },
+           dark: { bg:'#070A14', card:'#10152A', ink:'#E8ECFA' } } },
+  pine:{ name:'Хвоя', note:'лес → лайм',
+    light:{ acc:'#1B7443', g1:'#2A9657', g2:'#7FBF3E', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#5DD088', g1:'#3DB36A', g2:'#9AD65A', onAcc:'#0A130D', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#E7EEE6', card:'#F8FBF6', ink:'#0F1A12' },
+           dark: { bg:'#0A130D', card:'#122019', ink:'#E8F3EA' } } },
+  bordeaux:{ name:'Бордо', note:'вино → вишня',
+    light:{ acc:'#8E1F3F', g1:'#A52C4E', g2:'#D0564C', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
+    dark: { acc:'#F27C97', g1:'#D8486A', g2:'#F08A6C', onAcc:'#150A0E', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#F0E4E6', card:'#FFF9FA', ink:'#240D14' },
+           dark: { bg:'#150A0E', card:'#221218', ink:'#FBEBEF' } } },
+  kraft:{ name:'Крафт', note:'бумага → чернила',
+    light:{ acc:'#B03A26', g1:'#C24A30', g2:'#D8803C', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#E8805F', g1:'#D4603F', g2:'#E9A054', onAcc:'#14110D', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#E8DCC8', card:'#F6EEDF', ink:'#1B1612' },
+           dark: { bg:'#14110D', card:'#201B15', ink:'#F2E9D8' } } },
+  lime:{ name:'Кислинка', note:'лайм → лимон',
+    light:{ acc:'#5A7A00', g1:'#7FA800', g2:'#D6D12A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#C6E43A', g1:'#A9D21E', g2:'#E6E04A', onAcc:'#0F1204', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#F3F5E4', card:'#FFFFFF', ink:'#171A08' },
+           dark: { bg:'#0F1204', card:'#191D0A', ink:'#F2F6DC' } } },
+  diploma:{ name:'Золотой диплом', note:'графит → золото',
+    light:{ acc:'#86650A', g1:'#C99A2E', g2:'#F0CF6A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#E8C25A', g1:'#F5D77A', g2:'#C99A2E', onAcc:'#171100', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#ECECEA', card:'#FFFFFF', ink:'#111111' },
+           dark: { bg:'#080808', card:'#141414', ink:'#F4F1E8' } } }
 };
-const ACCENT_KEYS = ['raspberry', 'ice', 'honey'];
+const ACCENT_KEYS = ['raspberry', 'ice', 'honey', 'espresso', 'latte', 'dawn', 'midnight', 'pine', 'bordeaux', 'kraft', 'lime', 'diploma'];
 let accentKey = 'raspberry', accentGrad = true, themeDark = false;
 try{
   const k = localStorage.getItem('accent'); if(ACCENTS[k]) accentKey = k;
@@ -3820,10 +3902,30 @@ function accentVars(isDark){
     '--orange':a.acc, '--teal':a.acc, '--brown':a.acc, '--blue':a.acc };
 }
 
+const hex2rgb = h=> [1, 3, 5].map(i=> parseInt(h.slice(i, i + 2), 16));
+const rgbaOf = (rgb, a)=> 'rgba(' + rgb.join(',') + ',' + a + ')';
+const mixHex = (a, b, t)=>{ const A = hex2rgb(a), B = hex2rgb(b); return '#' + A.map((v, i)=> Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+/* Нейтрали темы из трёх семян: фон, карточка, текст. Стекло, тени и scrim остаются базовыми. */
+function themeNeutrals(sd, dark){
+  const ink = hex2rgb(sd.ink), lift = (t)=> mixHex(sd.card, '#FFFFFF', t);
+  return {
+    '--bg':sd.bg, '--card':sd.card, '--card-2':dark ? lift(.06) : sd.bg, '--label':sd.ink,
+    '--label-2':rgbaOf(ink, .62), '--label-3':rgbaOf(ink, .32), '--separator':rgbaOf(ink, dark ? .09 : .1),
+    '--fill':rgbaOf(ink, dark ? .07 : .05), '--track':rgbaOf(ink, dark ? .1 : .08), '--pill-off':dark ? lift(.06) : mixHex(sd.bg, sd.ink, .05),
+    '--seg-thumb':dark ? lift(.16) : sd.card, '--seg-thumb-text':dark ? '#FFFFFF' : sd.ink, '--pill-text':sd.ink,
+    '--bezel':rgbaOf(ink, dark ? .035 : .045), '--bezel-edge':rgbaOf(ink, .07),
+    '--card-shadow':dark ? '0 24px 48px -24px rgba(0,0,0,0.8)' : '0 24px 48px -24px ' + rgbaOf(ink, .2),
+    '--glass-bg':rgbaOf(hex2rgb(dark ? lift(.06) : sd.card), dark ? .5 : .56), '--glass-solid':dark ? lift(.05) : mixHex(sd.card, sd.bg, .18),
+    '--lens':rgbaOf(ink, dark ? .12 : .12), '--sheet-bg':rgbaOf(hex2rgb(dark ? lift(.05) : sd.card), dark ? .76 : .78),
+    '--edge-fade':rgbaOf(hex2rgb(sd.bg), .85), '--sheet-group':dark ? lift(.07) : sd.card
+  };
+}
+
 function applyPalette(isDark){
   themeDark = isDark;
   // нейтрали и акцент — одним набором: никаких частичных перезаписей из разных источников
-  const p = Object.assign({}, isDark ? PALETTE.dark : PALETTE.light, accentVars(isDark));
+  const sd = ACCENTS[accentKey].seed;
+  const p = Object.assign({}, isDark ? PALETTE.dark : PALETTE.light, sd ? themeNeutrals(sd[isDark ? 'dark' : 'light'], isDark) : {}, accentVars(isDark));
   const root = document.documentElement.style;
   Object.keys(p).forEach(k=> root.setProperty(k, p[k]));
   // Нативные части (календарь даты, select, скроллбары, автозаполнение) берут тему из color-scheme —
@@ -5151,16 +5253,139 @@ document.getElementById('tfRateBtn').addEventListener('click', ()=>{
 /* ---- Еще → Настройки: размеры порций S/M/L ----
    Шаг 10 мл. Плитки на Кофе обновляются сразу; если правят выбранный
    размер — объём текущего расчёта меняется вместе с ним. */
+/* ---- Темы-ачивки: условия, подсчёт по журналу, открытые темы ----
+   Условия считаются по журналу и зёрнам (задним числом), открытое сохраняется отдельно и не закрывается
+   обратно: удалил записи — тема осталась. Выбранная раньше тема, чьё условие ещё не выполнено, остаётся
+   «в долг» (gf), пока человек с неё не уйдёт: вернуться на неё можно только после выполнения. */
+const THEME_RULES = {
+  ice:      { goal:1,   short:'1 Iced V60',          pick:st=> st.iced },
+  honey:    { goal:5,   short:'5 горячих V60',       pick:st=> st.hot },
+  espresso: { goal:25,  short:'25 брю',          pick:st=> st.total },
+  latte:    { goal:5,   short:'5 брю с оценкой', pick:st=> st.rated },
+  dawn:     { goal:5,   short:'5 брю до 9 утра', pick:st=> st.early },
+  midnight: { goal:3,   short:'3 брю после 22:00', pick:st=> st.night },
+  pine:     { goal:3,   short:'3 разных зерна',      pick:st=> st.beans },
+  bordeaux: { goal:3,   short:'3 вида обработки',    pick:st=> st.processes },
+  kraft:    { goal:10,  short:'10 заметок в журнале', pick:st=> st.notes },
+  lime:     { goal:3,   short:'3 дня подряд',        pick:st=> st.streak },
+  diploma:  { goal:100, short:'100 брю',         pick:st=> st.total }
+};
+var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до этой строки
+  const KEY = 'themes_unlocked', DAY = 86400000;
+  let map = {}, ready = false, toastT = 0;
+  const counts = e=> !(e.duration > 0 && e.duration < 20);   // отменённый на старте брю не в счёт
+  function stats(entries, beansArr){
+    const es = (entries || []).filter(counts), byId = new Map((beansArr || []).map(b=> [b.id, b]));
+    const st = { hot:0, iced:0, total:es.length, rated:0, early:0, night:0, beans:(beansArr || []).length, notes:0, processes:0, streak:0 };
+    const procs = new Set(), days = new Set();
+    es.forEach(e=>{
+      if(e.mode === 'v60') st.hot++; else if(e.mode === 'v60ice') st.iced++;
+      if((e.rating || 0) > 0) st.rated++;
+      if(String(e.note || '').trim()) st.notes++;
+      const d = new Date(e.id), h = d.getHours();
+      if(h < 9) st.early++;
+      if(h >= 22 || h < 4) st.night++;
+      days.add(Math.floor((e.id - d.getTimezoneOffset() * 60000) / DAY));
+      const b = byId.get(normId(e.beanId)); if(b && b.process) procs.add(b.process);
+    });
+    st.processes = procs.size;
+    let run = 0, best = 0, prev = null;
+    [...days].sort((x, y)=> x - y).forEach(x=>{ run = prev != null && x === prev + 1 ? run + 1 : 1; prev = x; if(run > best) best = run; });
+    st.streak = best;
+    return st;
+  }
+  function progress(id, st){
+    const r = THEME_RULES[id]; if(!r) return { n:1, goal:1, done:true };
+    const n = Math.min(r.goal, r.pick(st));
+    return { n, goal:r.goal, done:n >= r.goal };
+  }
+  const earnedIds = st=> Object.keys(THEME_RULES).filter(id=> progress(id, st).done);
+  const statsNow = ()=> stats(journalEntries, beans);
+  const isOpen = id=> !THEME_RULES[id] || !!map[id];
+  const save = ()=> storeSet(KEY, JSON.stringify(map));
+  function toast(o){
+    const el = document.getElementById('themeToast'); if(!el) return;
+    el.querySelector('.tt-t').textContent = o.title; el.querySelector('.tt-s').textContent = o.sub || '';
+    const btn = el.querySelector('.tt-b'); btn.hidden = !o.action; btn.textContent = o.action ? o.action.label : '';
+    btn.onclick = ()=>{ if(o.action) o.action.run(); hideToast(); };
+    el.hidden = false; void el.offsetWidth; el.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(hideToast, o.ms || 7000);
+  }
+  function hideToast(){
+    const el = document.getElementById('themeToast'); if(!el) return;
+    clearTimeout(toastT); el.classList.remove('show');
+    setTimeout(()=>{ if(!el.classList.contains('show')) el.hidden = true; }, 320);
+  }
+  function announce(ids){
+    if(!ids.length) return;
+    // не перебиваем брю, открытую шторку или алерт: покажем, когда они закроются
+    const busy = Brew.phase === 'counting' || Brew.phase === 'running' || sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
+    if(busy){ setTimeout(()=> announce(ids), 2500); return; }
+    haptics('success');
+    if(ids.length === 1){
+      const id = ids[0];
+      toast({ title:'Открыта тема «' + ACCENTS[id].name + '»', sub:ACCENTS[id].note, action:{ label:'Применить', run:()=> useTheme(id) } });
+    } else {
+      toast({ title:'Открыто тем: ' + ids.length, sub:ids.map(id=> ACCENTS[id].name).join(' · '),
+        action:{ label:'Смотреть', run:()=>{ navGoTo(3, true); setTimeout(()=>{ const a = document.getElementById('accentPick'); if(a) a.scrollIntoView({ block:'center', behavior:'smooth' }); }, 420); } } });
+    }
+  }
+  async function start(){
+    try{ const raw = await storeGet(KEY); map = raw ? JSON.parse(raw) || {} : {}; }catch(e){ map = {}; }
+    const earned = earnedIds(statsNow());
+    let changed = false;
+    // выбранная раньше тема, которую ещё не заработали, остаётся в долг
+    if(THEME_RULES[accentKey] && !map[accentKey] && !earned.includes(accentKey)){ map[accentKey] = { at:Date.now(), gf:1 }; changed = true; }
+    const fresh = [];
+    earned.forEach(id=>{
+      if(!map[id]){ map[id] = { at:Date.now() }; fresh.push(id); changed = true; }
+      else if(map[id].gf){ delete map[id].gf; changed = true; }
+    });
+    if(changed) await save();
+    ready = true;
+    renderAccentPick();
+    announce(fresh);
+  }
+  function sync(){
+    if(!ready) return;
+    const fresh = [];
+    earnedIds(statsNow()).forEach(id=>{
+      if(!map[id]){ map[id] = { at:Date.now() }; fresh.push(id); }
+      else if(map[id].gf) delete map[id].gf;
+    });
+    if(fresh.length){ save(); renderAccentPick(); announce(fresh); }
+  }
+  // уходя с темы «в долг», теряем право вернуться
+  function leave(id){
+    if(map[id] && map[id].gf && !progress(id, statsNow()).done){ delete map[id]; save(); }
+  }
+  return { stats, progress, earnedIds, statsNow, isOpen, start, sync, leave, toast, hide:hideToast, get map(){ return map; }, set map(v){ map = v; }, get ready(){ return ready; } };
+})();
+function useTheme(id){
+  if(!Themes.isOpen(id) || id === accentKey) return;
+  Themes.leave(accentKey);
+  setAccent(id, accentGrad);
+  haptics('selection');
+  track('accent_changed', { accent:accentKey });
+}
+
 function renderAccentPick(){
-  const wrap = document.getElementById('accentPick'); if(!wrap) return;
+  const wrap = document.getElementById('accentPick'); if(!wrap || !Themes) return;
   if(!wrap.firstChild){
     wrap.innerHTML = ACCENT_KEYS.map(k=> '<button type="button" class="acc-opt" role="radio" data-acc="' + k + '"><span class="sw" aria-hidden="true"></span><b>' +
-      ACCENTS[k].name + '</b><small>' + ACCENTS[k].note.replace(' → ', ' →<br>') + '</small></button>').join('');
+      ACCENTS[k].name + '</b><small></small></button>').join('');
     wrap.addEventListener('click', e=>{
-      const b = e.target.closest('.acc-opt'); if(!b || b.dataset.acc === accentKey) return;
-      setAccent(b.dataset.acc, accentGrad);
-      haptics('selection');
-      track('accent_changed', { accent:accentKey });
+      const b = e.target.closest('.acc-opt'); if(!b) return;
+      const k = b.dataset.acc;
+      if(b.classList.contains('locked')){
+        const st = Themes.statsNow(), pr = Themes.progress(k, st);
+        haptics('warning');
+        b.classList.remove('nope'); void b.offsetWidth; b.classList.add('nope');
+        Themes.toast({ title:'Тема «' + ACCENTS[k].name + '» закрыта', sub:'Откроется: ' + THEME_RULES[k].short + ' — сейчас ' + pr.n + ' из ' + pr.goal, ms:4200 });
+        return;
+      }
+      if(k === accentKey) return;
+      useTheme(k);
     });
     document.getElementById('accentGradSw').addEventListener('change', e=>{
       setAccent(accentKey, e.target.checked);
@@ -5168,18 +5393,32 @@ function renderAccentPick(){
       track('accent_gradient', { on:accentGrad });
     });
   }
+  const st = Themes.ready ? Themes.statsNow() : null;
   wrap.querySelectorAll('.acc-opt').forEach(b=>{
-    const a = ACCENTS[b.dataset.acc][themeDark ? 'dark' : 'light'];
-    b.setAttribute('aria-checked', String(b.dataset.acc === accentKey));
-    b.querySelector('.sw').style.background = 'linear-gradient(135deg,' + a.g1 + ',' + (accentGrad ? a.g2 : a.g1) + ')';
+    const k = b.dataset.acc, a = ACCENTS[k][themeDark ? 'dark' : 'light'], open = !Themes.ready || Themes.isOpen(k);
+    b.setAttribute('aria-checked', String(k === accentKey));
+    b.classList.toggle('locked', !open);
+    const sw = b.querySelector('.sw'), sm = b.querySelector('small');
+    if(open){
+      sw.style.background = 'linear-gradient(135deg,' + a.g1 + ',' + (accentGrad ? a.g2 : a.g1) + ')';
+      sw.innerHTML = ''; sm.innerHTML = ACCENTS[k].note.replace(' → ', ' →<br>');
+    } else {
+      const pr = Themes.progress(k, st);
+      sw.style.background = '';
+      sw.style.setProperty('--t1', a.g1); sw.style.setProperty('--t2', a.g2);
+      sw.innerHTML = '<svg viewBox="0 0 46 46" aria-hidden="true"><circle class="trk" cx="23" cy="23" r="20.5"/><circle class="arc" cx="23" cy="23" r="20.5" pathLength="100" stroke-dasharray="' + (pr.n / pr.goal * 100).toFixed(1) + ' 100"/></svg><span class="pg">' + pr.n + '/' + pr.goal + '</span>';
+      sm.textContent = THEME_RULES[k].short;
+      b.setAttribute('aria-label', ACCENTS[k].name + ', закрыта: ' + THEME_RULES[k].short + ', ' + pr.n + ' из ' + pr.goal);
+    }
   });
   document.getElementById('accentGradSw').checked = accentGrad;
 }
 function setAccent(k, grad){
-  accentKey = ACCENTS[k] ? k : 'raspberry'; accentGrad = !!grad;
+  accentKey = ACCENTS[k] && (Themes.isOpen(k) || !Themes.ready) ? k : 'raspberry'; accentGrad = !!grad;
   try{ localStorage.setItem('accent', accentKey); localStorage.setItem('accentGrad', accentGrad ? '1' : '0'); }catch(e){}
   applyPalette(themeDark);   // тот же атомарный путь, что и смена темы
 }
+renderAccentPick();
 
 /* Уровень жидкости в кольце: 100 мл — у донышка, 600 мл — под самый край (кольцо в viewBox от y≈3 до y≈39) */
 function setArtLevel(row, ml){
@@ -5325,12 +5564,14 @@ async function journalSaveEntry(entry){
   journalEntries = journalEntries.filter(e=> e.id !== entry.id);
   journalEntries.push(entry);
   journalEntries.sort((a,b)=> b.id - a.id);
+  Themes.sync();
 }
 
 async function journalUpdateEntry(entry){
   await storeSet('journal_entry_' + entry.id, JSON.stringify(entry));
   const i = journalEntries.findIndex(e=> e.id === entry.id);
   if(i >= 0) journalEntries[i] = entry;
+  Themes.sync();
 }
 
 async function journalDeleteEntry(id){
@@ -5868,7 +6109,7 @@ function showSheet(){
     dialogFocus.open(sheetEl);
   }
   sheetScrimEl.classList.add('show');
-  sheetEl.classList.add('show');
+  sheetEl.classList.add('show'); Themes.hide();
 }
 function closeSheet(){
   // Если WebView всё же успел сдвинуть документ вбок — возвращаем на место.
@@ -6447,7 +6688,7 @@ function openDeleteAlert(id, kind){
   if(!alertBoxEl.classList.contains('show')) haptics('warning');
   lockPageScroll();
   alertScrimEl.classList.add('show');
-  alertBoxEl.classList.add('show');
+  alertBoxEl.classList.add('show'); Themes.hide();
   dialogFocus.open(alertBoxEl, alertCancelBtn);
 }
 /* Тот же алерт, но не деструктивный: основное действие синее, не красное. */
@@ -6461,7 +6702,7 @@ function openArchiveAlert(id){
   alertConfirmBtn.className = 'alert-btn primary';
   lockPageScroll();
   alertScrimEl.classList.add('show');
-  alertBoxEl.classList.add('show');
+  alertBoxEl.classList.add('show'); Themes.hide();
   dialogFocus.open(alertBoxEl, alertCancelBtn);
 }
 function openDiscardAlert(){
@@ -6475,7 +6716,7 @@ function openDiscardAlert(){
   haptics('warning');
   lockPageScroll();
   alertScrimEl.classList.add('show');
-  alertBoxEl.classList.add('show');
+  alertBoxEl.classList.add('show'); Themes.hide();
   dialogFocus.open(alertBoxEl, alertCancelBtn);
 }
 function closeDeleteAlert(){
@@ -6589,6 +6830,7 @@ async function beanSaveEntry(entry){
   }
   beans = beans.filter(b=> b.id !== entry.id);
   beans.push(entry);
+  Themes.sync();
 }
 
 async function beanUpdateEntry(entry){
@@ -7600,7 +7842,7 @@ buildCupSizes();
 renderSizeSettings();
 renderRatioSettings();
 setMode('v60');
-Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries);
+Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries).then(()=> Themes.start());
 
 /* ---- Навигация: стеклянный таб-бар внизу + свайп между разделами ----
    Зерна / Кофе / Журнал / Еще. Линза таб-бара едет за пальцем непрерывно,
