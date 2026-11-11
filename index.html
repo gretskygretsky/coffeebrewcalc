@@ -37,6 +37,7 @@
     --on-acc: #FFFFFF;
     --on-grad: #FFFFFF;
     --grad: linear-gradient(120deg, var(--g1), var(--g2));
+    --gradx: var(--grad);   /* градиент + текстура темы */
     --display: "Onest", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
     --blue: var(--acc);
     --seg-thumb: #FFFFFF;
@@ -642,7 +643,7 @@
   }
   /* Градиент акцента — отдельным слоем под бликом: фон-градиент не анимируется, а слой проявляется opacity */
   .action::after{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:-2; pointer-events:none;
-    background:var(--grad); opacity:0; transition:opacity .3s var(--ease-out); }
+    background:var(--gradx); opacity:0; transition:opacity .3s var(--ease-out); }
   .action.play::after, .action.add::after{ opacity:1; }
   .action.play::before, .action.add::before{ background:linear-gradient(180deg, rgba(255,255,255,0.32), transparent 55%); }
   .action.stop{ color:var(--label); }
@@ -1046,9 +1047,28 @@
   .bs-sw input:checked + i{ background:var(--blue); } /* без нового цвета в палитре: тинт приложения */
   .bs-sw input:checked + i::after{ transform:translateX(20px); }
   .bs-sw input:focus-visible + i{ outline:2px solid var(--blue); outline-offset:2px; }
-  #accentGradSw:checked + i{ background:var(--grad); }
+  #accentGradSw:checked + i{ background:var(--gradx); }
   /* Выбор акцента: три кружка-образца с градиентом своего цвета */
-  .theme-mode{ padding:12px 14px 2px; }
+  .theme-mode{ padding:12px 14px 12px; border-bottom:0.5px solid var(--separator); }
+  .th-row{ display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border:none; background:none; text-align:left; font-family:inherit; color:var(--label); cursor:pointer; border-bottom:0.5px solid var(--separator); }
+  .th-row:active{ background:var(--fill); }
+  .th-row .th-sw{ width:42px; height:42px; border-radius:50%; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,0.35); }
+  .th-row .th-mid{ flex:1; min-width:0; display:grid; gap:5px; }
+  .th-row .th-t{ font-size:16px; font-weight:600; }
+  .th-row .th-s{ font-size:12.5px; color:var(--label-2); font-variant-numeric:tabular-nums; }
+  .th-row .th-bar{ height:4px; border-radius:4px; background:var(--track); overflow:hidden; }
+  .th-row .th-bar i{ display:block; height:100%; width:0; border-radius:4px; background:var(--grad); transition:width .6s var(--ease-out); }
+  .th-row .th-cnt{ font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--label-2); white-space:nowrap; }
+  .th-row .th-cnt b{ color:var(--label); }
+  .th-row svg{ color:var(--label-3); flex-shrink:0; }
+  .sheet.themes-mode #beanSheetSave{ visibility:hidden; }
+  .th-sum{ display:grid; gap:8px; padding:4px 2px 12px; }
+  .th-sum .th-big{ font-size:28px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .th-sum .th-big small{ font-size:15px; font-weight:600; color:var(--label-2); letter-spacing:0; }
+  .th-sum .th-bar{ height:6px; border-radius:6px; background:var(--track); overflow:hidden; }
+  .th-sum .th-bar i{ display:block; height:100%; width:0; border-radius:6px; background:var(--grad); transition:width .6s var(--ease-out); }
+  .th-sum .th-sub{ font-size:13px; color:var(--label-2); }
+  .sheet .acc-pick{ border-bottom:none; padding:6px 0 4px; }
   .acc-pick{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:12px 10px 10px; border-bottom:0.5px solid var(--separator); }
   .acc-opt{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 4px 6px; border:none; background:none; border-radius:18px;
     font-family:inherit; color:var(--label); cursor:pointer; transition:transform .2s var(--ease-out), background-color .2s ease; }
@@ -1087,7 +1107,7 @@
   .th-toast[hidden]{ display:none; }
   .th-toast.show .tt-b{ pointer-events:auto; }
   .th-toast .tt-b{ flex:none; border:none; border-radius:999px; padding:9px 14px; font:inherit; font-size:14px; font-weight:700; cursor:pointer;
-    background:var(--grad); color:var(--on-grad); }
+    background:var(--gradx); color:var(--on-grad); }
   .th-toast .tt-b:active{ transform:scale(.95); }
   @media (prefers-reduced-motion:reduce){ .th-toast{ transition:opacity .2s; transform:translate(-50%, 0); } }
   .acc-opt small{ font-size:11px; color:var(--label-2); line-height:1.2; text-align:center; }
@@ -1346,7 +1366,7 @@
   .tf-trk{ display:flex; gap:4px; margin-top:14px; }
   .tf-tk{ display:flex; flex-direction:column; gap:6px; min-width:0; }
   .tf-tk .bar{ position:relative; height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
-  .tf-tk .bar i{ position:absolute; inset:0; border-radius:inherit; background:var(--grad); transform-origin:left; transform:scaleX(0); transition:opacity .24s ease; }
+  .tf-tk .bar i{ position:absolute; inset:0; border-radius:inherit; background:var(--gradx); transform-origin:left; transform:scaleX(0); transition:opacity .24s ease; }
   .tf-tk.past .bar i{ opacity:.45; }
   .tf-tk .lb{ font-size:11.5px; font-weight:600; color:var(--label-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .24s ease; }
   .tf-tk.cur .lb{ color:var(--accent, var(--orange)); }
@@ -1355,7 +1375,7 @@
   .tf-done[hidden]{ display:none; }
   .tf-btn{ flex:1; height:46px; border-radius:999px; border:none; background:var(--fill); color:var(--label); font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; transition:transform .16s var(--ease-out); }
   .tf-btn:active{ transform:scale(.97); }
-  .tf-btn.pri{ background:var(--grad); color:var(--on-grad); }
+  .tf-btn.pri{ background:var(--gradx); color:var(--on-grad); }
 
   /* На время брю зерно, подсказки и заголовок «Кофе» складываются — шаги встают под таймер */
   .fold{ transition:opacity .12s var(--ease-out); }  body.brew-fading .fold{ opacity:0; pointer-events:none; }
@@ -2002,7 +2022,12 @@ const Gestures = (()=>{
         <p class="section-header">Оформление</p>
         <div class="card">
           <div class="theme-mode" id="themeMode"></div>
-          <div class="acc-pick" id="accentPick" role="radiogroup" aria-label="Цвет акцента"></div>
+          <button class="th-row" id="themesBtn" type="button" aria-haspopup="dialog">
+            <span class="th-sw" id="thRowSw" aria-hidden="true"></span>
+            <span class="th-mid"><span class="th-t">Темы</span><span class="th-s" id="thRowSub"></span><span class="th-bar" aria-hidden="true"><i id="thRowBar"></i></span></span>
+            <span class="th-cnt" id="thRowCnt"></span>
+            <svg aria-hidden="true" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>
+          </button>
           <div class="row"><span class="row-label">Градиент</span><label class="bs-sw"><input type="checkbox" id="accentGradSw" checked aria-label="Градиент акцента"><i></i></label></div>
         </div>
         <p class="ratio-hint">Цвет кнопок, колец и главных чисел во всём приложении.</p>
@@ -3889,9 +3914,65 @@ const ACCENTS = {
     light:{ acc:'#86650A', g1:'#C99A2E', g2:'#F0CF6A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#E8C25A', g1:'#F5D77A', g2:'#C99A2E', onAcc:'#171100', onGrad:'#1A1200' },
     seed:{ light:{ bg:'#ECECEA', card:'#FFFFFF', ink:'#111111' },
-           dark: { bg:'#080808', card:'#141414', ink:'#F4F1E8' } } }
+           dark: { bg:'#080808', card:'#141414', ink:'#F4F1E8' } } },
+  /* Темы с текстурой: узор лежит поверх градиента акцента (--gradx) — на главной кнопке, прогрессе, образце. */
+  sprout:{ name:'Росток', note:'салат → мох',
+    light:{ acc:'#3F6B12', g1:'#6FA32A', g2:'#B4CF3C', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#A6D65A', g1:'#7FB83A', g2:'#C6DE55', onAcc:'#10180A', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#EAEFDD', card:'#F9FBF2', ink:'#17200C' },
+           dark: { bg:'#0E1507', card:'#18220E', ink:'#EEF5E1' } },
+    tex:"radial-gradient(ellipse 7px 3px at 30% 40%, rgba(255,255,255,.22) 98%, transparent) 0 0/22px 14px, radial-gradient(ellipse 5px 2px at 75% 75%, rgba(0,0,0,.14) 98%, transparent) 0 0/17px 11px" },
+  cardamom:{ name:'Кардамон', note:'хаки → золото',
+    light:{ acc:'#6B5E10', g1:'#8C7C1C', g2:'#BFA83A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#D8C766', g1:'#B5A236', g2:'#DACB6A', onAcc:'#16130A', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#EEEAD2', card:'#FBF9EC', ink:'#1E1B0A' },
+           dark: { bg:'#13120A', card:'#201E10', ink:'#F3F0DC' } },
+    tex:"repeating-linear-gradient(100deg, transparent 0 5px, rgba(0,0,0,.14) 5px 6px, transparent 6px 11px, rgba(255,255,255,.22) 11px 12px)" },
+  gold:{ name:'Золото', note:'чёрный → золото',
+    light:{ acc:'#7A5A00', g1:'#C79A12', g2:'#F0CB4A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#E8C45A', g1:'#C79A12', g2:'#F0CB4A', onAcc:'#14100A', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#EDE7D8', card:'#FBF8EF', ink:'#16130C' },
+           dark: { bg:'#0B0A08', card:'#16140F', ink:'#F3EDDC' } },
+    tex:"radial-gradient(circle, rgba(255,255,255,.55) 0 1px, transparent 1.6px) 0 0/13px 13px, radial-gradient(circle, rgba(255,255,255,.4) 0 .8px, transparent 1.3px) 6px 7px/17px 17px, linear-gradient(115deg, transparent 35%, rgba(255,255,255,.28) 48%, transparent 60%)" },
+  porcelain:{ name:'Фарфор', note:'белый → кобальт',
+    light:{ acc:'#1F4FB8', g1:'#2F67D6', g2:'#3F7BDC', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
+    dark: { acc:'#8CB0FF', g1:'#3F72E0', g2:'#6C9DEB', onAcc:'#0A1226', onGrad:'#0A1226' },
+    seed:{ light:{ bg:'#E8EDF4', card:'#FBFCFE', ink:'#0E1A33' },
+           dark: { bg:'#0A0F1A', card:'#121A2B', ink:'#E9EFFB' } },
+    tex:"linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px) 0 0/10px 10px, linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px) 0 0/10px 10px" },
+  terracotta:{ name:'Терракота', note:'глина → обжиг',
+    light:{ acc:'#A3401F', g1:'#C25A30', g2:'#E08A58', onAcc:'#FFFFFF', onGrad:'#1A1200' },
+    dark: { acc:'#F09A74', g1:'#D2693F', g2:'#EDA27A', onAcc:'#2B140C', onGrad:'#1A1200' },
+    seed:{ light:{ bg:'#F1E3D8', card:'#FFF8F3', ink:'#2B140C' },
+           dark: { bg:'#1E120D', card:'#2C1B14', ink:'#FBEAE0' } },
+    tex:"radial-gradient(circle, rgba(0,0,0,.14) 0 1px, transparent 1.4px) 0 0/9px 9px, radial-gradient(circle, rgba(255,255,255,.22) 0 .8px, transparent 1.2px) 4px 5px/11px 11px, radial-gradient(circle, rgba(0,0,0,.14) 0 .7px, transparent 1px) 2px 8px/7px 7px" },
+  cast:{ name:'Чугун', note:'графит → сталь',
+    light:{ acc:'#3F5A75', g1:'#506F8F', g2:'#8197AD', onAcc:'#FFFFFF', onGrad:'#0E1A26' },
+    dark: { acc:'#9DB6CF', g1:'#6C88A6', g2:'#A2B5C8', onAcc:'#0E1620', onGrad:'#0E1A26' },
+    seed:{ light:{ bg:'#E3E5E8', card:'#F6F7F9', ink:'#14181D' },
+           dark: { bg:'#0F1114', card:'#1A1D22', ink:'#ECEEF1' } },
+    tex:"repeating-linear-gradient(0deg, rgba(255,255,255,.13) 0 1px, transparent 1px 3px), repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 7px)" },
+  lab:{ name:'Лаборатория', note:'мята → тушь',
+    light:{ acc:'#0B7A66', g1:'#12A58A', g2:'#5CD1A8', onAcc:'#FFFFFF', onGrad:'#06201A' },
+    dark: { acc:'#4FD8B8', g1:'#16B596', g2:'#6FE0B8', onAcc:'#06201A', onGrad:'#06201A' },
+    seed:{ light:{ bg:'#E3EEEA', card:'#F6FBF9', ink:'#0A1F1B' },
+           dark: { bg:'#07120F', card:'#0F1E1A', ink:'#E3F5EF' } },
+    tex:"linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px) 0 0/40px 40px, linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px) 0 0/40px 40px" },
+  cascade:{ name:'Каскад', note:'бирюза → пена',
+    light:{ acc:'#0A6C7A', g1:'#0F8FA0', g2:'#58C2CC', onAcc:'#FFFFFF', onGrad:'#04202A' },
+    dark: { acc:'#5CCFDC', g1:'#1AA0B2', g2:'#7FD8DF', onAcc:'#04202A', onGrad:'#04202A' },
+    seed:{ light:{ bg:'#E1EEF0', card:'#F5FBFC', ink:'#0A2128' },
+           dark: { bg:'#061216', card:'#0E1E24', ink:'#E2F4F7' } },
+    tex:"url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2728%27%20height=%2712%27%3E%3Cpath%20d=%27M0%206Q7%200%2014%206T28%206%27%20fill=%27none%27%20stroke=%27%23fff%27%20stroke-opacity=%27.5%27%20stroke-width=%271.6%27/%3E%3C/svg%3E) 0 0/28px 12px" },
+  equal:{ name:'Поровну', note:'камень → шалфей',
+    light:{ acc:'#55684A', g1:'#7C9170', g2:'#B3BFA0', onAcc:'#FFFFFF', onGrad:'#14180F' },
+    dark: { acc:'#B5CAA6', g1:'#8CA17E', g2:'#C2CDB0', onAcc:'#12160E', onGrad:'#14180F' },
+    seed:{ light:{ bg:'#E8E8E2', card:'#F8F8F4', ink:'#1C1F18' },
+           dark: { bg:'#12130F', card:'#1D1F19', ink:'#EDEEE6' } },
+    tex:"linear-gradient(90deg, rgba(255,255,255,.22) 0 50%, transparent 50% 100%)" }
 };
-const ACCENT_KEYS = ['raspberry', 'ice', 'honey', 'espresso', 'latte', 'dawn', 'midnight', 'pine', 'bordeaux', 'kraft', 'lime', 'diploma'];
+const ACCENT_KEYS = ['raspberry', 'ice', 'honey', 'espresso', 'latte', 'dawn', 'midnight', 'pine', 'bordeaux', 'kraft', 'lime', 'diploma',
+  'sprout', 'cardamom', 'gold', 'porcelain', 'terracotta', 'cast', 'lab', 'cascade', 'equal'];
 let accentKey = 'raspberry', accentGrad = true, themeDark = false, themeMode = 'auto';   // themeMode: auto | light | dark
 try{
   const k = localStorage.getItem('accent'); if(ACCENTS[k]) accentKey = k;
@@ -3902,7 +3983,8 @@ function accentVars(isDark){
   const a = ACCENTS[accentKey][isDark ? 'dark' : 'light'];
   const g2 = accentGrad ? a.g2 : a.g1;
   return { '--acc':a.acc, '--g1':a.g1, '--g2':g2, '--on-acc':a.onAcc, '--on-grad':a.onGrad,
-    '--orange':a.acc, '--teal':a.acc, '--brown':a.acc, '--blue':a.acc };
+    '--orange':a.acc, '--teal':a.acc, '--brown':a.acc, '--blue':a.acc,
+    '--gradx':ACCENTS[accentKey].tex ? ACCENTS[accentKey].tex + ', var(--grad)' : 'var(--grad)' };
 }
 
 const hex2rgb = h=> [1, 3, 5].map(i=> parseInt(h.slice(i, i + 2), 16));
@@ -3935,7 +4017,7 @@ function applyPalette(isDark){
   // ставим её из того же источника, что и палитру, иначе при тёмном Telegram и светлой системе они светлые.
   root.colorScheme = isDark ? 'dark' : 'light';
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=> m.setAttribute('content', p['--bg']));
-  if(typeof renderAccentPick === 'function' && document.getElementById('accentPick')) renderAccentPick();
+  if(typeof renderAccentPick === 'function' && document.getElementById('themesBtn')) renderAccentPick();
   if(window.Telegram && window.Telegram.WebApp){
     try{ window.Telegram.WebApp.setBackgroundColor(p['--bg']); }catch(e){}
     try{ window.Telegram.WebApp.setHeaderColor(p['--bg']); }catch(e){}
@@ -5273,20 +5355,32 @@ const THEME_RULES = {
   bordeaux: { goal:3,   short:'3 вида обработки',    pick:st=> st.processes },
   kraft:    { goal:10,  short:'10 заметок в журнале', pick:st=> st.notes },
   lime:     { goal:3,   short:'3 дня подряд',        pick:st=> st.streak },
-  diploma:  { goal:100, short:'100 брю',         pick:st=> st.total }
+  diploma:  { goal:100, short:'100 брю',         pick:st=> st.total },
+  sprout:     { goal:1,  short:'1 зерно в кладовой',     pick:st=> st.beans },
+  cardamom:   { goal:5,  short:'5 зёрен в кладовой',     pick:st=> st.beans },
+  gold:       { goal:10, short:'10 зёрен в кладовой',    pick:st=> st.beans },
+  porcelain:  { goal:1,  short:'Изменить размер S',      pick:st=> st.fS },
+  terracotta: { goal:1,  short:'Изменить размер M',      pick:st=> st.fM },
+  cast:       { goal:1,  short:'Изменить размер L',      pick:st=> st.fL },
+  lab:        { goal:1,  short:'Брю по своему рецепту',  pick:st=> st.rcCustom },
+  cascade:    { goal:1,  short:'Брю каскадом',           pick:st=> st.rcCascade },
+  equal:      { goal:1,  short:'Брю «поровну»',          pick:st=> st.rcEqual }
 };
 var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до этой строки
   const KEY = 'themes_unlocked', DAY = 86400000;
-  let map = {}, ready = false, toastT = 0;
+  const FKEY = 'themes_flags';
+  let map = {}, flags = {}, ready = false, toastT = 0;
   const counts = e=> !(e.duration > 0 && e.duration < 20);   // отменённый на старте брю не в счёт
   function stats(entries, beansArr){
     const es = (entries || []).filter(counts), byId = new Map((beansArr || []).map(b=> [b.id, b]));
-    const st = { hot:0, iced:0, total:es.length, rated:0, early:0, night:0, beans:(beansArr || []).length, notes:0, processes:0, streak:0 };
+    const st = { hot:0, iced:0, total:es.length, rated:0, early:0, night:0, beans:(beansArr || []).length, notes:0, processes:0, streak:0,
+      fS:flags.sizeS ? 1 : 0, fM:flags.sizeM ? 1 : 0, fL:flags.sizeL ? 1 : 0, rcCustom:0, rcCascade:0, rcEqual:0 };
     const procs = new Set(), days = new Set();
     es.forEach(e=>{
       if(e.mode === 'v60') st.hot++; else if(e.mode === 'v60ice') st.iced++;
       if((e.rating || 0) > 0) st.rated++;
       if(String(e.note || '').trim()) st.notes++;
+      if(e.recipe === 'custom') st.rcCustom++; else if(e.recipe === 'cascade') st.rcCascade++; else if(e.recipe === 'equal') st.rcEqual++;
       const d = new Date(e.id), h = d.getHours();
       if(h < 9) st.early++;
       if(h >= 22 || h < 4) st.night++;
@@ -5332,11 +5426,12 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
       toast({ title:'Открыта тема «' + ACCENTS[id].name + '»', sub:ACCENTS[id].note, action:{ label:'Применить', run:()=> useTheme(id) } });
     } else {
       toast({ title:'Открыто тем: ' + ids.length, sub:ids.map(id=> ACCENTS[id].name).join(' · '),
-        action:{ label:'Смотреть', run:()=>{ navGoTo(3, true); setTimeout(()=>{ const a = document.getElementById('accentPick'); if(a) a.scrollIntoView({ block:'center', behavior:'smooth' }); }, 420); } } });
+        action:{ label:'Смотреть', run:()=> openThemesSheet() } });
     }
   }
   async function start(){
     try{ const raw = await storeGet(KEY); map = raw ? JSON.parse(raw) || {} : {}; }catch(e){ map = {}; }
+    try{ const rf = await storeGet(FKEY); flags = rf ? JSON.parse(rf) || {} : {}; }catch(e){ flags = {}; }
     const earned = earnedIds(statsNow());
     let changed = false;
     // выбранная раньше тема, которую ещё не заработали, остаётся в долг
@@ -5360,11 +5455,17 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
     });
     if(fresh.length){ save(); renderAccentPick(); announce(fresh); }
   }
+  // разовые действия (смена размера порции), которые нельзя вывести из журнала
+  function flag(name){
+    if(!ready || flags[name]) return;
+    flags[name] = 1; storeSet(FKEY, JSON.stringify(flags)); sync();
+  }
+  const openCount = ()=> ACCENT_KEYS.filter(isOpen).length;
   // уходя с темы «в долг», теряем право вернуться
   function leave(id){
     if(map[id] && map[id].gf && !progress(id, statsNow()).done){ delete map[id]; save(); }
   }
-  return { stats, progress, earnedIds, statsNow, isOpen, start, sync, leave, toast, hide:hideToast, get map(){ return map; }, set map(v){ map = v; }, get ready(){ return ready; } };
+  return { stats, progress, earnedIds, statsNow, isOpen, start, sync, leave, toast, flag, openCount, hide:hideToast, get map(){ return map; }, set map(v){ map = v; }, get ready(){ return ready; } };
 })();
 function useTheme(id){
   if(!Themes.isOpen(id) || id === accentKey) return;
@@ -5392,8 +5493,38 @@ function renderThemeMode(){
     });
   }
 }
+function texBg(k, g1, g2){ return (ACCENTS[k].tex ? ACCENTS[k].tex + ', ' : '') + 'linear-gradient(135deg,' + g1 + ',' + g2 + ')'; }
+function renderThemeRow(){
+  const btn = document.getElementById('themesBtn'); if(!btn) return;
+  if(!btn._b){ btn._b = 1; btn.addEventListener('click', ()=>{ haptics('light'); openThemesSheet(); }); }
+  const a = ACCENTS[accentKey][themeDark ? 'dark' : 'light'], total = ACCENT_KEYS.length, ready = Themes && Themes.ready;
+  const open = ready ? Themes.openCount() : total, left = total - open;
+  document.getElementById('thRowSw').style.background = texBg(accentKey, a.g1, accentGrad ? a.g2 : a.g1);
+  document.getElementById('thRowSub').textContent = ACCENTS[accentKey].name + (left ? ' · осталось ' + left : ' · открыты все');
+  document.getElementById('thRowCnt').innerHTML = '<b>' + open + '</b> из ' + total;
+  document.getElementById('thRowBar').style.width = (open / total * 100).toFixed(1) + '%';
+  btn.setAttribute('aria-label', 'Темы: открыто ' + open + ' из ' + total + (left ? ', осталось ' + left : '') + '. Сейчас ' + ACCENTS[accentKey].name);
+}
+function openThemesSheet(){
+  sheetMode = 'themes'; sheetEntry = null;
+  document.getElementById('beanSheetTitle').textContent = 'Темы';
+  document.getElementById('sheetBean').innerHTML = '<div class="th-sum" id="thSum"></div><div class="acc-pick" id="accentPick" role="radiogroup" aria-label="Тема оформления"></div>';
+  showSheet(); sheetEl.scrollTop = 0;
+  renderAccentPick();
+}
 function renderAccentPick(){
   renderThemeMode();
+  renderThemeRow();
+  const gsw = document.getElementById('accentGradSw');
+  if(gsw && !gsw._b){
+    gsw._b = 1;
+    gsw.addEventListener('change', e=>{
+      setAccent(accentKey, e.target.checked);
+      haptics('selection');
+      track('accent_gradient', { on:accentGrad });
+    });
+  }
+  if(gsw) gsw.checked = accentGrad;
   const wrap = document.getElementById('accentPick'); if(!wrap || !Themes) return;
   if(!wrap.firstChild){
     wrap.innerHTML = ACCENT_KEYS.map(k=> '<button type="button" class="acc-opt" role="radio" data-acc="' + k + '"><span class="sw" aria-hidden="true"></span><b>' +
@@ -5411,11 +5542,6 @@ function renderAccentPick(){
       if(k === accentKey) return;
       useTheme(k);
     });
-    document.getElementById('accentGradSw').addEventListener('change', e=>{
-      setAccent(accentKey, e.target.checked);
-      haptics('selection');
-      track('accent_gradient', { on:accentGrad });
-    });
   }
   const st = Themes.ready ? Themes.statsNow() : null;
   wrap.querySelectorAll('.acc-opt').forEach(b=>{
@@ -5424,8 +5550,9 @@ function renderAccentPick(){
     b.classList.toggle('locked', !open);
     const sw = b.querySelector('.sw'), sm = b.querySelector('small');
     if(open){
-      sw.style.background = 'linear-gradient(135deg,' + a.g1 + ',' + (accentGrad ? a.g2 : a.g1) + ')';
+      sw.style.background = texBg(k, a.g1, accentGrad ? a.g2 : a.g1);
       sw.innerHTML = ''; sm.innerHTML = ACCENTS[k].note.replace(' → ', ' →<br>');
+      b.removeAttribute('aria-label');
     } else {
       const pr = Themes.progress(k, st);
       sw.style.background = '';
@@ -5435,7 +5562,12 @@ function renderAccentPick(){
       b.setAttribute('aria-label', ACCENTS[k].name + ', закрыта: ' + THEME_RULES[k].short + ', ' + pr.n + ' из ' + pr.goal);
     }
   });
-  document.getElementById('accentGradSw').checked = accentGrad;
+  const sum = document.getElementById('thSum');
+  if(sum){
+    const total = ACCENT_KEYS.length, open = Themes.ready ? Themes.openCount() : total, left = total - open;
+    sum.innerHTML = '<div class="th-big">' + open + ' <small>из ' + total + ' открыто</small></div><div class="th-bar"><i style="width:' + (open / total * 100).toFixed(1) + '%"></i></div>' +
+      '<div class="th-sub">' + (left ? 'Осталось ' + left + '. Закрытые темы откроются за дела в приложении — нажми на любую, чтобы узнать за какое.' : 'Открыты все темы.') + '</div>';
+  }
 }
 function setAccent(k, grad){
   accentKey = ACCENTS[k] && (Themes.isOpen(k) || !Themes.ready) ? k : 'raspberry'; accentGrad = !!grad;
@@ -5456,6 +5588,7 @@ function applyCupSize(k, v){
   if(cup.sizes[k] === v) return;
   cup.sizes[k] = v;
   saveCupPrefs();
+  if(v !== ({ S:220, M:320, L:420 })[k] && Themes && Themes.flag) Themes.flag('size' + k);
   setArtLevel(document.querySelector('#sizeSettings [data-row="size-' + k + '"]'), v);
   if(cup.size === k && isBrewMode() && Brew.phase === 'idle'){ state.inputType = 'water'; state.value = v; }
   compute();
@@ -6122,7 +6255,8 @@ function showSheet(){
   // чтобы ни одна шторка не открылась с хвостом от предыдущей.
   if(sheetMode !== 'bean-edit'){ sheetStatEl.style.display = 'none'; sheetActionEl.style.display = 'none'; }
   if(sheetMode !== 'saved') sheetSavedMark.style.display = 'none';
-  sheetEl.classList.toggle('bean-mode', sheetMode === 'bean-add' || sheetMode === 'bean-edit');
+  sheetEl.classList.toggle('bean-mode', sheetMode === 'bean-add' || sheetMode === 'bean-edit' || sheetMode === 'themes');
+  sheetEl.classList.toggle('themes-mode', sheetMode === 'themes');
   sheetEl.classList.toggle('journal-mode', sheetMode === 'edit');
   // В пикере зерна выбор сам закрывает шторку — кнопка «Готово» там лишняя
   sheetPrimaryBtn.style.display = sheetMode === 'bean-pick' ? 'none' : '';
@@ -6161,6 +6295,7 @@ async function createBrewEntry(){
   const entry = {
     id: Brew.wallStart || Date.now(),
     mode: state.mode,
+    recipe: state.recipe,
     ratio: Math.round(state.ratio * 10) / 10,
     coffee: Math.round((state.coffee || 0) * 10) / 10,
     water: pours.reduce((a,b)=> a+b.add, 0),
