@@ -1774,6 +1774,20 @@
 <noscript><div><img src="https://mc.yandex.ru/watch/111490970" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 <script>
+/* ---- Арбитр горизонтальных жестов ----
+   Контрол, которому нужен горизонтальный жест, заявляет себя рядом со своим кодом:
+   Gestures.claimX(селектор). Свайп страниц не знает контролов — он спрашивает claimsX(target),
+   поэтому новый контрол не требует правки чужого модуля. */
+const Gestures = (()=>{
+  const sels = [];
+  return {
+    claimX(sel){ if(!sels.includes(sel)) sels.push(sel); },
+    claimsX(target){ return !!(target && target.closest && sels.length && target.closest(sels.join(','))); },
+    get claims(){ return sels.slice(); }
+  };
+})();
+
+
   // Метка платформы открытия: Telegram Mini App vs обычный браузер.
   // window.Telegram.WebApp уже определён к этому моменту, т.к. telegram-web-app.js
   // подключён обычным блокирующим <script> раньше в <head>.
@@ -3610,6 +3624,7 @@ function cupScrubEnd(){
   if(was && cup.size !== 'custom'){ cupCustLeftAt = performance.now(); compute(); cupCustLeave(); }
   else compute();
 }
+Gestures.claimX('.res-nums.swipe b');   // скраб числа: вертикаль, но горизонталь страниц ему не нужна
 (function wireCupScrub(){
   const nums = document.querySelector('#calcRes .res-nums');
   const can = ()=> isBrewMode() && Brew.phase === 'idle';
@@ -3954,6 +3969,7 @@ function hx(type){
   if(type === 'selection'){ const now = performance.now(); if(now - hxLastSel < 38) return; hxLastSel = now; }
   haptics(type);
 }
+Gestures.claimX('.cap'); Gestures.claimX('.wheel');   // барабаны: капсулы и колёса дат
 class Drum{
   constructor(host, o){
     Object.assign(this, { itemH:15, wheel:false, win:2, step:1, min:0, max:9999, fmt:v=> String(v), onChange:()=>{}, onTap:null, fast:false }, o);
@@ -5526,6 +5542,7 @@ function closeJournalRow(row){
   jAnimate(row, 0, J_SPR_CLOSE);
   if(jSwipeOpenRow === row) jSwipeOpenRow = null;
 }
+Gestures.claimX('.jr-row');   // свайп строки журнала
 journalList.addEventListener('pointerdown', (e)=>{
   const row = e.target.closest('.jr-row');
   if(!row || e.target.closest('.jr-act')) return;
@@ -6262,6 +6279,7 @@ sheetScrimEl.addEventListener('touchmove', (e)=> e.preventDefault(), { passive:f
    первом touchmove, куда идёт жест: вертикаль — это скролл самой шторки,
    не трогаем; горизонталь — гасим весь жест целиком. Исключения — то, что
    само листается вбок: ленты пилюль и слайдеры. */
+Gestures.claimX('input[type="range"]');
 function guardHorizontalPan(el){
   let sx = 0, sy = 0, lastY = 0, decided = false, horiz = false;
   el.addEventListener('touchstart', (e)=>{
@@ -7172,6 +7190,7 @@ function beanTempNoteHTML(processId){
 }
 
 /* ---- Зёрна: список ---- */
+Gestures.claimX('.b-row');   // строка зерна: страницы под ней не листаются
 let bSwipeOpenRow = null;
 let openTempNoteIds = new Set(); // какие карточки сейчас показывают «почему такая температура»
 
@@ -7621,7 +7640,7 @@ tabEls.forEach(t=>{
 navViewport.addEventListener('touchstart', (e)=>{
   // Пока открыта шторка или алерт, страницы под ними не листаются ни при каком жесте.
   const overlayOpen = sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
-  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.jr-row') || !!e.target.closest('.b-row') || !!e.target.closest('.gseg') || !!e.target.closest('.js-rate') || !!e.target.closest('.js-track') || !!e.target.closest('.cap') || !!e.target.closest('.wheel') || !!e.target.closest('.res-nums.swipe b');
+  navExcluded = overlayOpen || navLocked || Gestures.claimsX(e.target);
   if(navExcluded) return;
   const t = e.touches[0];
   navStartX = t.clientX; navStartY = t.clientY;
@@ -7958,6 +7977,7 @@ function gsegWire(root){
     const c = Math.max(0, Math.min(C - 1, Math.floor((x - r.left - 2) / ((r.width - 4) / C)))), w = Math.max(0, Math.min(R - 1, Math.floor((y - r.top - 2) / ((r.height - 4) / R))));
     return bs[Math.min(bs.length - 1, w * C + c)];
   };
+  Gestures.claimX('.gseg');
   root.addEventListener('touchstart', e=>{
     const el = e.target.closest('.gseg'); if(!el || el.closest('[disabled]')) return;
     const t = e.touches[0]; d = { el, x:t.clientX, y:t.clientY, on:false, grid:el.classList.contains('grid') }; el.classList.add('down');
@@ -7992,6 +8012,7 @@ gsegWire(document);
 (function(){
   let d = null;
   const near = (box, x)=>{ let best = null, bd = 1e9; box.querySelectorAll('button').forEach(b=>{ const r = b.getBoundingClientRect(), dd = Math.abs(x - (r.left + r.width / 2)); if(dd < bd){ bd = dd; best = b; } }); return best; };
+  Gestures.claimX('.js-rate');
   document.addEventListener('touchstart', e=>{
     const box = e.target.closest && e.target.closest('.js-rate, .js-track'); if(!box){ d = null; return; }
     const t = e.touches[0]; d = { box, x:t.clientX, y:t.clientY, on:false, last:null };
