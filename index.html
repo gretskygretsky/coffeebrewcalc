@@ -1048,6 +1048,7 @@
   .bs-sw input:focus-visible + i{ outline:2px solid var(--blue); outline-offset:2px; }
   #accentGradSw:checked + i{ background:var(--grad); }
   /* Выбор акцента: три кружка-образца с градиентом своего цвета */
+  .theme-mode{ padding:12px 14px 2px; }
   .acc-pick{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:12px 10px 10px; border-bottom:0.5px solid var(--separator); }
   .acc-opt{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 4px 6px; border:none; background:none; border-radius:18px;
     font-family:inherit; color:var(--label); cursor:pointer; transition:transform .2s var(--ease-out), background-color .2s ease; }
@@ -2000,6 +2001,7 @@ const Gestures = (()=>{
         <h1>Настройки</h1>
         <p class="section-header">Оформление</p>
         <div class="card">
+          <div class="theme-mode" id="themeMode"></div>
           <div class="acc-pick" id="accentPick" role="radiogroup" aria-label="Цвет акцента"></div>
           <div class="row"><span class="row-label">Градиент</span><label class="bs-sw"><input type="checkbox" id="accentGradSw" checked aria-label="Градиент акцента"><i></i></label></div>
         </div>
@@ -3890,10 +3892,11 @@ const ACCENTS = {
            dark: { bg:'#080808', card:'#141414', ink:'#F4F1E8' } } }
 };
 const ACCENT_KEYS = ['raspberry', 'ice', 'honey', 'espresso', 'latte', 'dawn', 'midnight', 'pine', 'bordeaux', 'kraft', 'lime', 'diploma'];
-let accentKey = 'raspberry', accentGrad = true, themeDark = false;
+let accentKey = 'raspberry', accentGrad = true, themeDark = false, themeMode = 'auto';   // themeMode: auto | light | dark
 try{
   const k = localStorage.getItem('accent'); if(ACCENTS[k]) accentKey = k;
   if(localStorage.getItem('accentGrad') === '0') accentGrad = false;
+  const tm = localStorage.getItem('themeMode'); if(tm === 'light' || tm === 'dark') themeMode = tm;
 }catch(e){}
 function accentVars(isDark){
   const a = ACCENTS[accentKey][isDark ? 'dark' : 'light'];
@@ -3931,6 +3934,7 @@ function applyPalette(isDark){
   // Нативные части (календарь даты, select, скроллбары, автозаполнение) берут тему из color-scheme —
   // ставим её из того же источника, что и палитру, иначе при тёмном Telegram и светлой системе они светлые.
   root.colorScheme = isDark ? 'dark' : 'light';
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=> m.setAttribute('content', p['--bg']));
   if(typeof renderAccentPick === 'function' && document.getElementById('accentPick')) renderAccentPick();
   if(window.Telegram && window.Telegram.WebApp){
     try{ window.Telegram.WebApp.setBackgroundColor(p['--bg']); }catch(e){}
@@ -3940,7 +3944,8 @@ function applyPalette(isDark){
 
 function syncTheme(){
   let isDark;
-  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.colorScheme){
+  if(themeMode === 'light' || themeMode === 'dark') isDark = themeMode === 'dark';
+  else if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.colorScheme){
     // Приоритет — явный сигнал темы от самого Telegram, а не отдельные цвета из themeParams.
     isDark = window.Telegram.WebApp.colorScheme === 'dark';
   } else {
@@ -5369,7 +5374,26 @@ function useTheme(id){
   track('accent_changed', { accent:accentKey });
 }
 
+function renderThemeMode(){
+  const THEME_MODES = [{ id:'auto', label:'Авто' }, { id:'light', label:'Светлая' }, { id:'dark', label:'Тёмная' }];
+  const w = document.getElementById('themeMode'); if(!w) return;
+  if(!w.firstChild){
+    w.innerHTML = gsegHTML(THEME_MODES, themeMode, it=> 'data-tm="' + it.id + '"');
+    gsegPaint(w.firstChild, true);
+    w.addEventListener('click', e=>{
+      const b = e.target.closest('[data-tm]'); if(!b || b.dataset.tm === themeMode) return;
+      themeMode = b.dataset.tm;
+      try{ localStorage.setItem('themeMode', themeMode); }catch(err){}
+      haptics('selection');
+      w.querySelectorAll('button').forEach(x=> x.classList.toggle('on', x.dataset.tm === themeMode));
+      gsegPaint(w.firstChild);
+      syncTheme();
+      track('theme_mode_changed', { mode:themeMode });
+    });
+  }
+}
 function renderAccentPick(){
+  renderThemeMode();
   const wrap = document.getElementById('accentPick'); if(!wrap || !Themes) return;
   if(!wrap.firstChild){
     wrap.innerHTML = ACCENT_KEYS.map(k=> '<button type="button" class="acc-opt" role="radio" data-acc="' + k + '"><span class="sw" aria-hidden="true"></span><b>' +
