@@ -1242,6 +1242,7 @@
   .tip.ice svg{ color:var(--accent, var(--teal)); }
 
   /* ---- Еще → Настройки: размер на строку — силуэт, имя, капсула «− 220 мл +» ---- */
+  .card.bs-group{ background:var(--card); border-radius:22px; }
   .set-row{ display:flex; align-items:center; gap:12px; padding:10px 12px 10px 16px; min-height:58px; border-bottom:0.5px solid var(--separator); }
   .set-row:last-child{ border-bottom:none; }
   .set-art{ width:30px; height:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
@@ -1971,10 +1972,10 @@ const Gestures = (()=>{
         </div>
         <p class="ratio-hint">Цвет кнопок, колец и главных чисел во всём приложении.</p>
         <p class="section-header">Размеры порций</p>
-        <div class="card" id="sizeSettings"></div>
+        <div class="card bs-group" id="sizeSettings"></div>
         <p class="ratio-hint">Плитки S, M, L на Калькуляторе. Для Iced V60 объём считается вместе со льдом.</p>
         <p class="section-header">Пропорция по умолчанию</p>
-        <div class="card" id="ratioSettings"></div>
+        <div class="card bs-group" id="ratioSettings"></div>
         <p class="ratio-hint">С неё начинается каждая чашка. На Калькуляторе её подстраивают «мягче / крепче».</p>
       </div>
     </div>
@@ -2601,36 +2602,53 @@ function updateTempBlock(){
 /* «Еще» → Пропорция по умолчанию: по ряду пилюль на режим */
 const COLD_RATIO_HINTS = { 4:'Концентрат — разбавить 1:1 водой или молоком', 5:'Концентрат — разбавить 1:1, чуть мягче', 8:'Готов к питью, плотный', 10:'Готов к питью, сбалансированный', 12:'Готов к питью, лёгкий' };
 const ratioHint = (m, r)=> (m === 'cold' ? COLD_RATIO_HINTS[r] : RATIO_HINTS[r]) || '';
-/* «Еще» → Пропорция по умолчанию: стеклянный сегмент на режим. Разметка строится один раз,
-   дальше — только .on, подложка и подсказка (ведение пальцем не теряет сегмент под собой). */
+/* «Еще» → Пропорция по умолчанию: строка на режим, как «Обработка» в зерне —
+   барабан-капсула с шевроном; тап раскрывает список с подписями. Разметка строится один раз. */
+const ratioXp = { open:null };
+const ratioKey = m=> 'rat-' + m;
+const ratioDrums = {};
 function renderRatioSettings(){
   const wrap = document.getElementById('ratioSettings');
   if(!wrap) return;
-  if(!wrap.querySelector('.gseg')){
-    wrap.innerHTML = Object.keys(MODE_META).map(m=>
-      '<div class="ratio-set"><p class="nm"><b>' + MODE_META[m].t + '</b><span class="gl-roll" data-rh="' + m + '"><span>' + ratioHint(m, ratioPref[m]) + '</span></span></p>' +
-      gsegHTML(RATIOS[m].map(r=> ({ id:r, label:'1:' + r })), ratioPref[m], it=> 'data-m="' + m + '" data-r="' + it.id + '" style="--accent:var(' + ACCENT[m] + ')"') +
-      (m === 'cold' ? '<div class="gseg-ends"><span>концентрат</span><span>готов к питью</span></div>' : '') + '</div>').join('');
-    wrap.querySelectorAll('.gseg').forEach(g=> gsegPaint(g, true));
+  if(!wrap.querySelector('.cap')){
+    wrap.innerHTML = Object.keys(MODE_META).map(m=>{
+      const k = ratioKey(m), items = RATIOS[m].map(r=> ({ id:r, label:'1:' + r, d:ratioHint(m, r) }));
+      return '<div style="--accent:var(' + ACCENT[m] + ')">' +
+        capRowHTML(k, MODE_META[m].t, ratioHint(m, ratioPref[m]), capHTML(k, MODE_META[m].t + ': пропорция', ' has-chev sm'), null, 'sub-' + k) +
+        capXpHTML(k, capOptsHTML(k, items, ratioPref[m])) + '</div>';
+    }).join('');
+    Object.keys(MODE_META).forEach(m=>{
+      const k = ratioKey(m), cap = wrap.querySelector('[data-cap="' + k + '"]');
+      ratioDrums[m] = new Drum(cap, { fast:true, value:Math.max(0, RATIOS[m].indexOf(ratioPref[m])), min:0, max:RATIOS[m].length - 1, fmt:i=> '1:' + RATIOS[m][i],
+        onChange:i=> setRatioPref(m, RATIOS[m][i]), onTap:()=> capToggle(wrap, ratioXp, k, document.getElementById('pageMore')) });
+    });
     return;
   }
   Object.keys(MODE_META).forEach(m=>{
-    const g = wrap.querySelector('[data-m="' + m + '"]').parentNode;
-    g.querySelectorAll('button').forEach(b=> b.classList.toggle('on', Number(b.dataset.r) === ratioPref[m]));
-    gsegPaint(g);
+    const k = ratioKey(m);
+    capMarkOpts(wrap, k, ratioPref[m]);
+    const d = ratioDrums[m], i = RATIOS[m].indexOf(ratioPref[m]);
+    if(d && d.cur() !== i) d.set(i);
   });
 }
-document.getElementById('ratioSettings').addEventListener('click', e=>{
-  const b = e.target.closest('.gseg button'); if(!b) return;
-  const m = b.dataset.m, r = Number(b.dataset.r), prev = ratioPref[m];
+function setRatioPref(m, r){
+  const prev = ratioPref[m];
   if(prev === r) return;
-  haptics('selection');
   ratioPref[m] = r;
   saveRatioPrefs();
-  renderRatioSettings();
-  glRoll(document.querySelector('#ratioSettings [data-rh="' + m + '"]'), ratioHint(m, r), r > prev ? 1 : -1);
+  const wrap = document.getElementById('ratioSettings'), k = ratioKey(m);
+  capMarkOpts(wrap, k, r);
+  const sub = document.getElementById('sub-' + k); if(sub) sub.textContent = ratioHint(m, r);
   track('ratio_default_changed', { mode:m, ratio:r });
   if(state.mode === m && Brew.phase === 'idle'){ state.ratio = r; compute(); }
+}
+document.getElementById('ratioSettings').addEventListener('click', e=>{
+  const o = e.target.closest('[data-opt]'); if(!o) return;
+  const m = o.dataset.opt.slice(4), r = Number(o.dataset.v);
+  haptics('selection');
+  setRatioPref(m, r);
+  ratioDrums[m].runTo(RATIOS[m].indexOf(r), true);
+  setTimeout(()=>{ if(ratioXp.open === o.dataset.opt) capToggle(document.getElementById('ratioSettings'), ratioXp, o.dataset.opt); }, 220);
 });
 // Старое имя: пропорция больше не выбирается на Калькуляторе, оставляем вызовы рабочими
 function renderPills(){ renderRatioSettings(); }
@@ -5169,32 +5187,32 @@ function setArtLevel(row, ml){
   const f = 0.1 + 0.9 * Math.max(0, Math.min(1, (ml - CUP_MIN) / (CUP_MAX - CUP_MIN)));
   liq.style.transform = 'translateY(' + (23 - 35 * f).toFixed(2) + 'px)';
 }
+/* Размеры порций: барабан-капсула с шагом 1 мл (как граммы в зерне); тап по капсуле — точный ввод. */
+const sizeDrums = {};
+function applyCupSize(k, v){
+  if(cup.sizes[k] === v) return;
+  cup.sizes[k] = v;
+  saveCupPrefs();
+  setArtLevel(document.querySelector('#sizeSettings [data-row="size-' + k + '"]'), v);
+  if(cup.size === k && isBrewMode() && Brew.phase === 'idle'){ state.inputType = 'water'; state.value = v; }
+  compute();
+}
 function renderSizeSettings(){
   const wrap = document.getElementById('sizeSettings');
   wrap.innerHTML = CUP_KEYS.map(k=>
-    '<div class="set-row">' +
+    '<div class="bs-row" data-row="size-' + k + '">' +
       '<div class="set-art">' + cupServerSVG(CUP_SCALE[k]*0.75, 'cupset') + '</div>' +
-      '<div class="set-name"><b>'+k+'</b>'+CUP_NAMES[k]+'</div>' +
-      '<div class="vstep">' +
-        '<button type="button" data-k="'+k+'" data-d="-10" aria-label="'+CUP_NAMES[k]+': меньше">−</button>' +
-        '<span class="v" data-v="'+k+'">'+cup.sizes[k]+'\u00a0мл</span>' +
-        '<button type="button" data-k="'+k+'" data-d="10" aria-label="'+CUP_NAMES[k]+': больше">+</button>' +
-      '</div>' +
+      '<span class="bs-l"><span class="t"><b>' + k + '</b> ' + CUP_NAMES[k] + '</span></span>' +
+      capHTML('size-' + k, CUP_NAMES[k] + ', миллилитры', ' sm') +
     '</div>').join('');
-  wrap.querySelectorAll('.set-row').forEach((row, i)=> setArtLevel(row, cup.sizes[CUP_KEYS[i]]));
-  wrap.querySelectorAll('button[data-k]').forEach(b=> b.addEventListener('click', ()=>{
-    const k = b.dataset.k;
-    const next = Math.max(CUP_MIN, Math.min(CUP_MAX, cup.sizes[k] + Number(b.dataset.d)));
-    if(next === cup.sizes[k]) return;
-    haptics('selection');
-    cup.sizes[k] = next;
-    saveCupPrefs();
-    wrap.querySelector('[data-v="'+k+'"]').textContent = next + '\u00a0мл';
-    setArtLevel(b.closest('.set-row'), next);
-    track('cup_sizes_edited', { cup_size: k, cup_ml: next });
-    if(cup.size === k && isBrewMode() && Brew.phase === 'idle'){ state.inputType = 'water'; state.value = next; }
-    compute();
-  }));
+  CUP_KEYS.forEach(k=>{
+    const row = wrap.querySelector('[data-row="size-' + k + '"]'), cap = row.querySelector('.cap');
+    setArtLevel(row, cup.sizes[k]);
+    sizeDrums[k] = new Drum(cap, { value:cup.sizes[k], step:1, min:CUP_MIN, max:CUP_MAX, fmt:v=> v + '\u00a0мл',
+      onChange:v=> applyCupSize(k, v),
+      onRest:()=> track('cup_sizes_edited', { cup_size:k, cup_ml:cup.sizes[k] }),
+      onTap:()=> capEdit(cap, String(sizeDrums[k].cur()), 'numeric', capParseInt) });
+  });
 }
 
 /* ---- Контекстная кнопка дока ----
