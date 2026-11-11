@@ -2961,7 +2961,14 @@ function moPressable(target, el, s, squash){
    окошка, ширина разряда доезжает вместе с цифрой. Повторный вызов пересобирает от текущего. */
 const moMeas = document.createElement('span');
 moMeas.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
-function moCharW(el, ch){ moMeas.textContent = ch; el.appendChild(moMeas); const w = moMeas.getBoundingClientRect().width; moMeas.remove(); return w; }
+/* Единый замер ширины глифа: кэш на элементе, сбрасывается при смене кегля.
+   Единое правило разбора числа: целая часть — по правому краю, запятая с десятыми — одним хвостом. */
+function moCharW(el, ch){
+  const fs = getComputedStyle(el).fontSize, c = (el._wc && el._wcFs === fs) ? el._wc : (el._wc = {}, el._wcFs = fs, el._wc);
+  if(c[ch] != null) return c[ch];
+  moMeas.textContent = ch; el.appendChild(moMeas); const w = moMeas.getBoundingClientRect().width; moMeas.remove();
+  return (c[ch] = w);
+}
 const moSplit = t=>{ const i = t.indexOf(','); return i < 0 ? [[...t], []] : [[...t.slice(0, i)], [...t.slice(i)]]; };
 function moRoll(el, text, dir, o){
   o = o || {}; text = String(text);
@@ -3003,7 +3010,6 @@ function moRoll(el, text, dir, o){
    новый вызов, и уезжает размываясь (быстрые тапы не обрываются, а доезжают стопкой); входящая
    выезжает размытой, сжатой по высоте и садится с перелётом ~5 %. Обрезки нет — прячут блюр и прозрачность. */
 const RN_EASE = 'cubic-bezier(.25,.8,.35,1)', RN_EXIT = 'cubic-bezier(.4,0,.6,1)', RN_DIST = 60, RN_BLUR = .17; // блюр — доля кегля: ~6,5 px на 38 px
-function rnW(el, ch){ const c = el._wc || (el._wc = {}); return c[ch] != null ? c[ch] : (c[ch] = moCharW(el, ch)); }
 function rnSlot(ch){
   const s = { el:document.createElement('span'), ch:'', g:null };
   s.el.className = 'rg';
@@ -3062,7 +3068,7 @@ function rnRoll(el, text, dir, o){
       s.g = null; s.ch = ch;
       if(ch){ const g = document.createElement('span'); g.className = 'rg-g'; g.textContent = ch; s.el.appendChild(g); s.g = g; rnEnter(g, up, delay, dur, bp); }
     }
-    const w1 = ch ? rnW(el, ch) : 0;
+    const w1 = ch ? moCharW(el, ch) : 0;
     moCancel(s.el, 'w');
     if(drop){
       const a = moTag(moA(s.el, [{ width:w0[j] + 'px' }, { width:'0px' }], { duration:dur, delay, easing:MO_OUT, fill:'both' }), 'w');
@@ -3256,12 +3262,25 @@ function odoRun(el, from, to, dec, ints, dur, delay){
   o.release = true;
   if(!odoRaf) odoRaf = requestAnimationFrame(odoTick);
 }
-function runResNum(el, prev, v, dec, delay){
-  const ints = Math.max(1, String(Math.floor(Math.max(prev, v))).length);
-  // +1 г — ~420 мс, S → L — ~700 мс
-  const steps = Math.abs(v - prev) * (dec ? 10 : 1);
-  odoRun(el, prev, v, dec, ints, Math.min(720, 380 + Math.sqrt(steps) * 28), delay || 0);
-}
+/* ---- Digits: единая точка показа числа ----
+   Digits.show(el, text, { mode, ... }) — три вида смены, один набор общих правил
+   (замер глифа moCharW, разбор по запятой moSplit, reduced-motion moReduce):
+     roll — дискретная смена барабанами (итог на плитках, вход в «Кофе»)
+     blur — смена с блюром и перелётом (пропорция 1:16)
+     run  — пробег одометром от from к value (действие человека на числе; нужны value и from, dec — число знаков после запятой). */
+const Digits = {
+  show(el, text, o){
+    o = o || {};
+    if(o.mode === 'run'){
+      const prev = o.from, v = o.value, dec = o.dec == null ? (String(text).indexOf(',') >= 0 ? 1 : 0) : o.dec;
+      const ints = Math.max(1, String(Math.floor(Math.max(prev, v))).length);
+      // +1 г — ~420 мс, S → L — ~700 мс
+      const steps = Math.abs(v - prev) * (dec ? 10 : 1);
+      odoRun(el, prev, v, dec, ints, Math.min(720, 380 + Math.sqrt(steps) * 28), o.delay || 0);
+    } else if(o.mode === 'blur') rnRoll(el, text, o.dir == null ? 1 : o.dir, o);
+    else moRoll(el, text, o.dir == null ? 1 : o.dir, o);
+  }
+};
 
 /* ---- Плитки: подложка выбора и наполнение сервера ---- */
 const tileAnim = { hold:false };
@@ -3341,7 +3360,7 @@ function renderResult(coffee, water){
   const lbl = '1:' + fmtRatio(state.ratio).replace('.', ',');
   const prevR = rv._v; rv._v = state.ratio;
   // крепче — число после «1:» уменьшается: цифры едут вниз; дробная часть выезжает своим разрядом
-  rnRoll(rv, lbl, prevR == null || state.ratio >= prevR ? 1 : -1, an && an.ratio ? { animate:true, dur:an.dur } : {});
+  Digits.show(rv, lbl, Object.assign({ mode:'blur', dir:prevR == null || state.ratio >= prevR ? 1 : -1 }, an && an.ratio ? { animate:true, dur:an.dur } : {}));
   el.querySelector('.cold-note').innerHTML = state.mode === 'cold' ? ' <span style="font-weight:400;color:var(--label-2)">· ' + (state.ratio <= 6 ? 'концентрат' : 'готов к питью') + '</span>' : '';
   const mod = ratioModified(), was = btn.classList.contains('mod');
   btn.classList.toggle('mod', mod);
@@ -3365,13 +3384,13 @@ function setResNum(el, txt, v, an){
   if(an && el.animate && !(el._odo && !el._odo.release)){
     const prev = el._v; el._v = v;
     if(prev == null || Math.abs(prev - v) < 1e-9){ el._t = txt; if(!el._odo) el.textContent = txt; return; }
-    runResNum(el, prev, v, txt.indexOf(',') >= 0 || (el.id === 'resCoffee' && isBrewMode()) ? 1 : 0, an.delay);
+    Digits.show(el, txt, { mode:'run', from:prev, value:v, dec:txt.indexOf(',') >= 0 || (el.id === 'resCoffee' && isBrewMode()) ? 1 : 0, delay:an.delay });
     el._t = txt;
     return;
   }
   if(el._odo){ el._t = txt; el._v = v; odoSet(el, v); return; }
   el._v = v;
-  moRoll(el, txt, 1, {});
+  Digits.show(el, txt, { mode:'roll' });
 }
 
 function fmtRatio(r){
@@ -4324,7 +4343,7 @@ const tf = {
   cd: document.getElementById('tfCd'), trk: document.getElementById('tfTrk'), done: document.getElementById('tfDone')
 };
 const CHECK_SVG = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
-const reduceMotion = ()=> !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const reduceMotion = moReduce;
 
 function setArc(pct){
   const p = Math.max(0, Math.min(1, pct)), len = RING_C * p;
@@ -7853,7 +7872,7 @@ function enCoffeeEnter(){
     el._enTxt = null;
     if(txt == null) return;
     el._t = '';
-    moRoll(el, txt, 1, { animate:true, dur:560, stagger:70, delay:220 + lag });
+    Digits.show(el, txt, { mode:'roll', animate:true, dur:560, stagger:70, delay:220 + lag });
   });
 }
 // Палец на калькуляторе — налив доводится мгновенно, дальше работает моушен плиток
