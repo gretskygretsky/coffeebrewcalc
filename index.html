@@ -5202,47 +5202,37 @@ actionBtn.onclick = ()=>{
 const tgApp = window.Telegram && window.Telegram.WebApp;
 const useCloud = !!(tgApp && tgApp.initData && tgApp.CloudStorage);
 
-function storeGet(key){
-  return new Promise(resolve=>{
-    if(useCloud){
-      tgApp.CloudStorage.getItem(key, (err, value)=> resolve(err || !value ? null : value));
-    } else {
-      resolve(localStorage.getItem(key));
-    }
-  });
-}
-function storeSet(key, value){
-  return new Promise(resolve=>{
-    if(useCloud){
-      tgApp.CloudStorage.setItem(key, value, ()=> resolve());
-    } else {
-      try{ localStorage.setItem(key, value); }catch(e){}
-      resolve();
-    }
-  });
-}
-function storeRemove(key){
-  return new Promise(resolve=>{
-    if(useCloud){
-      tgApp.CloudStorage.removeItem(key, ()=> resolve());
-    } else {
-      localStorage.removeItem(key);
-      resolve();
-    }
-  });
-}
-function storeGetMultiple(keys){
-  return new Promise(resolve=>{
-    if(!keys.length){ resolve({}); return; }
-    if(useCloud){
-      tgApp.CloudStorage.getItems(keys, (err, values)=> resolve(err ? {} : (values || {})));
-    } else {
-      const out = {};
-      keys.forEach(k=>{ const v = localStorage.getItem(k); if(v) out[k] = v; });
-      resolve(out);
-    }
-  });
-}
+/* Три адаптера с одним интерфейсом: get / set / remove / getMany. Cloud — Telegram,
+   local — браузер, memory — для тестов. Выбор один раз за сессию (Store.use меняет его в тестах). */
+const StoreAdapters = {
+  cloud: {
+    get: key=> new Promise(res=> tgApp.CloudStorage.getItem(key, (err, v)=> res(err || !v ? null : v))),
+    set: (key, v)=> new Promise(res=> tgApp.CloudStorage.setItem(key, v, ()=> res())),
+    remove: key=> new Promise(res=> tgApp.CloudStorage.removeItem(key, ()=> res())),
+    getMany: keys=> new Promise(res=> tgApp.CloudStorage.getItems(keys, (err, vals)=> res(err ? {} : (vals || {}))))
+  },
+  local: {
+    get: key=> Promise.resolve(localStorage.getItem(key)),
+    set: (key, v)=>{ try{ localStorage.setItem(key, v); }catch(e){} return Promise.resolve(); },
+    remove: key=>{ localStorage.removeItem(key); return Promise.resolve(); },
+    getMany: keys=>{ const out = {}; keys.forEach(k=>{ const v = localStorage.getItem(k); if(v) out[k] = v; }); return Promise.resolve(out); }
+  },
+  memory(){
+    const m = new Map();
+    return {
+      get: key=> Promise.resolve(m.has(key) ? m.get(key) : null),
+      set: (key, v)=>{ m.set(key, String(v)); return Promise.resolve(); },
+      remove: key=>{ m.delete(key); return Promise.resolve(); },
+      getMany: keys=>{ const out = {}; keys.forEach(k=>{ if(m.get(k)) out[k] = m.get(k); }); return Promise.resolve(out); },
+      dump: ()=> Object.fromEntries(m)
+    };
+  }
+};
+const Store = { adapter: useCloud ? StoreAdapters.cloud : StoreAdapters.local, use(a){ this.adapter = a; } };
+function storeGet(key){ return Store.adapter.get(key); }
+function storeSet(key, value){ return Store.adapter.set(key, value); }
+function storeRemove(key){ return Store.adapter.remove(key); }
+function storeGetMultiple(keys){ return keys.length ? Store.adapter.getMany(keys) : Promise.resolve({}); }
 
 /* ---- Дневник: модель данных ----
    journal_index -> [id, id, ...]; journal_entry_<id> -> {id,mode,ratio,coffee,water,pours}
@@ -5867,7 +5857,7 @@ async function createBrewEntry(){
   };
   brewEntryId = entry.id;
   await journalSaveEntry(entry);
-  if(entry.beanId != null) await adjustBeanRemaining(entry.beanId, -entry.coffee);
+  await applyGramsChange(null, entry);
   renderJournal();
   track('journal_autosaved');
   return entry.id;
@@ -6356,15 +6346,9 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
     entry.water = entry.pours.reduce((a,b)=> a+b.add, 0);
     // Смена зерна переносит граммы: вернуть прежнему, списать с нового.
     const before = journalEntries.find(e=> e.id === entry.id);
-    const oldId = before ? normId(before.beanId) : null;
-    const newId = normId(entry.beanId);
-    if(before && oldId !== newId){
-      if(oldId != null) await adjustBeanRemaining(oldId, before.coffee || 0);
-      if(newId != null) await adjustBeanRemaining(newId, -(entry.coffee || 0));
-      track('journal_bean_changed');
-    } else if(before && newId != null && Math.abs((before.coffee || 0) - (entry.coffee || 0)) > 1e-9){
-      // поправили граммы в записи — остаток зерна поправляется на разницу
-      await adjustBeanRemaining(newId, (before.coffee || 0) - (entry.coffee || 0));
+    if(before){
+      if(normId(before.beanId) !== normId(entry.beanId)) track('journal_bean_changed');
+      await applyGramsChange(before, entry);
     }
     if((entry.rating || 0) > 0 && !(before && (before.rating || 0) > 0)) ua('entry_rate');
     await journalUpdateEntry(entry);
@@ -6483,7 +6467,7 @@ document.getElementById('alertDeleteBtn').addEventListener('click', async ()=>{
     // Удалённое заваривание возвращает граммы своему зерну.
     const e = journalEntries.find(x=> x.id === id);
     await journalDeleteEntry(id);
-    if(e && normId(e.beanId) != null) await adjustBeanRemaining(normId(e.beanId), e.coffee || 0);
+    if(e) await applyGramsChange(e, null);
     renderJournal();
     updateBeanPickRow();
   }
@@ -6608,6 +6592,25 @@ function applyActiveBeanProfile(){
 /* Изменение остатка зерна на delta граммов (минус — списание, плюс — возврат).
    Остаток хранится честно, даже ниже нуля: иначе серия правок «туда-обратно»
    (смена зерна в записи, удаление записи) портит цифры. На экране — не меньше нуля. */
+/* Граммы записи списываются ровно с одного зерна. Любое изменение записи
+   (создание, правка, удаление) — это пара «было → стало», а переносы граммов
+   считает одна чистая функция. before = null — создание, after = null — удаление. */
+function gramsTransfers(before, after){
+  const b = before ? { id: normId(before.beanId), g: before.coffee || 0 } : { id: null, g: 0 };
+  const a = after ? { id: normId(after.beanId), g: after.coffee || 0 } : { id: null, g: 0 };
+  const out = [];
+  if(b.id === a.id){
+    if(b.id != null && Math.abs(b.g - a.g) > 1e-9) out.push([b.id, b.g - a.g]);
+  } else {
+    if(b.id != null && b.g) out.push([b.id, b.g]);
+    if(a.id != null && a.g) out.push([a.id, -a.g]);
+  }
+  return out;
+}
+async function applyGramsChange(before, after){
+  for(const [id, delta] of gramsTransfers(before, after)) await adjustBeanRemaining(id, delta);
+}
+
 async function adjustBeanRemaining(id, delta){
   if(id == null || !delta) return;
   const bean = beans.find(b=> b.id === id);
