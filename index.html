@@ -1402,22 +1402,6 @@
   .temp-src b{ color:var(--label); font-weight:600; }
   .temp-src:empty{ display:none; }
   .rc .sizes{ border-bottom:none; }
-  /* pan-y: вертикально — прокрутка страницы, горизонтально — только ползунок */
-  .slider-row{ touch-action:pan-y; display:flex; align-items:center; gap:10px; padding:10px 14px 10px 8px; min-height:88px; }
-  .vol-back{ width:40px; height:40px; border-radius:50%; border:none; background:var(--fill); color:var(--accent, var(--orange)); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
-  .slider-body{ flex:1; min-width:0; }
-  .slider-top{ display:flex; justify-content:space-between; align-items:baseline; }
-  .slider-top > span{ display:inline-block; font-size:13px; color:var(--label-2); }
-  /* Бегунок чуть растёт, пока его держат */
-  input[type=range]::-webkit-slider-thumb{ transition:transform .18s var(--ease-out), box-shadow .18s ease; }
-  input[type=range].grab::-webkit-slider-thumb{ transform:scale(1.22); box-shadow:0 3px 10px rgba(0,0,0,0.25); }
-  input[type=range].grab::-moz-range-thumb{ transform:scale(1.22); }
-  .slider-body input[type=range]{ margin:2px 0 -2px; }
-  .ticks{ position:relative; height:14px; font-size:11px; color:var(--label-3); font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .ticks span{ position:absolute; top:0; }
-  .ticks .mid{ transform:translateX(-50%); font-weight:600; transition:color .2s ease; }
-  .ticks .mid i, .ticks .end{ display:inline-block; font-style:normal; }
-  .ticks .mid.hit{ color:var(--accent, var(--orange)); }
   #classicInput .row{ padding-left:18px; }
   .rc-res{ position:relative; padding:14px 14px 14px 18px; }
   .rc-res::before{ content:""; position:absolute; top:0; left:18px; right:0; height:0.5px; background:var(--separator); }
@@ -1436,33 +1420,6 @@
   /* до первого входа в «Кофе» числа не показываем: их выкатят барабаны (иначе мелькнут из разметки) */
   @media (prefers-reduced-motion: no-preference){ .res-nums.en-hold b{ visibility:hidden; } }
   .res-nums > span{ font-size:15px; color:var(--label-2); font-weight:600; }
-  /* «Свой»: ползунок ведёт подчёркнутое число; тап по другому — переключить мл ⇄ г */
-  .res-nums .drv{ position:absolute; z-index:0; left:0; top:0; border-radius:12px; background:color-mix(in srgb, var(--accent, var(--orange)) 13%, transparent); pointer-events:none; opacity:0; transition:opacity .2s ease; }
-  .res-nums.pick .drv{ opacity:1; }
-  .res-nums.pick b{ position:relative; z-index:1; cursor:pointer; padding:4px 6px; margin:-4px -6px; border-radius:12px; }
-  .res-nums.pick b:focus-visible{ outline:2px solid var(--blue); outline-offset:0; }
-  .res-nums.pick b.on::after{ content:""; position:absolute; left:var(--ul-l, 6px); right:var(--ul-r, 6px); bottom:-3px; height:2.5px; border-radius:2px; background:var(--accent, var(--orange)); }
-  .cup-hint{ font-size:12px; color:var(--label-3); margin-top:8px; }
-  /* Точный ввод: второй тап по ведущему числу — печатаешь прямо в нём (весы показали 18,4 г) */
-  .res-nums b .cup-ed{ font:inherit; letter-spacing:inherit; color:inherit; background:none; border:none; padding:0; margin:0; outline:none; width:3ch;
-    font-variant-numeric:tabular-nums; caret-color:var(--accent, var(--orange)); -webkit-appearance:none; appearance:none; border-radius:0; }
-  .res-nums b .cup-ed.bad{ color:var(--red); }
-  .res-nums.pick b.editing{ cursor:text; }
-  .res-nums.pick b.editing::after{ animation:edCaret 1s ease-in-out infinite; }
-  @keyframes edCaret{ 50%{ opacity:.35; } }
-  /* «Готово» на время ввода встаёт на место «мягче / крепче»: у цифровой клавиатуры iPhone своей кнопки нет */
-  .res-adj{ position:relative; }
-  .res-adj .str{ transition:opacity .12s var(--ease-out); }
-  .res-adj.editing .str{ opacity:0; pointer-events:none; }
-  .cup-done{ position:absolute; right:0; top:50%; height:36px; padding:0 14px 0 10px; display:inline-flex; align-items:center; gap:4px;
-    border:none; border-radius:999px; background:var(--accent, var(--orange)); color:var(--on-acc); font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
-    transform-origin:right center; transform:translate(8px, -50%) scale(.95); opacity:0; pointer-events:none;
-    transition:transform .14s var(--ease-out), opacity .12s var(--ease-out); }
-  .res-adj.editing .cup-done{ transform:translate(0, -50%); opacity:1; pointer-events:auto; transition:transform .22s var(--ease-out), opacity .18s var(--ease-out); }
-  .res-adj.editing .cup-done:active{ transform:translate(0, -50%) scale(.97); transition:transform .1s var(--ease-out); }
-  .cup-done:focus-visible{ outline:2px solid var(--blue); outline-offset:2px; }
-  .cup-done svg{ width:16px; height:16px; }
-  .cup-hint[hidden]{ display:none; }
   /* Цифры-барабаны (дискретные смены) и одометр (под пальцем) */
   .dg{ display:inline-block; position:relative; clip-path:inset(0 -0.04em); white-space:pre; }
   .dg-out{ position:absolute; left:0; top:0; }
@@ -1547,35 +1504,33 @@
      На тач-экране :hover «залипает» после тапа, поэтому гейтим медиазапросом. */
   @media (hover: hover) and (pointer: fine){
     .tab:hover:not(.on), .size:hover:not(.on), .mi:hover, .jr:hover, .a-row:hover, .jm-head:hover, .arch-toggle:hover,
-    .bb-mute:hover, .chart-tg:hover:not(.on), .temp-btn:hover, .vol-back:hover, .pick-none:hover{ background-color:var(--fill); }
+    .bb-mute:hover, .chart-tg:hover:not(.on), .temp-btn:hover, .pick-none:hover{ background-color:var(--fill); }
     .pill:hover:not(.active), .pill-menu:hover, .tf-btn:not(.pri):hover, .bb-stop:hover, .alert-btn:not(.danger):not(.primary):hover,
     .bs-act:hover, .ce-add:hover, .str button:hover, .stepper button:hover, .vstep button:hover{ background-color:var(--track); }
     .action.play:hover, .action.add:hover, .tf-btn.pri:hover, .alert-btn.danger:hover, .alert-btn.primary:hover,
     .mode-pill:hover{ filter:brightness(1.06); }
     .b-row-content.bc:hover, #calcBeanCard:hover > *{ box-shadow:0 0 0 1px var(--separator); }
-    .tab, .size, .mi, .a-row, .jm-head, .arch-toggle, .bb-mute, .chart-tg, .temp-btn, .vol-back, .pick-none,
+    .tab, .size, .mi, .a-row, .jm-head, .arch-toggle, .bb-mute, .chart-tg, .temp-btn, .pick-none,
     .pill-menu, .bs-act, .ce-add, .str button, .stepper button, .vstep button, .alert-btn, .mode-pill{ transition-property:transform, background-color, color, filter, box-shadow; transition-duration:.16s; }
   }
   /* Отклик на нажатие для кнопок, у которых его не было */
-  .alert-btn, .bs-act, .temp-btn, .vol-back, .chart-tg, .pill-menu, .arch-toggle, .jm-head{
+  .alert-btn, .bs-act, .temp-btn, .chart-tg, .pill-menu, .arch-toggle, .jm-head{
     transition-property:transform, background-color, color, filter, box-shadow; transition-duration:.16s; transition-timing-function:var(--ease-out); }
   .alert-btn:active, .bs-act:active, .temp-btn:active, .pill-menu:active{ transform:scale(.97); }
-  .vol-back:active, .chart-tg:active{ transform:scale(.92); }
+  .chart-tg:active{ transform:scale(.92); }
   .arch-toggle:active, .jm-head:active{ transform:scale(.98); }
   .ratio-reset:active{ opacity:.55; }
   @media (prefers-reduced-motion: reduce){
-    .res-nums.pick b.editing::after{ animation:none; }
-    .cup-done, .res-adj.editing .cup-done{ transform:translateY(-50%) !important; transition:opacity .15s ease; }
-    .alert-btn, .bs-act, .temp-btn, .vol-back, .chart-tg, .pill-menu, .arch-toggle, .jm-head, .star, .js-rate button{ transition:none !important; }
-    .custom-row, .slider-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
+    .alert-btn, .bs-act, .temp-btn, .chart-tg, .pill-menu, .arch-toggle, .jm-head, .star, .js-rate button{ transition:none !important; }
+    .custom-row, .chart-in, .rc .temp-detail, .rc-face, .tf-n span{ animation:none !important; }
     .fold, #recipeCard, .brew-bar *, .pour-row, .tf-trk i{ transition:none !important; }
     .stage-pill i{ animation:none; }
     .sheet, .sheet:not(.show){ transition:opacity .2s ease, visibility 0s .2s !important; }
     .sheet:not(.show){ opacity:0; }
     .alert-box{ transition:opacity .16s ease !important; transform:translate(-50%,-50%) !important; }
-    .segmented .thumb, .js-track button::after, .bs-sw i::after, .chart-in, .slider-row, .custom-row, .rc .temp-detail, .tf-ice, .tf-done{ transition:none !important; }
+    .segmented .thumb, .js-track button::after, .bs-sw i::after, .chart-in, .custom-row, .rc .temp-detail, .tf-ice, .tf-done{ transition:none !important; }
     .pill, .tab, .size, .tf-btn, .bb-mute, .bb-stop, .action, .action svg{ transition:none !important; }
-    .size .letter, .od, .res-nums .drv, .ratio-reset, .ticks .mid, input[type=range]::-webkit-slider-thumb{ transition:none !important; }
+    .size .letter, .od, .ratio-reset, input[type=range]::-webkit-slider-thumb{ transition:none !important; }
     .pop-menu.glass{ transition:opacity .15s ease; transform:none !important; }
     .tab-lens.anim, .action, .action svg, .tabbar{ transition:none; }
   }
@@ -1634,30 +1589,6 @@
   .bs-blk .t{ font-size:16px; color:var(--label); }
   .bs-row + .bs-blk::before, .bs-blk + .bs-row::before, .bs-blk + .bs-blk::before{ content:""; position:absolute; top:0; left:16px; right:0; height:0.5px; background:var(--separator); }
   .js-rate-l.gl-roll{ display:grid; justify-items:center; }
-
-  /* ---------- «Свой»: бегунок-линза ---------- */
-  .slider-body{ position:relative; }
-  #volSlider::-webkit-slider-thumb{ opacity:0; }
-  #volSlider::-moz-range-thumb{ opacity:0; }
-  .vl-knob{ position:absolute; z-index:2; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; background:#FFFFFF; box-shadow:0 1px 4px rgba(0,0,0,.25);
-    pointer-events:none; transition:opacity .12s ease, scale .3s var(--gl-spring); }
-  .vl-lens{ position:absolute; z-index:3; width:64px; height:36px; margin:-18px 0 0 -32px; border-radius:18px; overflow:hidden; pointer-events:none;
-    background:var(--card); opacity:0; scale:.4; transition:opacity .14s ease, scale .34s var(--gl-spring);
-    box-shadow:0 10px 24px -6px var(--glass-shadow), 0 1px 3px var(--glass-shadow); }
-  .vl-lens::before{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:2; pointer-events:none;
-    background:linear-gradient(180deg, var(--glass-sheen) 0%, transparent 46%), radial-gradient(120% 90% at 50% 120%, transparent 55%, var(--glass-lo) 100%); }
-  .vl-lens::after{ content:""; position:absolute; inset:0; border-radius:inherit; z-index:3; pointer-events:none; padding:1px;
-    background:linear-gradient(160deg, var(--glass-hi), transparent 38%, transparent 62%, var(--glass-edge));
-    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
-            mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
-  .vl-mag{ position:absolute; pointer-events:none; }
-  .vl-mag .vm-track{ position:absolute; height:4px; border-radius:2px; background:var(--fill); overflow:hidden; }
-  .vl-mag .vm-track i{ display:block; height:100%; border-radius:2px; }
-  .vl-mag .ticks{ position:absolute; }
-  .slider-body.lens-on .vl-knob{ opacity:0; scale:1.6; }
-  .slider-body.lens-on .vl-lens{ opacity:1; scale:1; }
-  #volSlider:disabled ~ .vl-knob{ opacity:.5; }
-  @media (prefers-reduced-motion: reduce){ .vl-knob, .vl-lens{ transition:none !important; } }
 
   /* ---------- Таб-бар: линза на пружинах (положение, вытягивание и подъём — в JS) ---------- */
   .tab-lens, .tab-lens.anim{ transition:none; will-change:transform; --lift:0; }
@@ -1900,19 +1831,9 @@
       <div id="tempWhy"></div>
     </div>
 
-    <!-- V60 и Iced V60: порции S · M · L · Свой. «Свой» сворачивает плитки в ползунок на том же месте. -->
+    <!-- V60 и Iced V60: порции S · M · L; своя порция — четвёртая плитка, появляется при свайпе по числу итога. -->
     <div id="cupInput">
       <div class="sizes" id="cupSizes" role="radiogroup" aria-label="Размер порции"></div>
-      <div class="slider-row" id="cupCustomRow" style="display:none;">
-        <button class="vol-back" id="cupBackBtn" type="button" aria-label="Вернуться к порциям S, M, L"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-        <div class="slider-body">
-          <div class="slider-top"><span id="cupUnitLbl">Свой объём</span></div>
-          <input type="range" id="volSlider" min="100" max="600" step="1" value="300" aria-label="Свой объём воды">
-          <div class="ticks" id="volTicks"></div>
-          <span class="vl-knob" id="volKnob" aria-hidden="true"></span>
-          <span class="vl-lens" id="volLens" aria-hidden="true"><span class="vl-mag" id="volMag"></span></span>
-        </div>
-      </div>
     </div>
 
     <!-- Cold brew: объём воды задаётся напрямую -->
@@ -1932,13 +1853,11 @@
     </div>
 
     <div class="rc-res" id="calcRes">
-      <div class="res-nums en-hold"><span class="drv" id="cupDrv" aria-hidden="true"></span><div class="rn-col"><span class="rn-l">Зерно<small>, г</small></span><b class="c" id="resCoffee">20</b></div><div class="rn-col"><span class="rn-l">Вода<small>, мл</small></span><b id="resWater">320</b></div></div>
-      <div class="cup-hint" id="cupHint" hidden>Тапни другое число, чтобы вести ползунком его</div>
+      <div class="res-nums en-hold"><div class="rn-col"><span class="rn-l">Зерно<small>, г</small></span><b class="c" id="resCoffee">20</b></div><div class="rn-col"><span class="rn-l">Вода<small>, мл</small></span><b id="resWater">320</b></div></div>
       <div class="res-ice" id="resIce" style="display:none;">Воды <span id="cupHotVal"></span> · <b>лёд <span id="cupIceVal"></span></b> в сервер</div>
       <div class="res-adj">
         <span class="res-ratio" id="resRatio"></span>
         <span class="str"><button type="button" id="coffeeStepDown" aria-label="Мягче: меньше кофе"><span class="bl">− мягче</span></button><i></i><button type="button" id="coffeeStepUp" aria-label="Крепче: больше кофе"><span class="bl">крепче +</span></button></span>
-        <button type="button" class="cup-done" id="cupDone" tabindex="-1" aria-label="Готово"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Готово</button>
       </div>
     </div>
    </div>
@@ -2845,137 +2764,6 @@ document.getElementById('classicWaterStepDown').onclick = ()=>{
   classicWaterInput.dispatchEvent(new Event('input'));
 };
 
-/* ---- «Свой»: ползунок на месте плиток (магнит к отметкам и пресетам S/M/L) ---- */
-const volSlider = document.getElementById('volSlider');
-function snapPoints(){
-  const pts = [];
-  for(let v=CUP_MIN; v<=CUP_MAX; v+=25) pts.push(v);
-  return pts.concat(CUP_KEYS.map(k=> cup.sizes[k]));
-}
-function nearestSnap(v){
-  let best=v, bd=999;
-  snapPoints().forEach(s=>{ const d=Math.abs(v-s); if(d<bd){ bd=d; best=s; } });
-  return {best,bd};
-}
-
-function updateSliderFill(){
-  const accent = accentVar(state.mode);
-  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
-  const pct = ((parseFloat(volSlider.value)-min)/(max-min))*100;
-  volSlider.style.setProperty('--range-p', pct + '%');
-  volSlider.style.setProperty('--range-c', accent);
-  volLensPlace();
-}
-/* ---- «Свой»: бегунок-линза ----
-   Нативный бегунок невидим (жест и доступность — его), поверх — свой кружок. Пока палец на ползунке,
-   кружок раздувается в стеклянную линзу: в ней та же дорожка и деления, увеличенные вокруг пальца. */
-const VL_SCALE = 1.35;
-let vlTicksHTML = '';
-function volLensPlace(){
-  const body = volSlider.parentNode, knob = document.getElementById('volKnob'), lens = document.getElementById('volLens'), mag = document.getElementById('volMag');
-  if(!knob || !volSlider.offsetWidth) return;
-  const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max), f = (parseFloat(volSlider.value) - min) / (max - min);
-  const cx = volSlider.offsetLeft + 11 + f * (volSlider.offsetWidth - 22), cy = volSlider.offsetTop + 14;
-  knob.style.transform = lens.style.transform = '';
-  knob.style.left = lens.style.left = cx + 'px'; knob.style.top = lens.style.top = cy + 'px';
-  // копия лица ползунка, увеличенная вокруг центра линзы
-  const tk = document.getElementById('volTicks');
-  if(!mag.firstChild || vlTicksHTML !== tk.innerHTML){
-    vlTicksHTML = tk.innerHTML;
-    mag.innerHTML = '<span class="vm-track"><i></i></span><div class="ticks">' + vlTicksHTML + '</div>';
-  }
-  const lx = cx - 32, ly = cy - 18, tr = mag.firstChild, mt = mag.lastChild;
-  mag.style.width = body.clientWidth + 'px'; mag.style.height = body.clientHeight + 'px';
-  mag.style.left = -lx + 'px'; mag.style.top = -ly + 'px';
-  mag.style.transformOrigin = cx + 'px ' + cy + 'px'; mag.style.transform = 'scale(' + VL_SCALE + ')';
-  tr.style.left = volSlider.offsetLeft + 'px'; tr.style.top = (cy - 2) + 'px'; tr.style.width = volSlider.offsetWidth + 'px';
-  tr.firstChild.style.width = (f * 100).toFixed(2) + '%'; tr.firstChild.style.background = accentVar(state.mode);
-  mt.style.left = tk.offsetLeft + 'px'; mt.style.top = tk.offsetTop + 'px'; mt.style.width = tk.offsetWidth + 'px';
-}
-addEventListener('resize', ()=> volLensPlace());
-
-volSlider.oninput = ()=>{
-  let v = parseFloat(volSlider.value), detent = false;
-  if(cupUnit === 'g'){
-    // Ползунок ведёт граммы: магнит к целым граммам. Бегунок по-прежнему стоит на объёме воды
-    // (граммы = вода / пропорция), поэтому при переключении мл ⇄ г он не прыгает.
-    let gr = Math.round(v / state.ratio * 10) / 10;
-    const gi = Math.round(gr);
-    if(Math.abs(gr - gi) <= 0.3){ gr = gi; if(volSlider._detent !== 'g' + gi){ volSlider._detent = 'g' + gi; detent = true; } }
-    else volSlider._detent = null;
-    // вода остаётся целой: при обратном счёте граммы округляются в ту же десятую
-    v = Math.max(CUP_MIN, Math.min(CUP_MAX, Math.round(gr * state.ratio)));
-    volSlider.value = v;
-  } else {
-    const { best, bd } = nearestSnap(v);
-    if(bd<=6){ v = best; volSlider.value = v; }
-    // Детент: ползунок «щёлкнул» на отметке (каждые 25 мл, S/M/L)
-    if(bd<=6 && v !== volSlider._detent){ volSlider._detent = v; detent = true; }
-    else if(bd > 6) volSlider._detent = null;
-  }
-  if(detent) haptics('selection');
-  cup.size = 'custom';
-  cup.custom = v;
-  saveCupPrefs();
-  state.inputType = 'water';
-  state.value = v;
-  updateSliderFill();
-  compute();
-  // на отметке ведомое число коротко «щёлкает» вместе с вибро
-  if(detent) moPulse(cupDrivenEl(), 1.06, 240);
-};
-/* Вся строка «Свой объём» ведёт себя как ползунок: горизонтальный жест по подписям,
-   цифре и шкале двигает объём, а не листает экран. Вертикальный — обычная прокрутка. */
-(function wideSliderZone(){
-  const zone = document.querySelector('#cupCustomRow .slider-body');
-  let g = null;
-  const setFromX = x=>{
-    const r = volSlider.getBoundingClientRect(), knob = 28;
-    const min = parseFloat(volSlider.min), max = parseFloat(volSlider.max);
-    const f = Math.max(0, Math.min(1, (x - r.left - knob / 2) / Math.max(1, r.width - knob)));
-    const v = Math.round(min + f * (max - min));
-    if(String(v) === volSlider.value) return;
-    volSlider.value = v;
-    volSlider.dispatchEvent(new Event('input'));
-  };
-  zone.addEventListener('pointerdown', e=>{
-    if(volSlider.disabled) return;
-    moSweepGen++;   // палец перехватывает выезд бегунка
-    // На iOS ползунок едет только за «таблетку»; здесь — за палец в любом месте строки
-    g = { x:e.clientX, y:e.clientY, id:e.pointerId, on:false, onInput: e.target === volSlider };
-    if(g.onInput) sliderGrab(true);
-  });
-  zone.addEventListener('pointermove', e=>{
-    if(!g || e.pointerId !== g.id) return;
-    const dx = e.clientX - g.x, dy = e.clientY - g.y;
-    if(!g.on){
-      if(Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)){
-        g.on = true; sliderGrab(true);
-        if(!g.onInput){ try{ zone.setPointerCapture(e.pointerId); }catch(_){} }
-      } else if(Math.abs(dy) > 8){ g = null; sliderGrab(false); return; }
-      else return;
-    }
-    setFromX(e.clientX);
-  });
-  const end = ()=>{ if(g && g.on) volSlider.dispatchEvent(new Event('change')); g = null; sliderGrab(false); };
-  zone.addEventListener('pointerup', end);
-  zone.addEventListener('pointercancel', end);
-})();
-
-// «‹» — обратно к плиткам: совпал с пресетом — он, иначе ближайший к своему объёму
-document.getElementById('cupBackBtn').onclick = ()=>{
-  const w = cup.custom;
-  cup.size = CUP_KEYS.reduce((a,k)=> Math.abs(cup.sizes[k] - w) < Math.abs(cup.sizes[a] - w) ? k : a, 'M');
-  saveCupPrefs();
-  state.inputType = 'water';
-  state.value = cupWater();
-  haptics('light');
-  // ползунок втягивается обратно в «Свой», итог докручивается к объёму порции
-  calcAnim = { dur:300, delay:180 };
-  cupMorph.hold = true; compute(); cupMorph.hold = false;
-  morphCup(false);
-};
-
 /* ---- Плитки S · M · L · Свой ----
    Строятся один раз (тот же урок, что с .thumb: без пересборки DOM на каждый клик),
    дальше только переключаем .on и подписи. */
@@ -3401,18 +3189,8 @@ function odoEnd(el){
     // «,0» больше не нужно — хвост схлопывается (после пробега он уже свёрнут), потом разряды снова текст
     const w = o.frac.getBoundingClientRect().width; o.frac.classList.add('clip');
     moA(o.frac, [{ width:w + 'px', opacity:+o.frac.style.opacity || 1 }, { width:'0px', opacity:0 }], { duration:w > .5 ? 220 : 1, easing:MO_OUT, fill:'forwards' })
-      .finished.then(()=>{ if(!el._odo && !el._editing) el.textContent = el._t; }).catch(()=>{});
+      .finished.then(()=>{ if(!el._odo) el.textContent = el._t; }).catch(()=>{});
   } else el.textContent = el._t;
-}
-function odoKill(el){ if(el._odo){ ODO.delete(el); el._odo = null; } }
-function sliderGrab(on){
-  const anim = on && !moReduce() && isBrewMode() && brewPhase === 'idle';
-  volSlider.classList.toggle('grab', anim);
-  volSlider.parentNode.classList.toggle('lens-on', on && !moReduce() && !volSlider.disabled);
-  if(on) volLensPlace();
-  const els = [[document.getElementById('resWater'), state.water, 0, 3], [document.getElementById('resCoffee'), state.coffee, 1, 2]];
-  if(anim) els.forEach(([el, v, dec, ints])=> odoStart(el, v, dec, ints));
-  else els.forEach(([el])=> odoRelease(el));
 }
 
 /* ---- Пробег: S · M · L, «‹» и мягче / крепче крутят тот же одометр, что и ползунок ----
@@ -3477,325 +3255,7 @@ function animateTiles(prev){
   });
 }
 
-/* ---- «Свой» ⇄ плитки ----
-   Открытие: ползунок раскрывается из самой плитки «Свой» — окно растёт из её прямоугольника на всю
-   ширину, S·M·L уходят влево, бегунок выезжает от правого края к текущему объёму, «‹» — последним.
-   Закрытие — обратная дорога: бегунок уезжает вправо, ползунок втягивается в «Свой», плитки
-   возвращаются слева, подложка и наполнение садятся на выбранную порцию. */
-const cupMorph = { hold:false, busy:false, gen:0 };
-let moSweepGen = 0, moSweepOn = false;
-function setCupView(custom){
-  const t = document.getElementById('cupSizes'), r = document.getElementById('cupCustomRow');
-  t.style.display = 'flex'; r.style.display = 'none';   // ползунка «Свой» больше нет: своя порция — свайпом по числу
-  t.classList.remove('cup-leaving'); r.classList.remove('cup-leaving');
-}
-function moSweep(from, to, ms, delay, curve){
-  const g = ++moSweepGen;
-  const paint = v=>{ volSlider.value = v; updateSliderFill(); };
-  moSweepOn = true; paint(from);
-  setTimeout(()=>{
-    const t0 = performance.now();
-    const f = now=>{
-      if(g !== moSweepGen){ moSweepOn = false; return; }
-      const p = Math.min(1, (now - t0) / ms);
-      paint(Math.round(from + (to - from) * curve(p)));
-      if(p < 1) requestAnimationFrame(f); else moSweepOn = false;
-    };
-    requestAnimationFrame(f);
-  }, delay);
-}
-function morphCup(on){
-  const wrap = document.getElementById('cupInput'), tiles = document.getElementById('cupSizes'), row = document.getElementById('cupCustomRow');
-  const lens = document.getElementById('cupLens'), res = document.getElementById('calcRes'), card = document.getElementById('recipeCard');
-  const all = [wrap, tiles, row, res, ...tiles.querySelectorAll('*'), ...row.querySelectorAll('*')];
-  all.forEach(el=> moCancel(el, 'morph'));
-  moSweepGen++; moSweepOn = false;
-  if(moReduce() || !card.offsetHeight || !wrap.offsetHeight){ cupMorph.busy = false; setCupView(on); syncPickUI(); placeLens(false); return; }
-  const g = ++cupMorph.gen; cupMorph.busy = true;
-  const outEl = on ? tiles : row, inEl = on ? row : tiles;
-  const h0 = wrap.offsetHeight, y0 = res.getBoundingClientRect().top;
-  // раскладка — мгновенно внутри flipCalc (он двигает карточку и страницу transform/clip-path)
-  flipCalc(()=>{
-    tiles.style.display = 'grid'; row.style.display = 'flex';
-    outEl.classList.add('cup-leaving'); inEl.classList.remove('cup-leaving');
-    syncPickUI();
-  }, 440);
-  const h1 = wrap.offsetHeight, M = (el, kf, o)=> moTag(moA(el, kf, o), 'morph');
-  if(!on) placeLens(false);
-  // итог внутри карточки едет со старого места; лишняя высота уходящего слоя срезается в такт
-  const dy = y0 - res.getBoundingClientRect().top;
-  if(Math.abs(dy) > .5) M(res, [{ transform:'translateY(' + dy.toFixed(1) + 'px)' }, { transform:'none' }], { duration:440, easing:MO_DRAWER });
-  if(h0 > h1 + .5) M(wrap, [{ clipPath:'inset(-24px -24px ' + (h1 - h0).toFixed(1) + 'px -24px)' }, { clipPath:'inset(-24px -24px 0px -24px)' }], { duration:440, easing:MO_DRAWER });
-  const ts = [...tiles.querySelectorAll('.size')], cust = ts[3];
-  const rw = row.offsetWidth, rh = row.offsetHeight;
-  const tileClip = 'inset(' + cust.offsetTop + 'px ' + Math.max(0, rw - cust.offsetLeft - cust.offsetWidth) + 'px ' + Math.max(0, rh - cust.offsetTop - cust.offsetHeight) + 'px ' + cust.offsetLeft + 'px round 16px)';
-  const back = document.getElementById('cupBackBtn'), top = row.querySelector('.slider-top'), ticks = [...row.querySelectorAll('.ticks span')];
-  const target = parseFloat(volSlider.value);
-  if(on){
-    ts.slice(0, 3).forEach((t, i)=> M(t, [{ opacity:1, translate:'0 0', scale:'1' }, { opacity:0, translate:'-16px 0', scale:'.94' }], { duration:150, delay:(2 - i) * 20, easing:MO_EXIT, fill:'forwards' }));
-    M(lens, [{ opacity:1 }, { opacity:0 }], { duration:160, easing:MO_EXIT, fill:'forwards' });
-    M(cust, [{ opacity:1, scale:'1' }, { opacity:0, scale:'1.12' }], { duration:220, delay:50, easing:MO_OUT, fill:'forwards' });
-    M(row, [{ clipPath:tileClip, opacity:.4 }, { clipPath:'inset(0px 0px 0px 0px round 0px)', opacity:1 }], { duration:460, delay:80, easing:MO_DRAWER, fill:'backwards' });
-    M(back, [{ opacity:0, transform:'scale(.7)' }, { opacity:1, transform:'none' }], { duration:400, delay:200, easing:MO_SPRING, fill:'backwards' });
-    M(top, [{ opacity:0, transform:'translateY(6px)' }, { opacity:1, transform:'none' }], { duration:300, delay:150, easing:MO_OUT, fill:'backwards' });
-    ticks.forEach((t, i)=> M(t, [{ opacity:0 }, { opacity:1 }], { duration:240, delay:240 + i * 30, easing:MO_OUT, fill:'backwards' }));
-    moSweep(CUP_MAX, target, 680, 70, p=> moSpringAt(.72, p));
-  } else {
-    M(back, [{ opacity:1, transform:'none' }, { opacity:0, transform:'scale(.7)' }], { duration:160, easing:MO_EXIT, fill:'forwards' });
-    M(top, [{ opacity:1 }, { opacity:0 }], { duration:140, easing:MO_EXIT, fill:'forwards' });
-    ticks.forEach(t=> M(t, [{ opacity:1 }, { opacity:0 }], { duration:120, easing:MO_EXIT, fill:'forwards' }));
-    moSweep(parseFloat(volSlider.value), CUP_MAX, 280, 0, p=> p * p);
-    M(row, [{ clipPath:'inset(0px 0px 0px 0px round 0px)', opacity:1 }, { clipPath:tileClip, opacity:1, offset:.8 }, { clipPath:tileClip, opacity:0 }], { duration:380, delay:60, easing:MO_DRAWER, fill:'forwards' });
-    ts.forEach((t, i)=> M(t, i < 3 ? [{ opacity:0, translate:'-16px 0', scale:'.94' }, { opacity:1, translate:'0 0', scale:'1' }] : [{ opacity:0, scale:'1.12' }, { opacity:1, scale:'1' }],
-      { duration:400, delay:i < 3 ? 140 + i * 30 : 260, easing:MO_SPRING_SOFT, fill:'backwards' }));
-    M(lens, [{ opacity:0, scale:'.86' }, { opacity:1, scale:'1' }], { duration:440, delay:230, easing:MO_SPRING, fill:'backwards' });
-    const liq = tiles.querySelector('.size.on .liquid');
-    if(liq) M(liq, [{ transform:'translateY(30px)' }, { transform:'none' }], { duration:560, delay:290, easing:MO_SPRING_SOFT, fill:'backwards' });
-  }
-  setTimeout(()=>{
-    if(g !== cupMorph.gen) return;
-    cupMorph.busy = false;
-    [outEl, ...outEl.querySelectorAll('*')].forEach(el=> moCancel(el, 'morph'));
-    setCupView(cup.size === 'custom');
-    syncPickUI(); placeLens(false);
-  }, on ? 560 : 600);
-}
-
-/* ---- «Свой»: что ведёт ползунок — мл воды или г кофе (тап по числу в итоге) ---- */
-let cupUnit = 'ml', cupUnitHintSeen = false;
-try{ cupUnit = localStorage.getItem('cupUnit') === 'g' ? 'g' : 'ml'; cupUnitHintSeen = localStorage.getItem('cupUnitHint') === '1'; }catch(e){}
-function cupDrivenEl(){ return document.getElementById(cupUnit === 'g' ? 'resCoffee' : 'resWater'); }
-function cupPickOn(){ return false; }   // тап и ввод в числе итога убраны: число крутится свайпом
-function syncPickUI(keepLabel){
-  const on = cupPickOn(), nums = document.querySelector('#calcRes .res-nums');
-  nums.classList.toggle('pick', on);
-  [['resCoffee', 'g'], ['resWater', 'ml']].forEach(([id, u])=>{
-    const b = document.getElementById(id), act = on && cupUnit === u;
-    b.classList.toggle('on', act);
-    if(on){ b.setAttribute('role', 'button'); b.tabIndex = 0; b.setAttribute('aria-pressed', String(act));
-      b.setAttribute('aria-label', u === 'g' ? 'Ползунок задаёт граммы кофе' : 'Ползунок задаёт объём воды'); }
-    else { b.removeAttribute('role'); b.removeAttribute('tabindex'); b.removeAttribute('aria-pressed'); b.removeAttribute('aria-label'); }
-  });
-  if(!keepLabel) document.getElementById('cupUnitLbl').textContent = cupUnit === 'g' ? 'Свои граммы' : 'Свой объём';
-  volSlider.setAttribute('aria-label', cupUnit === 'g' ? 'Свои граммы кофе' : 'Свой объём воды');
-  document.getElementById('cupHint').hidden = !(on && !cupUnitHintSeen);
-  placeDrv(false);
-}
-/* Подложка и подчёркивание ведомого числа — по видимым цифрам, а не по коробке текста: у «1» широкий
-   левый отступ в моноширинных цифрах, а трекинг −0,05em съедает место справа, поэтому по коробке поля
-   выходили неровными. Отступы глифов меряем канвасом в том же шрифте. */
-let drvCtx = null, drvProbe = null;
-function drvInsets(b){
-  const cs = getComputedStyle(b), pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
-  const inp = b.querySelector('.cup-ed');
-  const txt = (inp ? inp.value : (b._t != null ? b._t : b.textContent)) || '0';
-  if(!drvCtx){ try{ drvCtx = document.createElement('canvas').getContext('2d'); }catch(e){} }
-  if(!drvCtx || !document.createRange) return { l:pl, r:pr };
-  // Ячейки символов — из DOM (моноширинные цифры, трекинг), сами глифы — из канваса: в ячейке глиф по центру
-  if(!drvProbe){
-    drvProbe = document.createElement('span'); drvProbe.setAttribute('aria-hidden', 'true');
-    drvProbe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;white-space:pre';
-    document.body.appendChild(drvProbe);
-  }
-  const ps = drvProbe.style;
-  ps.fontFamily = cs.fontFamily; ps.fontSize = cs.fontSize; ps.fontWeight = cs.fontWeight;
-  ps.letterSpacing = cs.letterSpacing; ps.fontVariantNumeric = cs.fontVariantNumeric;
-  drvProbe.textContent = txt;
-  const tn = drvProbe.firstChild, n = txt.length, rg = document.createRange(), base = drvProbe.getBoundingClientRect();
-  rg.setStart(tn, 0); rg.setEnd(tn, 1); const c0 = rg.getBoundingClientRect();
-  rg.setStart(tn, n - 1); rg.setEnd(tn, n); const c1 = rg.getBoundingClientRect();
-  drvCtx.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
-  if('letterSpacing' in drvCtx) drvCtx.letterSpacing = '0px';
-  const ls = parseFloat(cs.letterSpacing) || 0, m0 = drvCtx.measureText(txt[0]), m1 = drvCtx.measureText(txt[n - 1]);
-  const inkL = (c0.left - base.left) + ((c0.width - ls) - m0.width) / 2 - m0.actualBoundingBoxLeft;
-  const inkR = (c1.left - base.left) + ((c1.width - ls) - m1.width) / 2 + m1.actualBoundingBoxRight;
-  // ширина текста: в поле ввода — живая; в числе — по итоговому тексту (пока бегут цифры, коробка ещё тянется)
-  const content = inp ? b.offsetWidth - pl - pr : base.width;
-  return { l: pl + Math.max(0, inkL), r: pr + Math.max(0, content - inkR) };
-}
-function drvBox(b){
-  const PAD = 9, ins = drvInsets(b);
-  b.style.setProperty('--ul-l', Math.round(ins.l) + 'px'); b.style.setProperty('--ul-r', Math.round(ins.r) + 'px');
-  return { x: b.offsetLeft + ins.l - PAD, y: b.offsetTop, w: Math.max(24, b.offsetWidth - ins.l - ins.r + PAD * 2), h: b.offsetHeight };
-}
-function placeDrv(animate){
-  const d = document.getElementById('cupDrv'), b = cupDrivenEl();
-  if(!d || !b || !b.offsetWidth) return;
-  const { x, y, w, h } = drvBox(b);
-  const cs = getComputedStyle(d), fx = (window.DOMMatrix && cs.transform !== 'none') ? new DOMMatrix(cs.transform).m41 : x, fw = parseFloat(cs.width) || w;
-  moCancel(d, 'drv');
-  d.style.transform = 'translate(' + x + 'px,' + y + 'px)'; d.style.width = w + 'px'; d.style.height = h + 'px';
-  if(animate) moTag(moA(d, [{ transform:'translate(' + fx + 'px,' + y + 'px)', width:fw + 'px' }, { transform:'translate(' + x + 'px,' + y + 'px)', width:w + 'px' }], { duration:440, easing:MO_SPRING }), 'drv');
-}
-// Смена подписи: уходит вверх, новая приходит снизу (к мл — наоборот)
-function moSwapText(el, txt, dir){
-  if(moReduce() || !el.animate || el.textContent === txt){ el.textContent = txt; return; }
-  moCancel(el, 'swap');
-  const a = moTag(moA(el, [{ transform:'translateY(0)', opacity:1 }, { transform:'translateY(' + (-6 * dir) + 'px)', opacity:0 }], { duration:110, easing:MO_EXIT, fill:'forwards' }), 'swap');
-  a.finished.then(()=>{ el.textContent = txt; a.cancel(); moTag(moA(el, [{ transform:'translateY(' + (7 * dir) + 'px)', opacity:0 }, { transform:'none', opacity:1 }], { duration:300, easing:MO_SPRING }), 'swap'); }).catch(()=>{});
-}
-function setCupUnit(u){
-  if(u === cupUnit || !cupPickOn()) return;
-  cupUnit = u; cupUnitHintSeen = true;
-  try{ localStorage.setItem('cupUnit', u); localStorage.setItem('cupUnitHint', '1'); }catch(e){}
-  haptics('selection');
-  track('cup_unit_changed', { unit:u });
-  const dir = u === 'g' ? 1 : -1;
-  moSwapText(document.getElementById('cupUnitLbl'), u === 'g' ? 'Свои граммы' : 'Свой объём', dir);
-  volSlider._detent = null;
-  const hint = document.getElementById('cupHint'), hadHint = !hint.hidden;
-  const apply = ()=>{ syncPickUI(true); syncTicks(state.water, dir); };
-  // подсказка больше не нужна — карточка подтягивается flipCalc
-  if(hadHint) flipCalc(apply, 300); else apply();
-  placeDrv(true);
-}
-// Первый тап по числу — оно начинает вести ползунок; тап по уже ведущему — точный ввод прямо в нём
-function cupNumTap(b){
-  if(cupEdit.on) return;
-  if(b === cupDrivenEl()) cupStartEdit(b);
-  else setCupUnit(b.id === 'resCoffee' ? 'g' : 'ml');
-}
-document.querySelector('#calcRes .res-nums').addEventListener('click', e=>{
-  const b = e.target.closest('b'); if(!b || !cupPickOn() || e.target.closest('.cup-ed')) return;
-  cupNumTap(b);
-});
-document.querySelector('#calcRes .res-nums').addEventListener('keydown', e=>{
-  const b = e.target.closest('b'); if(!b || !cupPickOn() || e.target.closest('.cup-ed') || (e.key !== 'Enter' && e.key !== ' ')) return;
-  e.preventDefault(); cupNumTap(b);
-});
-
-/* ---- Точный ввод в числе итога ----
-   Граммы — с десятыми (кофе уже в кофемолке, весы показали 18,4), миллилитры — целые.
-   Вода остаётся целой: при 1:10 и выше погрешность меньше 0,05 г, введённые граммы видны как есть.
-   Закрыть: «Готово» на месте «мягче / крепче», Return там, где он есть, или тап вне поля —
-   как в iOS, такой тап только закрывает ввод и сохраняет; ползунок можно брать сразу. */
-const cupEdit = { on:false, b:null, inp:null, g:false, before:0, swallowUntil:0 };
-function cupEdParse(str, g){
-  const v = parseFloat(String(str).replace(',', '.').replace(/[^\d.]/g, ''));
-  if(!isFinite(v)) return null;
-  return g ? Math.round(v * 10) / 10 : Math.round(v);
-}
-function cupEdRange(g){ return g ? [CUP_MIN / state.ratio, CUP_MAX / state.ratio] : [CUP_MIN, CUP_MAX]; }
-function cupEdWater(v, g){ return Math.max(CUP_MIN, Math.min(CUP_MAX, g ? Math.round(v * state.ratio) : v)); }
-function cupApplyWater(w){
-  cup.size = 'custom'; cup.custom = w; saveCupPrefs();
-  state.inputType = 'water'; state.value = w;
-  volSlider.value = w; volSlider._detent = null; updateSliderFill();
-  compute();
-}
-function cupEdFit(){
-  // Поле — ровно по набранному тексту (в тех же моноширинных цифрах и трекинге) плюс место под каретку
-  const i = cupEdit.inp, cs = getComputedStyle(i);
-  if(!drvProbe){ drvProbe = document.createElement('span'); drvProbe.setAttribute('aria-hidden', 'true');
-    drvProbe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;white-space:pre'; document.body.appendChild(drvProbe); }
-  const ps = drvProbe.style;
-  ps.fontFamily = cs.fontFamily; ps.fontSize = cs.fontSize; ps.fontWeight = cs.fontWeight;
-  ps.letterSpacing = cs.letterSpacing; ps.fontVariantNumeric = cs.fontVariantNumeric;
-  drvProbe.textContent = i.value || '0';
-  i.style.width = Math.ceil(drvProbe.getBoundingClientRect().width + 3) + 'px';
-  placeDrv(false);
-}
-function cupStartEdit(b){
-  const g = b.id === 'resCoffee', inp = document.createElement('input');
-  inp.className = 'cup-ed'; inp.type = 'text'; inp.autocomplete = 'off';
-  inp.setAttribute('inputmode', g ? 'decimal' : 'numeric'); inp.setAttribute('enterkeyhint', 'done');
-  inp.setAttribute('aria-label', g ? 'Граммы кофе' : 'Объём воды, мл');
-  inp.value = g ? fmt(state.coffee) : String(Math.round(state.water));
-  Object.assign(cupEdit, { on:true, b, inp, g, before:Math.round(cup.custom) });
-  odoKill(b); rnFlat(b);   // число ещё добегало — ввод начинается с настоящего значения
-  b._editing = true; b.textContent = ''; b.appendChild(inp); b.classList.add('editing');
-  document.querySelector('#calcRes .res-adj').classList.add('editing');
-  document.getElementById('cupDone').tabIndex = 0;
-  cupEdFit();
-  // фокус — синхронно в тапе: иначе iOS не поднимет клавиатуру
-  // Без системного выделения (некрасивая заливка поверх цифр): каретка в конце, а первая набранная
-  // цифра заменяет число целиком — как будто оно было выделено. Тап внутрь поля — обычная правка.
-  inp.focus();
-  try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(e){}
-  inp._fresh = true;
-  inp.addEventListener('pointerdown', ()=>{ inp._fresh = false; });
-  inp.addEventListener('beforeinput', e=>{
-    if(!inp._fresh) return;
-    inp._fresh = false;
-    if(e.inputType === 'insertText' && e.data != null){
-      e.preventDefault();
-      inp.value = e.data;
-      try{ inp.setSelectionRange(inp.value.length, inp.value.length); }catch(err){}
-      cupEdInput();
-    }
-  });
-  inp.addEventListener('input', cupEdInput);
-  inp.addEventListener('keydown', e=>{
-    if(e.key === 'Enter'){ e.preventDefault(); cupEndEdit(true); }
-    else if(e.key === 'Escape'){ e.preventDefault(); cupEndEdit(false); }
-  });
-  inp.addEventListener('blur', ()=> cupEndEdit(true));   // «Готово» в панели над клавиатурой и прочие потери фокуса
-}
-function cupEdInput(){
-  const { inp, g } = cupEdit;
-  cupEdFit();
-  const v = cupEdParse(inp.value, g), [lo, hi] = cupEdRange(g);
-  // меньше минимума — ещё печатают («29» на пути к 290), не красим; больше максимума — перебор
-  inp.classList.toggle('bad', v != null && v > hi);
-  if(v == null || v < lo || v > hi) return;
-  cupApplyWater(cupEdWater(v, g));    // второе число и ползунок — по ходу набора
-}
-function cupEndEdit(commit){
-  if(!cupEdit.on) return;
-  const { b, inp, g, before } = cupEdit;
-  cupEdit.on = false;
-  const v = cupEdParse(inp.value, g), [lo, hi] = cupEdRange(g);
-  const ok = commit && v != null && v >= lo && v <= hi;
-  b._editing = false; b.classList.remove('editing');
-  if(inp.parentNode) inp.remove();
-  b._gen = (b._gen || 0) + 1; b.textContent = b._t != null ? b._t : '';
-  document.querySelector('#calcRes .res-adj').classList.remove('editing');
-  document.getElementById('cupDone').tabIndex = -1;
-  if(ok){
-    cupApplyWater(cupEdWater(v, g));
-    haptics('selection');
-    track('cup_value_typed', { unit:g ? 'g' : 'ml' });
-  } else {
-    if(Math.round(cup.custom) !== before) cupApplyWater(before);
-    if(commit && v != null) haptics('error');
-  }
-  placeDrv(false);
-}
-document.addEventListener('pointerdown', e=>{
-  if(!cupEdit.on || e.target === cupEdit.inp) return;
-  const onSlider = e.target.closest('#cupCustomRow'), onDone = e.target.closest('#cupDone');
-  if(!onSlider) e.preventDefault();      // поле не теряет фокус раньше, чем сохраним
-  cupEndEdit(true);
-  if(!onSlider && !onDone) cupEdit.swallowUntil = performance.now() + 500;
-}, true);
-document.addEventListener('click', e=>{
-  if(performance.now() < cupEdit.swallowUntil){ e.stopPropagation(); e.preventDefault(); cupEdit.swallowUntil = 0; }
-}, true);
-document.getElementById('cupDone').addEventListener('click', ()=> cupEndEdit(true));
-// Шкала под ползунком: строится один раз, дальше меняются подписи и положения S·M·L.
-// В граммах крайние подписи — граммы при текущей пропорции; S·M·L стоят на тех же местах.
-function syncTicks(water, swapDir){
-  const tk = document.getElementById('volTicks');
-  if(!tk.querySelector('.end')){
-    tk.innerHTML = '<span class="end" style="left:0"></span>' + CUP_KEYS.map(k=> '<span class="mid" data-k="' + k + '"><i>' + k + '</i></span>').join('') + '<span class="end" style="right:0"></span>';
-  }
-  const min = CUP_MIN, max = CUP_MAX, g = cupUnit === 'g';
-  const ends = g ? [fmt(min / state.ratio), fmt(max / state.ratio)] : [String(min), String(max)];
-  tk.querySelectorAll('.end').forEach((e, i)=>{ if(swapDir) moSwapText(e, ends[i], swapDir); else if(e.textContent !== ends[i] && !(e.getAnimations && e.getAnimations().length)) e.textContent = ends[i]; });
-  tk.querySelectorAll('.mid').forEach(m=>{
-    const v = cup.sizes[m.dataset.k];
-    m.style.left = ((v - min) / (max - min) * 100).toFixed(1) + '%';
-    const hit = cup.size === 'custom' && Math.abs(water - v) < 0.5;
-    if(hit && !m.classList.contains('hit') && volSlider.classList.contains('grab')) moPulse(m.querySelector('i'), 1.35, 300);
-    m.classList.toggle('hit', hit);
-  });
-}
-addEventListener('resize', ()=>{ placeLens(false); placeDrv(false); });
-// Подложка под ведомым числом следует за его шириной: одометр и барабаны меняют её без пересчёта
-if(window.ResizeObserver){
-  const ro = new ResizeObserver(()=>{ const d = document.getElementById('cupDrv'); if(!(d.getAnimations && d.getAnimations().length)) placeDrv(false); });
-  ro.observe(document.getElementById('resCoffee')); ro.observe(document.getElementById('resWater'));
-}
+addEventListener('resize', ()=> placeLens(false));
 
 // Итог под объёмом: «г → мл», пропорция (фактическая — с ↺ к пропорции по умолчанию)
 // Разметка пропорции строится один раз: кнопка ↺ живёт всегда, «не изменено» — просто её вид,
@@ -3827,7 +3287,6 @@ function fitResNums(cTxt, wTxt){
 }
 addEventListener('resize', ()=>{ rnFitKey = ''; fitResNums(document.getElementById('resCoffee')._t, document.getElementById('resWater')._t); });
 try{ document.fonts && document.fonts.ready.then(()=>{ rnFitKey = ''; fitResNums(document.getElementById('resCoffee')._t, document.getElementById('resWater')._t); }); }catch(e){}
-try{ document.fonts && document.fonts.ready.then(()=> placeDrv(false)); }catch(e){}
 
 function renderResult(coffee, water){
   const an = moReduce() ? null : calcAnim; calcAnim = null;
@@ -3862,7 +3321,6 @@ function renderResult(coffee, water){
   } else rs.hidden = true;
 }
 function setResNum(el, txt, v, an){
-  if(el._editing){ el._t = txt; el._v = v; return; }   // в числе сейчас печатают — не трогаем
   if(window.__enHold){ el._enTxt = txt; el._v = v; return; }   // первый вход в «Кофе» ещё не показан
   // действие человека (плитка, «‹», мягче / крепче) — число добегает; под пальцем лента ведётся ползунком
   if(an && el.animate && !(el._odo && !el._odo.release)){
@@ -4220,8 +3678,7 @@ function renderNotes(){
    другое место страницы должен сам её закрывать ---- */
 document.addEventListener('click', e=>{
   const active = document.activeElement;
-  // .cup-ed закрывается своей логикой (cupEndEdit): тап, которым ввод открыли, сюда тоже долетает
-  if(active && active.tagName === 'INPUT' && active.type !== 'range' && e.target !== active && !active.classList.contains('cup-ed')){
+  if(active && active.tagName === 'INPUT' && active.type !== 'range' && e.target !== active){
     active.blur();
   }
 });
@@ -4651,8 +4108,6 @@ function glRollWidth(box, text, dir){
   void box.offsetWidth; box.style.width = w1 + 'px';
   clearTimeout(box._wt); box._wt = setTimeout(()=>{ box.style.width = ''; }, 380);
 }
-
-function hapticImpact(style){ haptics(style); }
 function stageAlert(){ beep(880,150); setTimeout(()=>beep(1046,150),170); haptics('heavy'); }
 function finishAlert(){ beep(660,120); setTimeout(()=>beep(880,120),140); setTimeout(()=>beep(1175,260),280); haptic(); }
 
@@ -4762,14 +4217,11 @@ function lockControls(locked){
   document.querySelectorAll('#customEditor .rm').forEach(el=> el.disabled = locked);
   if(locked){ const x = document.getElementById('schemeXp'); x.classList.remove('open'); document.getElementById('schemeBtn').classList.remove('on'); }
   document.getElementById('ceAddPour').disabled = locked;
-  volSlider.disabled = locked;
-  document.getElementById('cupBackBtn').disabled = locked;
   document.getElementById('coffeeStepUp').disabled = locked;
   document.getElementById('coffeeStepDown').disabled = locked;
   const rr = document.querySelector('#resRatio .ratio-reset'); if(rr) rr.disabled = locked;
   document.querySelectorAll('#cupSizes .size').forEach(b=> b.disabled = locked);
-  if(locked){ sliderGrab(false); }
-  syncPickUI();
+  if(locked) ['resWater', 'resCoffee'].forEach(id=> odoRelease(document.getElementById(id)));
   if(locked) closePopMenu();
   navLocked = locked;
 }
@@ -5094,14 +4546,6 @@ function dockMotion(on){
     // ▶ проступает, когда капсула почти вернулась в него; лёгкий перелёт — это «живой» элемент
     setTimeout(()=>{ if(seq === dockSeq) actSpring.to(1, { response:0.28, damping:0.85 }); }, 90);
   }
-}
-
-
-function ruStepsWord(n){
-  const mod10 = n % 10, mod100 = n % 100;
-  if(mod10 === 1 && mod100 !== 11) return 'шаг';
-  if(mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return 'шага';
-  return 'шагов';
 }
 
 function updateScheduleUI(){
@@ -5835,8 +5279,6 @@ const DTF_DAY_LONG = new Intl.DateTimeFormat('ru-RU', { day:'numeric', month:'lo
 const DTF_MONTH = new Intl.DateTimeFormat('ru-RU', { month:'long' });
 // «14 окт» — без точки сокращения, как было в интерфейсе
 function fmtDayShort(d){ return DTF_DAY_SHORT.formatToParts(d).map(p=> p.type === 'month' ? p.value.replace(/\.$/, '') : p.value).join(''); }
-// «14 октября 2026» — без «г.»
-function fmtDayLong(d){ return DTF_DAY_LONG.formatToParts(d).filter(p=> p.type === 'day' || p.type === 'month' || p.type === 'year' || (p.type === 'literal' && p.value.trim() === '')).map(p=> p.value).join('').trim(); }
 function fmtMonthName(d){ const m = DTF_MONTH.format(d); return m.charAt(0).toUpperCase() + m.slice(1); }
 function formatEntryDate(id){
   const d = new Date(id);
@@ -6405,39 +5847,6 @@ async function createBrewEntry(){
   return entry.id;
 }
 
-/* Конец брю (последний пролив или ручная остановка): дописываем фактическую
-   длительность и предлагаем оценить. Сохранять уже нечего — запись есть. */
-async function offerRateSheet(){
-  if(journalOfferedThisBrew) return;
-  journalOfferedThisBrew = true;
-  const id = brewEntryPromise ? await brewEntryPromise : null;
-  const entry = id != null ? journalEntries.find(e=> e.id === id) : null;
-  if(!entry) return;
-  await saveBrewDuration();
-  // Пока ждали запись, могли открыть другую шторку — не перебиваем её.
-  if(sheetEl.classList.contains('show')) return;
-
-  sheetMode = 'saved';
-  sheetEntry = entry;
-  document.getElementById('sheetPills').style.display = 'none';
-  document.getElementById('sheetBeanPickList').style.display = 'none';
-  sheetSavedMark.style.display = 'flex';
-  sheetTitleEl.textContent = 'Записано в журнал';
-  const beanName = entryBeanName(entry);
-  sheetSubtitleEl.textContent = (beanName ? beanName + ' · ' : '') +
-    fmt(entry.coffee) + '\u00a0г · ' + fmt(entry.water) + '\u00a0мл' + (entry.ice ? ' + ' + fmt(entry.ice) + '\u00a0г льда' : '') + ' · ' +
-    entry.pours.length + ' ' + pluralRu(entry.pours.length, 'пролив', 'пролива', 'проливов');
-  sheetTabSeg.style.display = 'none';
-  sheetTabRate.style.display = 'none';
-  sheetTabRecipe.style.display = 'none';
-  sheetFieldsEl.style.display = 'none';
-  sheetFieldsEl.innerHTML = '';
-  sheetPrimaryBtn.textContent = 'Оценить';
-  sheetGhostBtn.textContent = 'Позже';
-  sheetGhostBtn.style.display = '';
-  showSheet();
-}
-
 function openEditSheet(id){
   const entry = journalEntries.find(e=> e.id === id);
   if(!entry) return;
@@ -6492,20 +5901,6 @@ function journalChartSVG(e){
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Профиль пролива: ' + fmt(jsWater(e)) + '\u00a0мл за ' + fmtTime(end) + '">' + grid + ticks +
     '<path d="' + path + ' L' + X(end).toFixed(1) + ',' + Y(0).toFixed(1) + ' Z" fill="' + col + '" opacity=".12"/>' +
     '<path d="' + path + '" fill="none" stroke="' + col + '" stroke-width="2.2" stroke-linejoin="round"/>' + dots + '</svg>';
-}
-function jsPoursHTML(e){
-  let run = 0;
-  return (e.pours || []).map((p, i)=>{
-    run += (p.add || 0);
-    const label = i === 0 ? 'Блум' : 'Пролив ' + i;
-    if(jsPoursEdit){
-      return '<div class="bs-row"><span class="bs-l"><span class="t">' + label + '</span></span>' +
-        '<input class="js-pin" type="number" inputmode="numeric" name="pourTime' + i + '" autocomplete="off" min="0" step="1" data-jpt="' + i + '" value="' + (p.time || 0) + '" aria-label="' + label + ': секунда"><span class="js-pu">с</span>' +
-        '<input class="js-pin" type="number" inputmode="decimal" name="pourAdd' + i + '" autocomplete="off" min="0" step="1" data-jpa="' + i + '" value="' + (p.add || 0) + '" aria-label="' + label + ': граммы"><span class="js-pu">г</span></div>';
-    }
-    return '<div class="bs-row"><span class="bs-l"><span class="tm">' + fmtTime(p.time || 0) + '</span><span class="t">' + label + '</span></span>' +
-      '<span class="bs-v"><b>' + fmt(run) + '\u00a0мл</b> <span class="add">+' + fmt(p.add || 0) + '</span></span></div>';
-  }).join('');
 }
 function renderEditSheet(){
   sheetMode = 'edit';
@@ -6730,15 +6125,6 @@ function jsPickTaste(v, fromDrum){
     }
   });
 })();
-
-function updateSheetBeanPick(){
-  const id = normId(sheetEntry.beanId);
-  const b = id != null ? beans.find(x=> x.id === id) : null;
-  sheetBeanPickName.textContent = b ? (b.name || 'Без названия') : (sheetEntry.bean || 'Не выбрано');
-  const orphan = !b && !!sheetEntry.bean;
-  sheetBeanPickNote.style.display = orphan ? '' : 'none';
-  sheetBeanPickNote.textContent = id != null ? 'зерно удалено' : 'не привязано';
-}
 
 /* Зерно для записи — то же стеклянное меню, что у плитки зерна на Кофе: текущие зёрна, ниже приглушённый
    «Архив» (исправить запись задним числом на закончившееся зерно). Сверху — что будет с граммами. */
@@ -7745,19 +7131,8 @@ function daysSinceRoast(dateStr){
   const startRoast = new Date(r.getFullYear(), r.getMonth(), r.getDate());
   return Math.round((startToday - startRoast) / 86400000);
 }
-function freshnessLabel(days){
-  if(days == null) return '';
-  if(days <= 0) return 'сегодня';
-  return days + ' ' + pluralRu(days, 'день', 'дня', 'дней');
-}
 function escapeHTML(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function checkIconSVG(){
-  return '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
-}
-function infoIconSVG(){
-  return '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v0.5M12 11v5" stroke-linecap="round"/></svg>';
 }
 /* Тот же текст, что в «Почему такая температура» Калькулятора — только без
    TEMP_ICE_NOTE (он про лёд в чашке, к конкретной пачке отношения не имеет). */
@@ -7765,39 +7140,6 @@ function beanTempNoteHTML(processId){
   const paras = (PROCESS_WHY[processId] || []).slice();
   paras.push(TEMP_FOOTNOTE);
   return paras.map(t=> '<p>' + t + '</p>').join('');
-}
-function beanBagSVG(pct, id){
-  const bodyTop=15, bodyBottom=44, bodyLeft=6, bodyRight=34, corner=6;
-  const fillH = Math.max(0, (bodyBottom-bodyTop) * Math.max(0, Math.min(1, pct)));
-  const bodyPath = 'M' + bodyLeft + ',' + bodyTop + ' H' + bodyRight + ' V' + (bodyBottom-corner) +
-    ' Q' + bodyRight + ',' + bodyBottom + ' ' + (bodyRight-corner) + ',' + bodyBottom +
-    ' H' + (bodyLeft+corner) + ' Q' + bodyLeft + ',' + bodyBottom + ' ' + bodyLeft + ',' + (bodyBottom-corner) + ' Z';
-  const clipId = 'bagclip' + id;
-  return '<svg aria-hidden="true" viewBox="0 0 40 50" width="32" height="40">' +
-      '<path d="M4,15 L8,5 H32 L36,15 Z" fill="none" stroke="var(--label-3)" stroke-width="1.6" stroke-linejoin="round"/>' +
-      '<path d="' + bodyPath + '" fill="none" stroke="var(--label-3)" stroke-width="1.6" stroke-linejoin="round"/>' +
-      '<clipPath id="' + clipId + '"><path d="' + bodyPath + '"/></clipPath>' +
-      '<rect x="' + bodyLeft + '" y="' + (bodyBottom-fillH) + '" width="' + (bodyRight-bodyLeft) + '" height="' + (fillH+4) + '" fill="var(--brown)" opacity="0.85" clip-path="url(#' + clipId + ')"/>' +
-      '<circle cx="20" cy="24" r="2.4" fill="var(--card)" stroke="var(--label-3)" stroke-width="1"/>' +
-    '</svg>';
-}
-
-/* Нижняя часть карточки зерна: полоска остатка, остаток + средняя оценка,
-   дата вскрытия. У закончившегося — без полоски, «Закончилось» и когда. */
-function beanStatusHTML(b, pct, low, remain, start, openedLbl){
-  const st = beanStats(b.id);
-  const rate = st.rated
-    ? '<span class="b-rate"><span class="s">★</span> <b>' + fmt(st.avg) + '</b> · ' + st.rated + '</span>'
-    : '<span class="b-rate">нет оценок</span>';
-  if(b.finishedAt){
-    const d = daysSinceRoast(b.finishedAt);
-    const when = d == null ? '' : (d <= 0 ? 'закончилось сегодня' : d === 1 ? 'закончилось вчера' : 'закончилось ' + freshnessLabel(d) + ' назад');
-    return '<div class="b-weight-row"><span class="b-weight done">Закончилось</span>' + rate + '</div>' +
-      (when ? '<div class="b-opened">' + when + '</div>' : '');
-  }
-  return '<div class="b-bar"><div class="b-bar-fill" style="width:' + Math.round(pct*100) + '%;"></div></div>' +
-    '<div class="b-weight-row"><span class="b-weight' + (low ? ' low' : '') + '">' + fmt(remain) + ' / ' + fmt(start) + '\u00a0г' + (low ? ' · заканчивается' : '') + '</span>' + rate + '</div>' +
-    (openedLbl ? '<div class="b-opened">' + openedLbl + '</div>' : '');
 }
 
 /* ---- Зёрна: список ---- */
@@ -7807,12 +7149,6 @@ let openTempNoteIds = new Set(); // какие карточки сейчас п�
 function beanRowHTML(b){
   return '<div class="b-row' + (b.finishedAt ? ' finished' : '') + '" data-id="' + b.id + '">' +
     '<div class="b-row-content ' + beanCardClasses(b) + '" role="button" tabindex="0">' + beanCardHTML(b) + '</div></div>';
-}
-
-function toggleBeanTempNote(id){
-  if(openTempNoteIds.has(id)) openTempNoteIds.delete(id);
-  else openTempNoteIds.add(id);
-  renderBeans();
 }
 
 function renderBeans(){
@@ -7888,9 +7224,6 @@ function closeBeanRow(row){
 
 const B_ACTION_WIDTH = 84;
 const B_LONG_PRESS_MS = 480;
-let bLongTimer = null, bLongFired = false, bSwipeTargetIsMore = false;
-let bSwipeRow = null, bSwipeStartX = 0, bSwipeStartY = 0, bSwipeDragging = false, bSwipeDecided = false;
-let bSwipeBaseOpen = false, bSwipeLastDx = 0, bSwipeTargetIsAction = false, bSwipeTargetIsCheck = false, bSwipeTargetIsInfo = false;
 
 const beansList = document.getElementById('beansList');
 
@@ -7913,11 +7246,6 @@ beansList.addEventListener('keydown', (e)=>{
    подпись слева, значение справа. Ввод не пересобирает шторку (фокус не прыгает),
    полная перерисовка — только на выбор из списка, дату, переключатель. */
 const BEAN_MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-function beanFullDate(iso){
-  if(!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
-  return isNaN(d) ? '' : fmtDayLong(d);
-}
 function beanAgoLabel(days){
   if(days == null) return '';
   if(days <= 0) return 'сегодня';
@@ -8264,7 +7592,7 @@ tabEls.forEach(t=>{
 navViewport.addEventListener('touchstart', (e)=>{
   // Пока открыта шторка или алерт, страницы под ними не листаются ни при каком жесте.
   const overlayOpen = sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
-  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.slider-row') || !!e.target.closest('.j-row') || !!e.target.closest('.jr-row') || !!e.target.closest('.b-row') || !!e.target.closest('.gseg') || !!e.target.closest('.js-rate') || !!e.target.closest('.js-track') || !!e.target.closest('.cap') || !!e.target.closest('.wheel') || !!e.target.closest('.res-nums.swipe b');
+  navExcluded = overlayOpen || navLocked || !!e.target.closest('input[type="range"]') || !!e.target.closest('.j-row') || !!e.target.closest('.jr-row') || !!e.target.closest('.b-row') || !!e.target.closest('.gseg') || !!e.target.closest('.js-rate') || !!e.target.closest('.js-track') || !!e.target.closest('.cap') || !!e.target.closest('.wheel') || !!e.target.closest('.res-nums.swipe b');
   if(navExcluded) return;
   const t = e.touches[0];
   navStartX = t.clientX; navStartY = t.clientY;
