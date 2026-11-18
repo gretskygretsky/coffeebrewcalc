@@ -2944,12 +2944,12 @@ function popShow(seed){
   const g = popGeom(seed);
   popMenu.style.transformOrigin = g.origin;
   popAnims.push(
-    popMenu.animate([{ clipPath:g.clip }, { clipPath:POP_FULL }], { duration:480, easing:MO_SPRING_SOFT }),
-    popMenu.animate([{ transform:'scale(.94, .9)' }, { transform:'none' }], { duration:640, easing:MO_SPRING }),
-    popMenu.animate([{ opacity:0 }, { opacity:1 }], { duration:90, easing:'linear' }));
+    popMenu.animate([{ clipPath:g.clip }, { clipPath:POP_FULL }], { duration:330, easing:MO_SPRING_SOFT }),
+    popMenu.animate([{ transform:'scale(.94, .9)' }, { transform:'none' }], { duration:420, easing:MO_SPRING }),
+    popMenu.animate([{ opacity:0 }, { opacity:1 }], { duration:60, easing:'linear' }));
   [...popMenu.children].forEach((c, i)=> popAnims.push(c.animate(
-    [{ opacity:0, filter:'blur(6px)', transform:'translateY(' + g.dy + 'px) scale(.97)' }, { opacity:1, filter:'blur(0px)', transform:'none' }],
-    { duration:320, delay:70 + Math.min(i, 6) * 14, easing:MO_OUT, fill:'backwards' })));
+    [{ opacity:0, filter:'blur(4px)', transform:'translateY(' + g.dy + 'px) scale(.97)' }, { opacity:1, filter:'blur(0px)', transform:'none' }],
+    { duration:200, delay:35 + Math.min(i, 6) * 8, easing:MO_OUT, fill:'backwards' })));
 }
 // Закрыть: класс show снимается сразу (меню больше не ловит касания), форма стекает в зародыш.
 // done — уборка классов и ширины после того, как меню исчезло (раньше — прыжок формы на лету).
@@ -2958,12 +2958,12 @@ function popHide(done){
   const wasShown = popMenu.classList.contains('show');
   popMenu.classList.remove('show');
   if(!wasShown){ done && done(); return; }
-  if(!seed || !popMenu.classList.contains('morph') || moReduce()){ popStop(); if(done) setTimeout(()=>{ if(!popMenu.classList.contains('show')) done(); }, 200); return; }
+  if(!seed || !popMenu.classList.contains('morph') || moReduce()){ popStop(); if(done) setTimeout(()=>{ if(!popMenu.classList.contains('show')) done(); }, 160); return; }
   popStop();
   const g = popGeom(seed);
   popMenu.style.transformOrigin = g.origin;
-  const o = { duration:260, easing:'cubic-bezier(0.4, 0, 0.2, 1)', fill:'forwards' };
-  [...popMenu.children].forEach(c=> popAnims.push(c.animate([{ opacity:1, filter:'blur(0px)' }, { opacity:0, filter:'blur(4px)' }], { duration:120, easing:'linear', fill:'forwards' })));
+  const o = { duration:180, easing:'cubic-bezier(0.4, 0, 0.2, 1)', fill:'forwards' };
+  [...popMenu.children].forEach(c=> popAnims.push(c.animate([{ opacity:1, filter:'blur(0px)' }, { opacity:0, filter:'blur(4px)' }], { duration:80, easing:'linear', fill:'forwards' })));
   popAnims.push(
     popMenu.animate([{ clipPath:POP_FULL }, { clipPath:g.clip }], o),
     popMenu.animate([{ transform:'none' }, { transform:'scale(.94, .9)' }], o),
@@ -7648,9 +7648,9 @@ function renderBestRow(o){
     // выезжает из-под плитки вместе с приходом нового зерна
     settle();
     const card = el.firstElementChild, h = el.offsetHeight;
-    A(el, tuckOut(h, 1), { duration:460, easing:BEAN_EASE });
-    A(card, slide(h, 1), { duration:460, easing:BEAN_EASE });
-    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:340, delay:150 + i * 35, easing:BEAN_EASE, fill:'backwards' }));
+    A(el, tuckOut(h, 1), { duration:320, easing:BEAN_EASE });
+    A(card, slide(h, 1), { duration:320, easing:BEAN_EASE });
+    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:260, delay:150 + i * 25, easing:BEAN_EASE, fill:'backwards' }));
     return;
   }
   if(!html){
@@ -7658,8 +7658,8 @@ function renderBestRow(o){
     const card = el.firstElementChild, h = el.offsetHeight;
     tile.classList.add('has-best');
     [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach(n=> A(n, [{ opacity:1 }, { opacity:0 }], { duration:150, easing:BEAN_EXIT, fill:'forwards' }));
-    A(card, slide(h, -1), { duration:380, easing:BEAN_INOUT, fill:'forwards' });
-    A(el, tuckOut(h, -1), { duration:380, easing:BEAN_INOUT, fill:'forwards' }).onfinish = ()=>{ if(bestHTMLNow === '') { bestFxStop(); settle(); } };
+    A(card, slide(h, -1), { duration:260, easing:BEAN_INOUT, fill:'forwards' });
+    A(el, tuckOut(h, -1), { duration:260, easing:BEAN_INOUT, fill:'forwards' }).onfinish = ()=>{ if(bestHTMLNow === '') { bestFxStop(); settle(); } };
     return;
   }
   // было и есть: текст уходит вверх и приходит снизу — как на плитке; высота подстраивается
@@ -7670,8 +7670,8 @@ function renderBestRow(o){
     if(bestHTMLNow !== html) return;
     bestFxStop(); settle();
     const h1 = el.offsetHeight, card = el.firstElementChild;
-    if(h1 !== h0) A(el, [{ height:h0 + 'px' }, { height:h1 + 'px' }], { duration:340, easing:BEAN_EASE });
-    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:340, delay:i * 35, easing:BEAN_EASE, fill:'backwards' }));
+    if(h1 !== h0) A(el, [{ height:h0 + 'px' }, { height:h1 + 'px' }], { duration:260, easing:BEAN_EASE });
+    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:260, delay:i * 25, easing:BEAN_EASE, fill:'backwards' }));
   }, 150);
 }
 document.getElementById('calcBest').addEventListener('click', e=>{
@@ -7964,7 +7964,7 @@ function beanPickLand(id){
     };
     beanLand.finish = finish;
     beanLand.timers.push(setTimeout(finish, dur + 80));
-  }, 200);
+  }, 120);   // меню успевает стечь в каплю (180 мс), плитка оживает раньше
 }
 // Сама посадка на существующей плитке. Возвращает длительность, мс.
 function runBeanLand(tile, fromBean, toBean){
