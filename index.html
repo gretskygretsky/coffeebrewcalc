@@ -1010,9 +1010,14 @@
   #calcBeanCard.locked{ opacity:.45; pointer-events:none; }
 
   /* ---- Октализ: лучшая чашка, итоги недели, факультет ---- */
-  #calcBest{ margin:-8px 0 16px; }
+  /* «Лучшая чашка» — язычок из-под плитки зерна: верхние 22 px спрятаны под ней */
+  #calcBeanCard{ position:relative; z-index:1; }
+  #calcBeanCard.has-best{ margin-bottom:0; }
+  #calcBeanCard.has-best > .b-row-content{ box-shadow:0 10px 18px -12px rgba(0,0,0,.38); }
+  #calcBest{ position:relative; z-index:0; margin:-22px 0 16px; overflow:hidden; border-radius:0 0 22px 22px; }
   #calcBest:empty{ display:none; }
-  .bt-best{ display:flex; align-items:center; gap:12px; min-height:56px; padding:10px 14px; background:var(--card); border-radius:22px; }
+  .bt-best{ display:flex; align-items:center; gap:12px; min-height:56px; padding:32px 14px 10px 18px; border-radius:0 0 22px 22px;
+    background:color-mix(in srgb, var(--card) 58%, var(--bg)); }
   .bt-best .t1{ font-size:15px; font-weight:600; color:var(--label); }
   .bt-best .t2{ font-size:13px; color:var(--label-2); font-variant-numeric:tabular-nums; }
   .bt-best .t2 .s{ color:var(--orange); }
@@ -1606,6 +1611,8 @@
     transform-origin:top left; transform:scale(.95); opacity:0; pointer-events:none; transition:transform .18s var(--ease-out), opacity .15s var(--ease-out); }
   .pop-menu.show{ transform:none; opacity:1; pointer-events:auto; }
   .pop-menu.right{ transform-origin:top right; }
+  /* Морфинг: форму и упругость ведёт JS (clip-path + пружина), CSS-переход не мешает */
+  .pop-menu.glass.morph{ transition:none; transform:none; }
   .mi{ width:100%; display:flex; align-items:center; gap:12px; border:none; background:none; padding:10px 12px; border-radius:16px; cursor:pointer; text-align:left; font-family:inherit; color:var(--label); }
   .mi:active, .mi:focus-visible{ background:var(--fill); outline:none; }
   .mi .ck{ width:16px; color:var(--blue); flex-shrink:0; display:flex; }
@@ -2897,7 +2904,7 @@ function openPopMenu(kind, anchor){
     '<span class="ck">' + (it.k === cur ? POP_TICK : '') + '</span><span class="t"><b>' + it.t + '</b><span>' + it.d + '</span></span>' + (it.icon ? '<span class="ic">' + it.icon + '</span>' : '') + '</button>').join('');
   const r = anchor.getBoundingClientRect(), vw = window.innerWidth;
   const right = r.left + r.width / 2 > vw / 2;
-  popMenu.classList.remove('bean-menu'); popMenu.style.width = '';
+  popMenu.classList.remove('bean-menu', 'ctx-menu'); popMenu.style.width = '';
   popMenu.classList.toggle('right', right);
   popMenu.style.right = 'auto';
   // Меряем в покое (без scale), потом ставим в пределах экрана с полями 16 px
@@ -2908,13 +2915,68 @@ function openPopMenu(kind, anchor){
   const down = popPlace(r, mh, 8, 90);
   popMenu.style.transformOrigin = (down ? 'top ' : 'bottom ') + (right ? 'right' : 'left');
   popScrim.classList.add('show');
-  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  popShow({ cx:r.left + r.width / 2, w:r.width, h:r.height, down });
+}
+/* ---- Морфинг меню (Liquid Glass, iOS 26) ----
+   Меню не проявляется, а вытекает из того, чем его открыли: зародыш у якоря (капсула кнопки режима,
+   капля под плиткой зерна, кружок у поднятой карточки) пружиной растягивается в полное меню,
+   пункты проступают из размытия, когда форма почти набрана. Закрытие — обратно в зародыш, быстрее.
+   Форма — clip-path по рамке меню (стекло и размытие под ним не ломаются), упругость — лёгкий
+   scale с перелётом. Одна функция на все меню: режим, зерно из плитки, долгое нажатие в Зернах и Журнале.
+   «Уменьшить движение» — прежнее появление прозрачностью. */
+let popAnims = [], popSeed = null, popDone = null;
+function popStop(){ popAnims.forEach(a=> a.cancel()); popAnims = []; }
+function popGeom(seed){
+  const r = popMenu.getBoundingClientRect(), W = r.width, H = r.height;
+  const w = Math.min(W, Math.max(36, seed.w)), h = Math.min(H, Math.max(36, Math.min(seed.h, 48)));
+  const x = Math.max(0, Math.min(W - w, seed.cx - r.left - w / 2)), y = seed.down ? 0 : H - h;
+  return { clip:'inset(' + y + 'px ' + (W - x - w) + 'px ' + (H - y - h) + 'px ' + x + 'px round ' + (h / 2) + 'px)',
+    origin:(x + w / 2) + 'px ' + (y + h / 2) + 'px', dy:seed.down ? -6 : 6 };
+}
+const POP_FULL = 'inset(0px 0px 0px 0px round 22px)';
+function popShow(seed){
+  popStop(); popDone = null;   // уборка прошлого закрытия не нужна: новое меню само ставит свои классы
+  const morph = !!seed && canAnimate(popMenu) && !moReduce();
+  popMenu.classList.toggle('morph', morph);
+  popSeed = morph ? seed : null;
+  if(!morph){ requestAnimationFrame(()=> popMenu.classList.add('show')); return; }
+  popMenu.classList.add('show');
+  const g = popGeom(seed);
+  popMenu.style.transformOrigin = g.origin;
+  popAnims.push(
+    popMenu.animate([{ clipPath:g.clip }, { clipPath:POP_FULL }], { duration:480, easing:MO_SPRING_SOFT }),
+    popMenu.animate([{ transform:'scale(.94, .9)' }, { transform:'none' }], { duration:640, easing:MO_SPRING }),
+    popMenu.animate([{ opacity:0 }, { opacity:1 }], { duration:90, easing:'linear' }));
+  [...popMenu.children].forEach((c, i)=> popAnims.push(c.animate(
+    [{ opacity:0, filter:'blur(6px)', transform:'translateY(' + g.dy + 'px) scale(.97)' }, { opacity:1, filter:'blur(0px)', transform:'none' }],
+    { duration:320, delay:70 + Math.min(i, 6) * 14, easing:MO_OUT, fill:'backwards' })));
+}
+// Закрыть: класс show снимается сразу (меню больше не ловит касания), форма стекает в зародыш.
+// done — уборка классов и ширины после того, как меню исчезло (раньше — прыжок формы на лету).
+function popHide(done){
+  const seed = popSeed; popSeed = null;
+  const wasShown = popMenu.classList.contains('show');
+  popMenu.classList.remove('show');
+  if(!wasShown){ done && done(); return; }
+  if(!seed || !popMenu.classList.contains('morph') || moReduce()){ popStop(); if(done) setTimeout(()=>{ if(!popMenu.classList.contains('show')) done(); }, 200); return; }
+  popStop();
+  const g = popGeom(seed);
+  popMenu.style.transformOrigin = g.origin;
+  const o = { duration:260, easing:'cubic-bezier(0.4, 0, 0.2, 1)', fill:'forwards' };
+  [...popMenu.children].forEach(c=> popAnims.push(c.animate([{ opacity:1, filter:'blur(0px)' }, { opacity:0, filter:'blur(4px)' }], { duration:120, easing:'linear', fill:'forwards' })));
+  popAnims.push(
+    popMenu.animate([{ clipPath:POP_FULL }, { clipPath:g.clip }], o),
+    popMenu.animate([{ transform:'none' }, { transform:'scale(.94, .9)' }], o),
+    popMenu.animate([{ opacity:1 }, { opacity:1, offset:.6 }, { opacity:0 }], o));
+  popDone = done || null;
+  const last = popAnims[popAnims.length - 1];
+  last.onfinish = ()=>{ if(popAnims[popAnims.length - 1] !== last) return; popStop(); const f = popDone; popDone = null; f && f(); };
 }
 function closePopMenu(){
-  popMenu.classList.remove('show'); popScrim.classList.remove('show');
+  popScrim.classList.remove('show');
   if(window.ctxOn) ctxClose();
-  if(beanMenuOn){ beanMenuOn = false; document.getElementById('calcBeanCard').setAttribute('aria-expanded', 'false');
-    setTimeout(()=>{ if(!beanMenuOn){ popMenu.classList.remove('bean-menu'); popMenu.style.width = ''; } }, 200); }
+  if(beanMenuOn){ beanMenuOn = false; document.getElementById('calcBeanCard').setAttribute('aria-expanded', 'false'); }
+  popHide(()=>{ if(popMenu.classList.contains('show')) return; popMenu.classList.remove('ctx-menu'); if(!beanMenuOn){ popMenu.classList.remove('bean-menu'); popMenu.style.width = ''; } });
 }
 popScrim.addEventListener('click', closePopMenu);
 popScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
@@ -6969,7 +7031,7 @@ function openEntryBeanMenu(anchor){
   popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' left';
   anchor.setAttribute('aria-expanded', 'true');
   popScrim.classList.add('show');
-  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  popShow({ cx:r.left + r.width / 2, w:r.width, h:r.height, down });
 }
 function entryBeanPick(k){
   closePopMenu();
@@ -7545,24 +7607,78 @@ function bestCupFor(beanId){
 }
 let bestShownFor = null;
 let brewFromBest = null;   // { beanId, rating }: следующее брю сварено через «Повторить»
-function renderBestRow(){
-  const el = document.getElementById('calcBest');
-  if(!el) return;
-  const bean = FEATURES.bestRecipe && activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
-  if(!bean){ el.innerHTML = ''; return; }
+/* «Лучшая чашка» — язычок, выдвинутый из-под плитки зерна: верх спрятан под плиткой, её скруглённые
+   углы лежат поверх. Принадлежит зерну, поэтому и движется вместе с ним: при выборе зерна язычок
+   меняется в тот же момент, что и текст плитки (не после посадки кольца) — выезжает из-под неё,
+   уезжает обратно под неё или меняет текст на месте с тем же уходом вверх / приходом снизу. */
+let bestHTMLNow = '', bestEntry = null, bestFx = { anims:[], timer:0 };
+const BEST_TUCK = 22;   // сколько язычка спрятано под плиткой (= радиус её углов)
+function bestRowHTML(bean){
+  if(!bean) return { html:'', entry:null };
   const r = bestCupFor(bean.id);
   if(!r.entry){
     const need = OCT_CFG.bestMinRated - r.rated;
-    el.innerHTML = '<div class="bt-best empty"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2">Оцени ещё ' + need + '\u00a0' + pluralRu(need, 'брю', 'брю', 'брю') + ' на этом зерне</div></div></div>';
-    return;
+    return { entry:null, html:'<div class="bt-best empty"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2">Оцени ещё ' + need + ' ' + pluralRu(need, 'брю', 'брю', 'брю') + ' на этом зерне</div></div></div>' };
   }
   const e = r.entry, w = jsWater(e) || e.water || 0, c = e.coffee || 0;
   const ratio = c > 0 ? fmtRatio(w / c).replace('.', ',') : fmtRatio(e.ratio || 16).replace('.', ',');
-  el.innerHTML = '<div class="bt-best"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2"><span class="s">★</span>' + e.rating + ' · 1:' + ratio + ' · ' + fmt(w) + '\u00a0мл</div></div>' +
-    '<button class="pillbtn" type="button" id="bestApplyBtn">Повторить</button></div>';
-  document.getElementById('bestApplyBtn').addEventListener('click', ()=>{ ua('best_recipe_applied'); haptics('light'); repeatEntryRecipe(e); brewFromBest = { beanId:normId(e.beanId), rating:e.rating || 0 }; });
-  if(bestShownFor !== bean.id){ bestShownFor = bean.id; ua('best_recipe_shown'); }
+  return { entry:e, html:'<div class="bt-best"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2"><span class="s">★</span>' + e.rating + ' · 1:' + ratio + ' · ' + fmt(w) + ' мл</div></div>' +
+    '<button class="pillbtn" type="button" id="bestApplyBtn">Повторить</button></div>' };
 }
+function bestFxStop(){ clearTimeout(bestFx.timer); bestFx.anims.forEach(a=> a.cancel()); bestFx.anims = []; }
+// o.bean — зерно, для которого рисуем (при посадке activeBeanId ещё старый); o.animate — двигать
+function renderBestRow(o){
+  const el = document.getElementById('calcBest');
+  if(!el) return;
+  o = o || {};
+  const bean = !FEATURES.bestRecipe ? null : ('bean' in o ? o.bean : (activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null));
+  const { html, entry } = bestRowHTML(bean);
+  bestEntry = entry;
+  if(entry && bestShownFor !== bean.id){ bestShownFor = bean.id; ua('best_recipe_shown'); }
+  if(html === bestHTMLNow) return;
+  const prev = bestHTMLNow; bestHTMLNow = html;
+  const tile = document.getElementById('calcBeanCard');
+  bestFxStop();
+  const settle = ()=>{ el.innerHTML = html; el.style.height = ''; tile.classList.toggle('has-best', !!html); };
+  if(!o.animate || !canAnimate(el) || moReduce() || !el.offsetParent){ settle(); return; }
+  const A = (n, kf, op)=>{ const a = n.animate(kf, op); bestFx.anims.push(a); return a; };
+  const tuckOut = (h, dir)=> [{ height:(dir > 0 ? BEST_TUCK : h) + 'px' }, { height:(dir > 0 ? h : BEST_TUCK) + 'px' }];
+  const slide = (h, dir)=> dir > 0 ? [{ transform:'translateY(' + (BEST_TUCK - h) + 'px)' }, { transform:'none' }] : [{ transform:'none' }, { transform:'translateY(' + (BEST_TUCK - h) + 'px)' }];
+  if(!prev){
+    // выезжает из-под плитки вместе с приходом нового зерна
+    settle();
+    const card = el.firstElementChild, h = el.offsetHeight;
+    A(el, tuckOut(h, 1), { duration:460, easing:BEAN_EASE });
+    A(card, slide(h, 1), { duration:460, easing:BEAN_EASE });
+    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:340, delay:150 + i * 35, easing:BEAN_EASE, fill:'backwards' }));
+    return;
+  }
+  if(!html){
+    // уезжает под плитку, пока плитка становится пустой
+    const card = el.firstElementChild, h = el.offsetHeight;
+    tile.classList.add('has-best');
+    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach(n=> A(n, [{ opacity:1 }, { opacity:0 }], { duration:150, easing:BEAN_EXIT, fill:'forwards' }));
+    A(card, slide(h, -1), { duration:380, easing:BEAN_INOUT, fill:'forwards' });
+    A(el, tuckOut(h, -1), { duration:380, easing:BEAN_INOUT, fill:'forwards' }).onfinish = ()=>{ if(bestHTMLNow === '') { bestFxStop(); settle(); } };
+    return;
+  }
+  // было и есть: текст уходит вверх и приходит снизу — как на плитке; высота подстраивается
+  const h0 = el.offsetHeight;
+  const old = el.firstElementChild;
+  [old.querySelector('.tx'), old.querySelector('.pillbtn')].filter(Boolean).forEach(n=> A(n, [{ opacity:1, transform:'none' }, { opacity:0, transform:'translateY(-8px)' }], { duration:150, easing:BEAN_EXIT, fill:'forwards' }));
+  bestFx.timer = setTimeout(()=>{
+    if(bestHTMLNow !== html) return;
+    bestFxStop(); settle();
+    const h1 = el.offsetHeight, card = el.firstElementChild;
+    if(h1 !== h0) A(el, [{ height:h0 + 'px' }, { height:h1 + 'px' }], { duration:340, easing:BEAN_EASE });
+    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:340, delay:i * 35, easing:BEAN_EASE, fill:'backwards' }));
+  }, 150);
+}
+document.getElementById('calcBest').addEventListener('click', e=>{
+  if(!e.target.closest('#bestApplyBtn') || !bestEntry) return;
+  const en = bestEntry;
+  ua('best_recipe_applied'); haptics('light'); repeatEntryRecipe(en); brewFromBest = { beanId:normId(en.beanId), rating:en.rating || 0 };
+});
 function weekBounds(offset){
   const n = new Date(), dow = (n.getDay() + 6) % 7;
   const from = new Date(n.getFullYear(), n.getMonth(), n.getDate() - dow + offset * 7);
@@ -7835,6 +7951,7 @@ function beanPickLand(id){
     beanLand.busy = true; beanLand.pending = false;
     const commit = commitBeanPick(id);
     const dur = runBeanLand(tile, fromBean, toBean);
+    renderBestRow({ bean:toBean, animate:true });   // язычок «Лучшей чашки» — в такт с текстом плитки
     await commit;
     countTemp(fromTemp);
     const finish = ()=>{
@@ -7989,7 +8106,8 @@ function slotHTMLEmpty(){
    Пачек больше шести — последней строкой «Все зерна…» (шторка со всеми). */
 const BEAN_MENU_MAX = 6;
 const BEAN_MENU_TICK = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
-var beanMenuOn = false;   // var: closePopMenu объявлен выше и может прийти раньше этой строки
+var beanMenuOn = false;
+var beanMenuTapX = null;  // где тронули плитку: оттуда вытекает меню   // var: closePopMenu объявлен выше и может прийти раньше этой строки
 function beanMenuOpen(){
   const pickable = beans.filter(b=> !b.archived && !b.finishedAt);
   if(!pickable.length || Brew.phase !== 'idle'){ openBeanPickSheet(); return false; }
@@ -8009,7 +8127,7 @@ function beanMenuOpen(){
     '<div class="mi-sep" role="separator"></div>' +
     row('none', activeBeanId == null, 'Без зерна', '', '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M6.5 17.5l11-11"/></svg>').replace('role="menuitemradio" aria-checked', 'role="menuitemradio" aria-checked') +
     row('add', false, 'Добавить зерно', '', '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>', 'add');
-  popMenu.classList.add('bean-menu'); popMenu.classList.remove('right');
+  popMenu.classList.add('bean-menu'); popMenu.classList.remove('right', 'ctx-menu');
   const r = tile.getBoundingClientRect();
   popMenu.style.width = r.width + 'px'; popMenu.style.right = 'auto';
   const { mh } = popMeasure();
@@ -8019,7 +8137,8 @@ function beanMenuOpen(){
   popScrim.classList.add('show');
   tile.setAttribute('aria-expanded', 'true');
   beanMenuOn = true;
-  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  // Капля вытекает из-под плитки там, где её тронули
+  popShow({ cx:beanMenuTapX != null ? beanMenuTapX : r.left + r.width / 2, w:Math.round(r.width * 0.42), h:40, down });
   return true;
 }
 function beanMenuPick(k){
@@ -8039,6 +8158,7 @@ function beanMenuPick(k){
   tile.addEventListener('touchstart', e=>{
     if(beanMenuOn || Brew.phase !== 'idle') return;
     const t = e.touches[0]; d = { x:t.clientX, y:t.clientY, scrub:false, moved:false };
+    beanMenuTapX = t.clientX;
     holdT = setTimeout(()=>{ if(!d) return; if(beanMenuOpen()){ d.scrub = true; haptics('soft'); } else d = null; }, 200);
   }, { passive:true });
   // Меню, которое на низком экране листается внутри: палец у края — оно само едет, как в iOS
@@ -8078,8 +8198,8 @@ function beanMenuPick(k){
     else if(dd.moved) closePopMenu();
   });
   tile.addEventListener('touchcancel', ()=>{ clearTimeout(holdT); cancelAnimationFrame(edgeRaf); edgeRaf = 0; d = null; setHot(null); });
-  tile.addEventListener('click', ()=>{ if(beanMenuOn) closePopMenu(); else beanMenuOpen(); });
-  tile.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); beanMenuOpen(); } });
+  tile.addEventListener('click', e=>{ if(beanMenuOn){ closePopMenu(); return; } if(e.detail) beanMenuTapX = e.clientX; beanMenuOpen(); });
+  tile.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); beanMenuTapX = null; beanMenuOpen(); } });
 })();
 
 /* ---- Зёрна: форматирование ---- */
@@ -9087,14 +9207,13 @@ function ctxOpen(kind, id, el){
   const { mw, mh } = popMeasure();
   popMenu.style.left = Math.round(Math.max(16, Math.min(window.innerWidth - 16 - mw, r.left + 6))) + 'px';
   const down = popPlace(r, mh, 14, 96);
-  popMenu.style.transformOrigin = (down ? 'top' : 'bottom') + ' left';
-  requestAnimationFrame(()=> popMenu.classList.add('show'));
+  // Кружок у края карточки, ближнего к меню, — как кнопка, из которой меню вытекает в iOS
+  popShow({ cx:parseFloat(popMenu.style.left) + 22, w:44, h:44, down });
   return true;
 }
 function ctxClose(){
   const st = ctxState; ctxState = null; ctxOn = false;
   ctxScrim.classList.remove('on');
-  popMenu.classList.remove('ctx-menu');
   if(!st) return;
   st.clone.classList.remove('lift');
   setTimeout(()=>{ st.clone.remove(); if(st.el.isConnected) st.el.style.visibility = ''; if(!ctxOn) ctxScrim.classList.remove('show'); }, 260);
