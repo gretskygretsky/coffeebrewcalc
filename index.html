@@ -970,17 +970,39 @@
   .bc-g{ text-align:right; align-self:start; white-space:nowrap; }
   .bc-g b{ display:block; font-size:17px; font-weight:700; letter-spacing:-0.02em; color:var(--label); font-variant-numeric:tabular-nums; }
   .bc-g span{ font-size:12px; color:var(--label-2); font-variant-numeric:tabular-nums; }
-  .bc.low .bc-g b{ color:var(--orange); }
+  .bc.low .bc-g b{ color:var(--warn); }
   .bc.finished .bc-g b{ color:var(--label-3); }
   .bc-g span.bc-delta{ color:var(--brown); font-weight:600; }   /* «−15 г» на входе в Зерна */
-  .bc-chips{ grid-column:2 / span 2; display:flex; flex-wrap:wrap; gap:6px; }
-  .bc-chip{
-    display:inline-flex; align-items:center; gap:4px; height:26px; padding:0 10px; border-radius:999px;
-    background:var(--fill); font-size:12.5px; font-weight:600; color:var(--label); white-space:nowrap; font-variant-numeric:tabular-nums;
-  }
-  .bc-chip .s{ color:var(--orange); }
-  .bc-chip.warn{ color:var(--orange); background:color-mix(in srgb, var(--orange) 14%, transparent); }
-  .bc-chip.muted{ color:var(--label-2); }
+  /* Свежесть — точка + слово: пик — акцент темы, отлёжка/не вскрыто — тихо, уходит — предупреждение */
+  .bc-st{ display:inline-flex; align-items:center; gap:5px; font-weight:600; color:var(--label-2); }
+  .bc-st i{ width:6px; height:6px; border-radius:50%; background:var(--label-3); flex:none; }
+  .bc-st.peak{ color:var(--brown); } .bc-st.peak i{ background:var(--brown); }
+  .bc-st.fade{ color:var(--warn); } .bc-st.fade i{ background:var(--warn); }
+  .bc-st.dead{ color:var(--label-3); } .bc-st.dead i{ background:transparent; box-shadow:inset 0 0 0 1.5px var(--label-3); }
+  .bc-st.plain i{ background:var(--label-2); }
+  .bc-dot{ margin:0 5px; color:var(--label-3); }
+  .bc-star{ width:11px; height:11px; fill:currentColor; flex:none; }
+  /* Строка списка (Калькулятор, пикеры): две строки текста слева, граммы и оценка справа */
+  .bc.list .bc-ringcol{ grid-row:auto; align-self:center; margin-top:0; }
+  .bc.list .bc-g{ align-self:center; }
+  .bc.list .bc-sub{ display:flex; align-items:center; margin-top:3px; }
+  .bc-g .bc-rate{ display:inline-flex; align-items:center; gap:3px; margin-top:3px; font-weight:600; }
+  .bc-new{ color:var(--label-3); font-weight:500; }
+  /* Карточка Зёрен «три зоны»: шапка + сетка фактов на постоянных местах */
+  .bc.zones .bc-ringcol{ grid-row:auto; align-self:center; margin-top:0; }
+  .bc.zones .bc-g{ align-self:center; }
+  .bc.zones{ container-type:inline-size; }
+  .bc-stats{ grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr) auto auto; padding-top:11px; margin-top:3px; border-top:0.5px solid var(--separator); }
+  .bc-stats > div{ min-width:0; }
+  .bc-stats > div + div{ padding-left:12px; margin-left:12px; border-left:0.5px solid var(--separator); }
+  .bc-stats > div:not(:first-child){ min-width:52px; }
+  /* Узкий экран: дни возраста прячем, статус целиком важнее */
+  @container (max-width: 290px){ .bc-v small{ display:none; } }
+  .bc-k{ font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--label-3); }
+  .bc-v{ display:flex; align-items:center; gap:4px; margin-top:4px; font-size:15px; font-weight:600; color:var(--label); white-space:nowrap; overflow:hidden; font-variant-numeric:tabular-nums; }
+  .bc-v small{ font-size:13px; font-weight:500; color:var(--label-2); }
+  .bc-v.peak{ color:var(--brown); } .bc-v.rest{ color:var(--label-2); } .bc-v.fade{ color:var(--warn); } .bc-v.dead{ color:var(--label-3); }
+  .bc-none{ display:inline-flex; align-items:center; gap:4px; color:var(--label-3); }
   /* Пустая плитка в Калькуляторе — того же размера, что обычная: ничего не прыгает */
   .bc.empty .bc-name{ color:var(--blue); }
   #calcBeanCard{ margin:16px 0; }
@@ -1667,15 +1689,20 @@
      Ширины — статикой через --n (урок сегмент-контролов); сетка 2×2 — через --c/--r. */
   .gseg{ --n:3; --c:var(--n); --r:1; position:relative; display:grid; grid-template-columns:repeat(var(--c), minmax(0,1fr)); grid-auto-rows:32px;
     padding:2px; border-radius:999px; background:var(--fill); touch-action:pan-y; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  /* iOS WebKit: пока подложка едет (transform на своём слое) и одновременно перекрашивается палитра, WebKit рисовал
+     её поверх подписей — выбранная надпись пропадала до конца анимации. Сегмент — свой контекст наложения,
+     подложка явно внизу, кнопки на собственном слое над ней. */
+  .gseg{ isolation:isolate; }
   .gseg.grid{ border-radius:20px; touch-action:none; }
   .gseg-th{ position:absolute; top:2px; left:2px; width:calc((100% - 4px) / var(--c)); height:calc((100% - 4px) / var(--r)); border-radius:999px; pointer-events:none;
     background:var(--seg-thumb); box-shadow:0 3px 8px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.05), inset 0 1px 0 var(--glass-hi);
-    transform:translate(calc(var(--ci, 0) * 100%), calc(var(--ri, 0) * 100%)); transition:transform .38s var(--gl-spring), scale .2s var(--ease-out); }
+    transform:translate(calc(var(--ci, 0) * 100%), calc(var(--ri, 0) * 100%)); transition:transform .38s var(--gl-spring), scale .2s var(--ease-out); z-index:0; }
   .gseg.grid .gseg-th{ border-radius:16px; }
   .gseg.down .gseg-th{ scale:.95; transition:transform .24s var(--ease-out), scale .14s var(--ease-out); }
   .gseg.idle .gseg-th{ transition:none; }
   .gseg button{ position:relative; z-index:1; min-width:0; border:0; background:none; border-radius:999px; font-family:inherit; font-size:13px; font-weight:600;
-    color:var(--label-2); cursor:pointer; padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .2s ease; touch-action:inherit; }
+    color:var(--label-2); cursor:pointer; padding:0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .2s ease; touch-action:inherit;
+    transform:translateZ(0); -webkit-backface-visibility:hidden; backface-visibility:hidden; }
   .gseg.grid button{ border-radius:16px; }
   .gseg button.on{ color:var(--accent, var(--blue)); }
   .gseg button:focus-visible{ outline:2px solid var(--blue); outline-offset:-2px; }
@@ -1710,7 +1737,10 @@
   /* ---------- Меню зерна (то же меню, что у режима, шириной с плитку) ---------- */
   .pop-menu.bean-menu.glass{ min-width:0; max-width:calc(100vw - 32px); }
   .pop-menu .mi.hot{ background:var(--fill); }
-  .pop-menu .mi .t span .warn{ color:var(--orange); font-weight:600; }
+  .pop-menu .mi .t span .warn{ color:var(--warn); font-weight:600; }
+  .pop-menu .mi .t span span{ display:inline; margin:0; font-size:inherit; line-height:inherit; }
+  .pop-menu .mi .t span .bc-st{ display:inline-flex; vertical-align:baseline; }
+  .pop-menu .mi .t span .bc-dot{ margin:0 5px; }
   .pop-menu .mi.add .t b, .pop-menu .mi.add .ic{ color:var(--blue); }
   .pop-menu .mi .t b, .pop-menu .mi .t span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .pop-menu .mi .ic .bc-ring svg{ width:22px; height:22px; }
@@ -1862,6 +1892,28 @@
   .bp-cap{ font-size:12.5px; line-height:1.35; color:var(--label-2); padding:11px 16px 4px; min-height:calc(2 * 1.35em + 15px); } /* всегда две строки: смена подписи не двигает список */
   .bp-arch{ font-size:12px; font-weight:600; color:var(--label-2); text-transform:uppercase; letter-spacing:.03em; padding:12px 16px 2px; }
   .js-cap-n{ font-size:12.5px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--label-2); }
+
+/* Блик «Императрицы» */
+@keyframes empGlint{ 0%,62%{ transform:translateX(-120%) } 100%{ transform:translateX(120%) } }
+.acc-opt[data-acc="diploma"]:not(.locked) .sw{ overflow:hidden; }
+.acc-opt[data-acc="diploma"]:not(.locked) .sw::before, :root[data-acc="diploma"] .action.play::before, :root[data-acc="diploma"] .action.add::before{
+  content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:1;
+  background:linear-gradient(105deg, transparent 30%, rgba(255,244,200,.75) 48%, transparent 64%); animation:empGlint 3.4s ease-in-out infinite; }
+.acc-opt[data-acc="diploma"]:not(.locked) .sw{ box-shadow:inset 0 0 0 1.5px #E3B44C, inset 0 1px 0 rgba(255,255,255,.35); }
+:root[data-acc="diploma"] .action.play, :root[data-acc="diploma"] .action.add{ color:#FFF4D6; box-shadow:inset 0 0 0 2px #E3B44C, 0 10px 26px rgba(201,146,42,.45); overflow:hidden; }
+
+/* Золотые цифры «Императрицы» — современное матовое золото: шампань, мягкий перелив без «ювелирных» полос, мелкое зерно */
+:root[data-acc="diploma"]{
+  --gold-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.24 0 0 0 0 0.12 0 0 0 1.1 -0.45'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E");
+  --gold-metal:linear-gradient(170deg, #E9D6A6 0%, #D6BC84 40%, #C4A66C 70%, #D2B980 100%);
+}
+:root[data-acc="diploma"][data-scheme="light"]{
+  --gold-metal:linear-gradient(170deg, #B39459 0%, #9E7F45 45%, #8C6F3A 75%, #9A7D46 100%);
+}
+:root[data-acc="diploma"] .res-nums b, :root[data-acc="diploma"] .res-nums b *{
+  background:var(--gold-grain) 0 0/80px 80px, var(--gold-metal) 0 0/100% 60px;
+  -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+:root[data-acc="diploma"] .res-nums b .od .strip i, :root[data-acc="diploma"] .res-nums b .dg{ background-size:80px 80px, 100% 1em; background-position:0 0, 0 0; }
 </style>
 <!-- Umami (cloud.umami.is) — вторая аналитика, параллельно Метрике -->
 <script defer id="umamiScript" src="https://cloud.umami.is/script.js" data-website-id="a6b50b1f-5857-4b6e-b020-7d3cf0adf4bd"></script>
@@ -3923,161 +3975,138 @@ const ACCENTS = {
     dark: { acc:'#FFC83A', g1:'#FFCB3D', g2:'#FF9A1F', onAcc:'#1A1200', onGrad:'#1A1200' } },
   /* Темы-ачивки: у каждой, кроме акцента, свои нейтрали (seed: фон, карточка, текст) — всё остальное выводится
      themeNeutrals(). Условия открытия — в THEME_RULES ниже. Без фиолетового, контраст проверен расчётом. */
-  espresso:{ name:'Эспрессо',
-    light:{ acc:'#7A3E1D', g1:'#8F4A24', g2:'#B97A38', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
-    dark: { acc:'#E4A672', g1:'#C98245', g2:'#EDBA82', onAcc:'#1E1410', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#E9DED3', card:'#F7F0E8', ink:'#1E1410' },
-           dark: { bg:'#120C09', card:'#1E1511', ink:'#F4EBE3' } } },
-  latte:{ name:'Латте',
-    light:{ acc:'#A85A24', g1:'#C97A3C', g2:'#E3A767', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#F0AC70', g1:'#D88F4F', g2:'#F2C48F', onAcc:'#2A1F18', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#F3ECE2', card:'#FFFDF9', ink:'#2A1F18' },
-           dark: { bg:'#1A1511', card:'#251D18', ink:'#F7EFE6' } } },
+  espresso:{ name:'Кофейня',
+    light:{'acc': '#C8200F', 'g1': '#E8281A', 'g2': '#C41D10', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
+    dark: {'acc': '#FF7563', 'g1': '#E8281A', 'g2': '#C41D10', 'onAcc': '#1A0805', 'onGrad': '#FFFFFF'},
+    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#080B10'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F8F6F2'} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2718%27%20height%3D%2718%27%20viewBox%3D%270%200%2018%2018%27%3E%3Crect%20width%3D%2718%27%20height%3D%2718%27%20fill%3D%27%23FFF3E1%27%2F%3E%3Crect%20width%3D%279%27%20height%3D%2718%27%20fill%3D%27%232E4C8C%27%2F%3E%3Crect%20x%3D%2712.6%27%20width%3D%271.8%27%20height%3D%2718%27%20fill%3D%27%23FA2D1A%27%2F%3E%3C%2Fsvg%3E) 0 0/22px 22px" },
+  latte:{ name:'Санторини',
+    light:{'acc': '#94541D', 'g1': '#BF7E46', 'g2': '#D69A60', 'onAcc': '#FFFFFF', 'onGrad': '#1E1208'},
+    dark: {'acc': '#E8AE74', 'g1': '#BF7E46', 'g2': '#D69A60', 'onAcc': '#1E1208', 'onGrad': '#1E1208'},
+    seed:{ light:{'bg': '#F2EFEC', 'card': '#FFFFFD', 'ink': '#0F0A07'}, dark:{'bg': '#0E0B09', 'card': '#1C1815', 'ink': '#F8F6F2'} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2724%27%20height%3D%2730%27%20viewBox%3D%270%200%2024%2030%27%3E%3Crect%20width%3D%2724%27%20height%3D%2730%27%20fill%3D%27%23BF7E46%27%2F%3E%3Cpath%20d%3D%27M4%2030V13a8%208%200%200%201%2016%200V30Z%27%20fill%3D%27%23FDECD8%27%2F%3E%3Cpath%20d%3D%27M7.5%2030V14.5a4.5%204.5%200%200%201%209%200V30Z%27%20fill%3D%27%2398C5E2%27%2F%3E%3Crect%20x%3D%277.5%27%20y%3D%2724%27%20width%3D%279%27%20height%3D%276%27%20fill%3D%27%23E9D3B8%27%2F%3E%3C%2Fsvg%3E) 0 0/20px 25px" },
   dawn:{ name:'Рассвет',
     light:{ acc:'#C93E22', g1:'#FF6E4A', g2:'#FFAE5A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#FF8A66', g1:'#FF6E4A', g2:'#FFAE5A', onAcc:'#2B1713', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#FBEEE8', card:'#FFFFFF', ink:'#2B1713' },
-           dark: { bg:'#1C1210', card:'#291B18', ink:'#FFF0EA' } } },
+    seed:{ light:{'bg': '#F4EFED', 'card': '#FFFFFF', 'ink': '#100908'}, dark:{'bg': '#0E0B0A', 'card': '#1C1817', 'ink': '#F9F5F3'} } },
   midnight:{ name:'Полночь',
     light:{ acc:'#A85600', g1:'#FFB547', g2:'#FF7A3D', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#FFB547', g1:'#FFC25E', g2:'#FF8A4A', onAcc:'#0B1020', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#E6EBF3', card:'#FBFCFE', ink:'#0B1020' },
-           dark: { bg:'#070A14', card:'#10152A', ink:'#E8ECFA' } } },
+    seed:{ light:{'bg': '#EEF0F4', 'card': '#FFFFFF', 'ink': '#090B10'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F5F6FA'} } },
   pine:{ name:'Хвоя',
     light:{ acc:'#1B7443', g1:'#2A9657', g2:'#7FBF3E', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#5DD088', g1:'#3DB36A', g2:'#9AD65A', onAcc:'#0A130D', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#E7EEE6', card:'#F8FBF6', ink:'#0F1A12' },
-           dark: { bg:'#0A130D', card:'#122019', ink:'#E8F3EA' } } },
+    seed:{ light:{'bg': '#EEF1ED', 'card': '#FEFFFE', 'ink': '#070D09'}, dark:{'bg': '#0A0D0B', 'card': '#161A18', 'ink': '#F4F7F4'} } },
   bordeaux:{ name:'Бордо',
     light:{ acc:'#8E1F3F', g1:'#A52C4E', g2:'#D0564C', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
     dark: { acc:'#F27C97', g1:'#D8486A', g2:'#F08A6C', onAcc:'#150A0E', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#F0E4E6', card:'#FFF9FA', ink:'#240D14' },
-           dark: { bg:'#150A0E', card:'#221218', ink:'#FBEBEF' } } },
+    seed:{ light:{'bg': '#F4EEEF', 'card': '#FFFEFF', 'ink': '#0F090B'}, dark:{'bg': '#0E0B0C', 'card': '#1C1719', 'ink': '#F9F5F6'} } },
   kraft:{ name:'Крафт',
     light:{ acc:'#B03A26', g1:'#C24A30', g2:'#D8803C', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#E8805F', g1:'#D4603F', g2:'#E9A054', onAcc:'#14110D', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#E8DCC8', card:'#F6EEDF', ink:'#1B1612' },
-           dark: { bg:'#14110D', card:'#201B15', ink:'#F2E9D8' } } },
-  lime:{ name:'Кислинка',
-    light:{ acc:'#5A7A00', g1:'#7FA800', g2:'#D6D12A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#C6E43A', g1:'#A9D21E', g2:'#E6E04A', onAcc:'#0F1204', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#F3F5E4', card:'#FFFFFF', ink:'#171A08' },
-           dark: { bg:'#0F1204', card:'#191D0A', ink:'#F2F6DC' } } },
-  diploma:{ name:'Золотой диплом',
-    light:{ acc:'#86650A', g1:'#C99A2E', g2:'#F0CF6A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#E8C25A', g1:'#F5D77A', g2:'#C99A2E', onAcc:'#171100', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#ECECEA', card:'#FFFFFF', ink:'#111111' },
-           dark: { bg:'#080808', card:'#141414', ink:'#F4F1E8' } } },
+    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#0F0A07'}, dark:{'bg': '#0E0C09', 'card': '#1B1815', 'ink': '#F8F6F2'} } },
+  lime:{ name:'Амальфи',
+    light:{'acc': '#2E5AA7', 'g1': '#FFA62B', 'g2': '#FFC24A', 'onAcc': '#FFFFFF', 'onGrad': '#1A1200'},
+    dark: {'acc': '#FFB84D', 'g1': '#FFA62B', 'g2': '#FFC24A', 'onAcc': '#1A1200', 'onGrad': '#1A1200'},
+    seed:{ light:{'bg': '#F1F0EB', 'card': '#FFFFFD', 'ink': '#090B10'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F7F6F2'} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2732%27%20height%3D%2732%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20fill%3D%27%232E5AA7%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%279%27%20r%3D%277%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%279%27%20r%3D%275.60%27%20fill%3D%27%23FFB52B%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%2714.60%27%20y2%3D%279.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%2712.96%27%20y2%3D%2712.96%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%279.00%27%20y2%3D%2714.60%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%275.04%27%20y2%3D%2712.96%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%273.40%27%20y2%3D%279.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%275.04%27%20y2%3D%275.04%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%279.00%27%20y2%3D%273.40%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%2712.96%27%20y2%3D%275.04%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%279%27%20r%3D%270.98%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%2725%27%20cy%3D%2725%27%20r%3D%276%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%2725%27%20cy%3D%2725%27%20r%3D%274.80%27%20fill%3D%27%23FFB52B%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2729.80%27%20y2%3D%2725.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2728.39%27%20y2%3D%2728.39%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2725.00%27%20y2%3D%2729.80%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2721.61%27%20y2%3D%2728.39%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2720.20%27%20y2%3D%2725.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2721.61%27%20y2%3D%2721.61%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2725.00%27%20y2%3D%2720.20%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2728.39%27%20y2%3D%2721.61%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Ccircle%20cx%3D%2725%27%20cy%3D%2725%27%20r%3D%270.84%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%2726%27%20cy%3D%277%27%20r%3D%271.3%27%20fill%3D%27%2386C5FF%27%2F%3E%3Ccircle%20cx%3D%277%27%20cy%3D%2725%27%20r%3D%271.3%27%20fill%3D%27%2386C5FF%27%2F%3E%3C%2Fsvg%3E) 0 0/26px 26px" },
+  diploma:{ name:'Императрица',
+    light:{'acc': '#A3161F', 'g1': '#C9922A', 'g2': '#ECC65E', 'onAcc': '#FFFFFF', 'onGrad': '#1A1200'},
+    dark: {'acc': '#ECC062', 'g1': '#C9922A', 'g2': '#ECC65E', 'onAcc': '#1A1200', 'onGrad': '#1A1200'},
+    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#070C10'}, dark:{'bg': '#0A0C0E', 'card': '#16191C', 'ink': '#F8F6F2'} },
+    pat:"repeating-conic-gradient(#A3161F 0 25%, #E3B44C 0 50%) left bottom/8px 8px repeat-x, url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2744%27%20height%3D%2744%27%20viewBox%3D%270%200%2044%2044%27%3E%3Cpolygon%20points%3D%279.00%2C6.80%209.86%2C9.14%2012.20%2C10.00%209.86%2C10.86%209.00%2C13.20%208.14%2C10.86%205.80%2C10.00%208.14%2C9.14%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Cpolygon%20points%3D%2731.00%2C4.20%2031.48%2C5.52%2032.80%2C6.00%2031.48%2C6.48%2031.00%2C7.80%2030.52%2C6.48%2029.20%2C6.00%2030.52%2C5.52%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Cpolygon%20points%3D%2735.00%2C27.40%2035.70%2C29.30%2037.60%2C30.00%2035.70%2C30.70%2035.00%2C32.60%2034.30%2C30.70%2032.40%2C30.00%2034.30%2C29.30%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Cpolygon%20points%3D%2716.00%2C32.50%2016.40%2C33.60%2017.50%2C34.00%2016.40%2C34.40%2016.00%2C35.50%2015.60%2C34.40%2014.50%2C34.00%2015.60%2C33.60%27%20fill%3D%27%23E9C25A%27%2F%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2720%27%20r%3D%27.8%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Ccircle%20cx%3D%274%27%20cy%3D%2726%27%20r%3D%27.6%27%20fill%3D%27%23F6E7C4%27%2F%3E%3C%2Fsvg%3E) 0 0/40px 40px, radial-gradient(circle at 24% 76%, rgba(11,28,39,.95) 0, rgba(11,28,39,0) 20%), repeating-conic-gradient(from 0deg at 24% 76%, rgba(233,183,74,.95) 0 3.2deg, transparent 3.2deg 10deg), linear-gradient(152deg, transparent 60%, #B3202A 60%), radial-gradient(circle at 24% 76%, #22465A 0 20%, #0B1C27 80%)" },
   /* Темы с текстурой: узор лежит поверх градиента акцента (--gradx) — на главной кнопке, прогрессе, образце. */
-  sprout:{ name:'Росток',
-    light:{ acc:'#3F6B12', g1:'#6FA32A', g2:'#B4CF3C', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#A6D65A', g1:'#7FB83A', g2:'#C6DE55', onAcc:'#10180A', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#EAEFDD', card:'#F9FBF2', ink:'#17200C' },
-           dark: { bg:'#0E1507', card:'#18220E', ink:'#EEF5E1' } },
-    tex:"radial-gradient(ellipse 7px 3px at 30% 40%, rgba(255,255,255,.22) 98%, transparent) 0 0/22px 14px, radial-gradient(ellipse 5px 2px at 75% 75%, rgba(0,0,0,.14) 98%, transparent) 0 0/17px 11px" },
-  cardamom:{ name:'Кардамон',
-    light:{ acc:'#6B5E10', g1:'#8C7C1C', g2:'#BFA83A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#D8C766', g1:'#B5A236', g2:'#DACB6A', onAcc:'#16130A', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#EEEAD2', card:'#FBF9EC', ink:'#1E1B0A' },
-           dark: { bg:'#13120A', card:'#201E10', ink:'#F3F0DC' } },
-    tex:"repeating-linear-gradient(100deg, transparent 0 5px, rgba(0,0,0,.14) 5px 6px, transparent 6px 11px, rgba(255,255,255,.22) 11px 12px)" },
-  gold:{ name:'Золото',
-    light:{ acc:'#7A5A00', g1:'#C79A12', g2:'#F0CB4A', onAcc:'#FFFFFF', onGrad:'#1A1200' },
-    dark: { acc:'#E8C45A', g1:'#C79A12', g2:'#F0CB4A', onAcc:'#14100A', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#EDE7D8', card:'#FBF8EF', ink:'#16130C' },
-           dark: { bg:'#0B0A08', card:'#16140F', ink:'#F3EDDC' } },
-    tex:"radial-gradient(circle, rgba(255,255,255,.55) 0 1px, transparent 1.6px) 0 0/13px 13px, radial-gradient(circle, rgba(255,255,255,.4) 0 .8px, transparent 1.3px) 6px 7px/17px 17px, linear-gradient(115deg, transparent 35%, rgba(255,255,255,.28) 48%, transparent 60%)" },
+  sprout:{ name:'Кактус',
+    light:{'acc': '#B20000', 'g1': '#B20000', 'g2': '#D3261A', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
+    dark: {'acc': '#FF7A6E', 'g1': '#B20000', 'g2': '#D3261A', 'onAcc': '#1A0402', 'onGrad': '#FFFFFF'},
+    seed:{ light:{'bg': '#EFF0EC', 'card': '#FFFFFD', 'ink': '#090C08'}, dark:{'bg': '#0B0D0A', 'card': '#171A16', 'ink': '#F6F7F3'} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2720%27%20height%3D%2726%27%20viewBox%3D%270%200%2020%2026%27%3E%3Crect%20width%3D%2720%27%20height%3D%2726%27%20fill%3D%27%23152012%27%2F%3E%3Cpath%20d%3D%27M5%200V26M15%200V26%27%20stroke%3D%27%233E5A2E%27%20stroke-width%3D%273%27%2F%3E%3Cpath%20d%3D%27M5%200V26M15%200V26%27%20stroke%3D%27%23E2EACB%27%20stroke-opacity%3D%27.55%27%20stroke-width%3D%27.8%27%2F%3E%3Cpath%20d%3D%27M3%205l2%201.2%202-1.2M13%2018l2%201.2%202-1.2%27%20fill%3D%27none%27%20stroke%3D%27%23E2EACB%27%20stroke-width%3D%27.8%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2710.00%27%20cy%3D%2711.32%27%20r%3D%271.44%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2711.60%27%20cy%3D%2712.48%27%20r%3D%271.44%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2710.99%27%20cy%3D%2714.36%27%20r%3D%271.44%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%279.01%27%20cy%3D%2714.36%27%20r%3D%271.44%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%278.40%27%20cy%3D%2712.48%27%20r%3D%271.44%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2713%27%20r%3D%270.77%27%20fill%3D%27%23FFB4A8%27%2F%3E%3Ccircle%20cx%3D%270.00%27%20cy%3D%2724.63%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%271.30%27%20cy%3D%2725.58%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%270.80%27%20cy%3D%2727.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%27-0.80%27%20cy%3D%2727.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%27-1.30%27%20cy%3D%2725.58%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%2726%27%20r%3D%270.62%27%20fill%3D%27%23FFB4A8%27%2F%3E%3Ccircle%20cx%3D%2720.00%27%20cy%3D%2724.63%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2721.30%27%20cy%3D%2725.58%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2720.80%27%20cy%3D%2727.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2719.20%27%20cy%3D%2727.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2718.70%27%20cy%3D%2725.58%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2726%27%20r%3D%270.62%27%20fill%3D%27%23FFB4A8%27%2F%3E%3Ccircle%20cx%3D%270.00%27%20cy%3D%27-1.37%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%271.30%27%20cy%3D%27-0.42%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%270.80%27%20cy%3D%271.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%27-0.80%27%20cy%3D%271.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%27-1.30%27%20cy%3D%27-0.42%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%270%27%20r%3D%270.62%27%20fill%3D%27%23FFB4A8%27%2F%3E%3Ccircle%20cx%3D%2720.00%27%20cy%3D%27-1.37%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2721.30%27%20cy%3D%27-0.42%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2720.80%27%20cy%3D%271.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2719.20%27%20cy%3D%271.10%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2718.70%27%20cy%3D%27-0.42%27%20r%3D%271.17%27%20fill%3D%27%23B20000%27%2F%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%270%27%20r%3D%270.62%27%20fill%3D%27%23FFB4A8%27%2F%3E%3C%2Fsvg%3E) 0 0/17px 22px" },
+  cardamom:{ name:'Сакура',
+    light:{'acc': '#8A0E2A', 'g1': '#6C0820', 'g2': '#A3203E', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
+    dark: {'acc': '#F5A7B8', 'g1': '#6C0820', 'g2': '#A3203E', 'onAcc': '#2A0610', 'onGrad': '#FFFFFF'},
+    seed:{ light:{'bg': '#F4EEEE', 'card': '#FFFEFE', 'ink': '#10090A'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F9F5F5'} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2736%27%20height%3D%2736%27%20viewBox%3D%270%200%2036%2036%27%3E%3Crect%20width%3D%2736%27%20height%3D%2736%27%20fill%3D%27%235A86CB%27%2F%3E%3Ccircle%20cx%3D%2710.00%27%20cy%3D%276.43%27%20r%3D%273.06%27%20fill%3D%27%23F2AEBC%27%2F%3E%3Ccircle%20cx%3D%2713.40%27%20cy%3D%278.90%27%20r%3D%273.06%27%20fill%3D%27%23F2AEBC%27%2F%3E%3Ccircle%20cx%3D%2712.10%27%20cy%3D%2712.89%27%20r%3D%273.06%27%20fill%3D%27%23F2AEBC%27%2F%3E%3Ccircle%20cx%3D%277.90%27%20cy%3D%2712.89%27%20r%3D%273.06%27%20fill%3D%27%23F2AEBC%27%2F%3E%3Ccircle%20cx%3D%276.60%27%20cy%3D%278.90%27%20r%3D%273.06%27%20fill%3D%27%23F2AEBC%27%2F%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2710%27%20r%3D%271.63%27%20fill%3D%27%236C0820%27%2F%3E%3Ccircle%20cx%3D%2727.00%27%20cy%3D%2724.06%27%20r%3D%272.52%27%20fill%3D%27%23F2DCDB%27%2F%3E%3Ccircle%20cx%3D%2729.80%27%20cy%3D%2726.09%27%20r%3D%272.52%27%20fill%3D%27%23F2DCDB%27%2F%3E%3Ccircle%20cx%3D%2728.73%27%20cy%3D%2729.38%27%20r%3D%272.52%27%20fill%3D%27%23F2DCDB%27%2F%3E%3Ccircle%20cx%3D%2725.27%27%20cy%3D%2729.38%27%20r%3D%272.52%27%20fill%3D%27%23F2DCDB%27%2F%3E%3Ccircle%20cx%3D%2724.20%27%20cy%3D%2726.09%27%20r%3D%272.52%27%20fill%3D%27%23F2DCDB%27%2F%3E%3Ccircle%20cx%3D%2727%27%20cy%3D%2727%27%20r%3D%271.34%27%20fill%3D%27%236C0820%27%2F%3E%3Cellipse%20cx%3D%2728%27%20cy%3D%278%27%20rx%3D%272.2%27%20ry%3D%271.2%27%20transform%3D%27rotate%28-30%2028%208%29%27%20fill%3D%27%23F2AEBC%27%2F%3E%3Cellipse%20cx%3D%278%27%20cy%3D%2728%27%20rx%3D%271.8%27%20ry%3D%271%27%20transform%3D%27rotate%2825%208%2028%29%27%20fill%3D%27%23F2DCDB%27%2F%3E%3Ccircle%20cx%3D%2719%27%20cy%3D%2718%27%20r%3D%27.9%27%20fill%3D%27%233D5D91%27%2F%3E%3C%2Fsvg%3E) 0 0/30px 30px" },
+  gold:{ name:'Корт',
+    light:{'acc': '#4E7000', 'g1': '#F26C84', 'g2': '#F98093', 'onAcc': '#FFFFFF', 'onGrad': '#1E2A02'},
+    dark: {'acc': '#B9D96A', 'g1': '#F26C84', 'g2': '#F98093', 'onAcc': '#1E2A02', 'onGrad': '#1E2A02'},
+    seed:{ light:{'bg': '#EFF0EC', 'card': '#FFFFFF', 'ink': '#0A0C07'}, dark:{'bg': '#0B0C0A', 'card': '#181A16', 'ink': '#F6F6F3'} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2736%27%20height%3D%2736%27%20viewBox%3D%270%200%2036%2036%27%3E%3Crect%20width%3D%2736%27%20height%3D%2736%27%20fill%3D%27%23384704%27%2F%3E%3Cpath%20d%3D%27M0%2018H36%27%20stroke%3D%27%23699407%27%20stroke-width%3D%279%27%2F%3E%3Cpath%20d%3D%27M0%2031.5H36%27%20stroke%3D%27%23F4FDCE%27%20stroke-opacity%3D%27.9%27%20stroke-width%3D%271.4%27%2F%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2710%27%20r%3D%276%27%20fill%3D%27%23F98093%27%2F%3E%3Cpath%20d%3D%27M4.30%208.20Q10.00%2010.90%208.20%2015.70%27%20fill%3D%27none%27%20stroke%3D%27%23F4FDCE%27%20stroke-width%3D%270.96%27%20stroke-linecap%3D%27round%27%2F%3E%3Cpath%20d%3D%27M11.80%204.30Q10.00%209.10%2015.70%2011.80%27%20fill%3D%27none%27%20stroke%3D%27%23F4FDCE%27%20stroke-width%3D%270.96%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2727%27%20cy%3D%2724%27%20r%3D%274.5%27%20fill%3D%27%23F98093%27%2F%3E%3Cpath%20d%3D%27M22.73%2022.65Q27.00%2024.68%2025.65%2028.27%27%20fill%3D%27none%27%20stroke%3D%27%23F4FDCE%27%20stroke-width%3D%270.72%27%20stroke-linecap%3D%27round%27%2F%3E%3Cpath%20d%3D%27M28.35%2019.73Q27.00%2023.32%2031.27%2025.35%27%20fill%3D%27none%27%20stroke%3D%27%23F4FDCE%27%20stroke-width%3D%270.72%27%20stroke-linecap%3D%27round%27%2F%3E%3C%2Fsvg%3E) 0 0/30px 30px" },
   porcelain:{ name:'Фарфор',
     light:{ acc:'#1F4FB8', g1:'#2F67D6', g2:'#3F7BDC', onAcc:'#FFFFFF', onGrad:'#FFFFFF' },
     dark: { acc:'#8CB0FF', g1:'#3F72E0', g2:'#6C9DEB', onAcc:'#0A1226', onGrad:'#0A1226' },
-    seed:{ light:{ bg:'#E8EDF4', card:'#FBFCFE', ink:'#0E1A33' },
-           dark: { bg:'#0A0F1A', card:'#121A2B', ink:'#E9EFFB' } },
+    seed:{ light:{'bg': '#EDF0F4', 'card': '#FFFFFF', 'ink': '#080B10'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F4F6FA'} },
     tex:"linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px) 0 0/10px 10px, linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px) 0 0/10px 10px" },
   terracotta:{ name:'Терракота',
     light:{ acc:'#A3401F', g1:'#C25A30', g2:'#E08A58', onAcc:'#FFFFFF', onGrad:'#1A1200' },
     dark: { acc:'#F09A74', g1:'#D2693F', g2:'#EDA27A', onAcc:'#2B140C', onGrad:'#1A1200' },
-    seed:{ light:{ bg:'#F1E3D8', card:'#FFF8F3', ink:'#2B140C' },
-           dark: { bg:'#1E120D', card:'#2C1B14', ink:'#FBEAE0' } },
+    seed:{ light:{'bg': '#F3EFEC', 'card': '#FFFFFD', 'ink': '#100907'}, dark:{'bg': '#0E0B0A', 'card': '#1C1816', 'ink': '#F9F5F3'} },
     tex:"radial-gradient(circle, rgba(0,0,0,.14) 0 1px, transparent 1.4px) 0 0/9px 9px, radial-gradient(circle, rgba(255,255,255,.22) 0 .8px, transparent 1.2px) 4px 5px/11px 11px, radial-gradient(circle, rgba(0,0,0,.14) 0 .7px, transparent 1px) 2px 8px/7px 7px" },
   cast:{ name:'Чугун',
     light:{ acc:'#3F5A75', g1:'#506F8F', g2:'#8197AD', onAcc:'#FFFFFF', onGrad:'#0E1A26' },
     dark: { acc:'#9DB6CF', g1:'#6C88A6', g2:'#A2B5C8', onAcc:'#0E1620', onGrad:'#0E1A26' },
-    seed:{ light:{ bg:'#E3E5E8', card:'#F6F7F9', ink:'#14181D' },
-           dark: { bg:'#0F1114', card:'#1A1D22', ink:'#ECEEF1' } },
+    seed:{ light:{'bg': '#EEF0F3', 'card': '#FFFFFF', 'ink': '#080B10'}, dark:{'bg': '#0A0C0F', 'card': '#17191D', 'ink': '#F4F6F9'} },
     tex:"repeating-linear-gradient(0deg, rgba(255,255,255,.13) 0 1px, transparent 1px 3px), repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 7px)" },
   lab:{ name:'Лаборатория',
     light:{ acc:'#0B7A66', g1:'#12A58A', g2:'#5CD1A8', onAcc:'#FFFFFF', onGrad:'#06201A' },
     dark: { acc:'#4FD8B8', g1:'#16B596', g2:'#6FE0B8', onAcc:'#06201A', onGrad:'#06201A' },
-    seed:{ light:{ bg:'#E3EEEA', card:'#F6FBF9', ink:'#0A1F1B' },
-           dark: { bg:'#07120F', card:'#0F1E1A', ink:'#E3F5EF' } },
+    seed:{ light:{'bg': '#ECF1EF', 'card': '#FDFFFF', 'ink': '#060D0B'}, dark:{'bg': '#090D0C', 'card': '#151A19', 'ink': '#F3F7F6'} },
     tex:"linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px) 0 0/40px 40px, linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px) 0 0/40px 40px" },
   cascade:{ name:'Каскад',
     light:{ acc:'#0A6C7A', g1:'#0F8FA0', g2:'#58C2CC', onAcc:'#FFFFFF', onGrad:'#04202A' },
     dark: { acc:'#5CCFDC', g1:'#1AA0B2', g2:'#7FD8DF', onAcc:'#04202A', onGrad:'#04202A' },
-    seed:{ light:{ bg:'#E1EEF0', card:'#F5FBFC', ink:'#0A2128' },
-           dark: { bg:'#061216', card:'#0E1E24', ink:'#E2F4F7' } },
+    seed:{ light:{'bg': '#ECF1F2', 'card': '#FDFFFF', 'ink': '#060C0F'}, dark:{'bg': '#090D0E', 'card': '#151A1C', 'ink': '#F2F7F8'} },
     tex:"url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2728%27%20height=%2712%27%3E%3Cpath%20d=%27M0%206Q7%200%2014%206T28%206%27%20fill=%27none%27%20stroke=%27%23fff%27%20stroke-opacity=%27.5%27%20stroke-width=%271.6%27/%3E%3C/svg%3E) 0 0/28px 12px" },
   equal:{ name:'Поровну',
     light:{ acc:'#55684A', g1:'#7C9170', g2:'#B3BFA0', onAcc:'#FFFFFF', onGrad:'#14180F' },
     dark: { acc:'#B5CAA6', g1:'#8CA17E', g2:'#C2CDB0', onAcc:'#12160E', onGrad:'#14180F' },
-    seed:{ light:{ bg:'#E8E8E2', card:'#F8F8F4', ink:'#1C1F18' },
-           dark: { bg:'#12130F', card:'#1D1F19', ink:'#EDEEE6' } },
+    seed:{ light:{'bg': '#F0F0EC', 'card': '#FFFFFD', 'ink': '#0A0C07'}, dark:{'bg': '#0C0C0A', 'card': '#181915', 'ink': '#F6F6F3'} },
     tex:"linear-gradient(90deg, rgba(255,255,255,.22) 0 50%, transparent 50% 100%)" },
   /* Темы-узоры: двухцветный рисунок вместо градиента — на образце, главной кнопке, таймере, в тосте.
      Под текстом кнопок узор не кладём (--gradt): там остаётся градиент. */
   tune:{ name:'Миллиметровка',
     light:{'acc': '#C21A2F', 'g1': '#3F86D8', 'g2': '#E0243A', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#FF7A88', 'g1': '#3F86D8', 'g2': '#E0243A', 'onAcc': '#2A0508', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#E6EFF8', 'card': '#FAFCFF', 'ink': '#0D1A2B'},
-           dark: {'bg': '#09111B', 'card': '#121C29', 'ink': '#E8F1FB'} },
+    seed:{ light:{'bg': '#EDF0F4', 'card': '#FEFFFF', 'ink': '#080B10'}, dark:{'bg': '#0A0C0F', 'card': '#16191D', 'ink': '#F4F6F9'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2772%27%20height%3D%2772%27%20viewBox%3D%270%200%2072%2072%27%3E%3Crect%20width%3D%2772%27%20height%3D%2772%27%20fill%3D%27%23E8F2FC%27%2F%3E%3Cpolyline%20points%3D%270.0%2C0%201.1%2C3%201.9%2C6%202.2%2C9%201.9%2C12%201.1%2C15%200.0%2C18%20-1.1%2C21%20-1.9%2C24%20-2.2%2C27%20-1.9%2C30%20-1.1%2C33%20-0.0%2C36%201.1%2C39%201.9%2C42%202.2%2C45%201.9%2C48%201.1%2C51%200.0%2C54%20-1.1%2C57%20-1.9%2C60%20-2.2%2C63%20-1.9%2C66%20-1.1%2C69%20-0.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C0.0%203%2C1.1%206%2C1.9%209%2C2.2%2012%2C1.9%2015%2C1.1%2018%2C0.0%2021%2C-1.1%2024%2C-1.9%2027%2C-2.2%2030%2C-1.9%2033%2C-1.1%2036%2C-0.0%2039%2C1.1%2042%2C1.9%2045%2C2.2%2048%2C1.9%2051%2C1.1%2054%2C0.0%2057%2C-1.1%2060%2C-1.9%2063%2C-2.2%2066%2C-1.9%2069%2C-1.1%2072%2C-0.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%2712.0%2C0%2013.1%2C3%2013.9%2C6%2014.2%2C9%2013.9%2C12%2013.1%2C15%2012.0%2C18%2010.9%2C21%2010.1%2C24%209.8%2C27%2010.1%2C30%2010.9%2C33%2012.0%2C36%2013.1%2C39%2013.9%2C42%2014.2%2C45%2013.9%2C48%2013.1%2C51%2012.0%2C54%2010.9%2C57%2010.1%2C60%209.8%2C63%2010.1%2C66%2010.9%2C69%2012.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C12.0%203%2C13.1%206%2C13.9%209%2C14.2%2012%2C13.9%2015%2C13.1%2018%2C12.0%2021%2C10.9%2024%2C10.1%2027%2C9.8%2030%2C10.1%2033%2C10.9%2036%2C12.0%2039%2C13.1%2042%2C13.9%2045%2C14.2%2048%2C13.9%2051%2C13.1%2054%2C12.0%2057%2C10.9%2060%2C10.1%2063%2C9.8%2066%2C10.1%2069%2C10.9%2072%2C12.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%2724.0%2C0%2025.1%2C3%2025.9%2C6%2026.2%2C9%2025.9%2C12%2025.1%2C15%2024.0%2C18%2022.9%2C21%2022.1%2C24%2021.8%2C27%2022.1%2C30%2022.9%2C33%2024.0%2C36%2025.1%2C39%2025.9%2C42%2026.2%2C45%2025.9%2C48%2025.1%2C51%2024.0%2C54%2022.9%2C57%2022.1%2C60%2021.8%2C63%2022.1%2C66%2022.9%2C69%2024.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C24.0%203%2C25.1%206%2C25.9%209%2C26.2%2012%2C25.9%2015%2C25.1%2018%2C24.0%2021%2C22.9%2024%2C22.1%2027%2C21.8%2030%2C22.1%2033%2C22.9%2036%2C24.0%2039%2C25.1%2042%2C25.9%2045%2C26.2%2048%2C25.9%2051%2C25.1%2054%2C24.0%2057%2C22.9%2060%2C22.1%2063%2C21.8%2066%2C22.1%2069%2C22.9%2072%2C24.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%2736.0%2C0%2037.1%2C3%2037.9%2C6%2038.2%2C9%2037.9%2C12%2037.1%2C15%2036.0%2C18%2034.9%2C21%2034.1%2C24%2033.8%2C27%2034.1%2C30%2034.9%2C33%2036.0%2C36%2037.1%2C39%2037.9%2C42%2038.2%2C45%2037.9%2C48%2037.1%2C51%2036.0%2C54%2034.9%2C57%2034.1%2C60%2033.8%2C63%2034.1%2C66%2034.9%2C69%2036.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C36.0%203%2C37.1%206%2C37.9%209%2C38.2%2012%2C37.9%2015%2C37.1%2018%2C36.0%2021%2C34.9%2024%2C34.1%2027%2C33.8%2030%2C34.1%2033%2C34.9%2036%2C36.0%2039%2C37.1%2042%2C37.9%2045%2C38.2%2048%2C37.9%2051%2C37.1%2054%2C36.0%2057%2C34.9%2060%2C34.1%2063%2C33.8%2066%2C34.1%2069%2C34.9%2072%2C36.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%2748.0%2C0%2049.1%2C3%2049.9%2C6%2050.2%2C9%2049.9%2C12%2049.1%2C15%2048.0%2C18%2046.9%2C21%2046.1%2C24%2045.8%2C27%2046.1%2C30%2046.9%2C33%2048.0%2C36%2049.1%2C39%2049.9%2C42%2050.2%2C45%2049.9%2C48%2049.1%2C51%2048.0%2C54%2046.9%2C57%2046.1%2C60%2045.8%2C63%2046.1%2C66%2046.9%2C69%2048.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C48.0%203%2C49.1%206%2C49.9%209%2C50.2%2012%2C49.9%2015%2C49.1%2018%2C48.0%2021%2C46.9%2024%2C46.1%2027%2C45.8%2030%2C46.1%2033%2C46.9%2036%2C48.0%2039%2C49.1%2042%2C49.9%2045%2C50.2%2048%2C49.9%2051%2C49.1%2054%2C48.0%2057%2C46.9%2060%2C46.1%2063%2C45.8%2066%2C46.1%2069%2C46.9%2072%2C48.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%2760.0%2C0%2061.1%2C3%2061.9%2C6%2062.2%2C9%2061.9%2C12%2061.1%2C15%2060.0%2C18%2058.9%2C21%2058.1%2C24%2057.8%2C27%2058.1%2C30%2058.9%2C33%2060.0%2C36%2061.1%2C39%2061.9%2C42%2062.2%2C45%2061.9%2C48%2061.1%2C51%2060.0%2C54%2058.9%2C57%2058.1%2C60%2057.8%2C63%2058.1%2C66%2058.9%2C69%2060.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C60.0%203%2C61.1%206%2C61.9%209%2C62.2%2012%2C61.9%2015%2C61.1%2018%2C60.0%2021%2C58.9%2024%2C58.1%2027%2C57.8%2030%2C58.1%2033%2C58.9%2036%2C60.0%2039%2C61.1%2042%2C61.9%2045%2C62.2%2048%2C61.9%2051%2C61.1%2054%2C60.0%2057%2C58.9%2060%2C58.1%2063%2C57.8%2066%2C58.1%2069%2C58.9%2072%2C60.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%2772.0%2C0%2073.1%2C3%2073.9%2C6%2074.2%2C9%2073.9%2C12%2073.1%2C15%2072.0%2C18%2070.9%2C21%2070.1%2C24%2069.8%2C27%2070.1%2C30%2070.9%2C33%2072.0%2C36%2073.1%2C39%2073.9%2C42%2074.2%2C45%2073.9%2C48%2073.1%2C51%2072.0%2C54%2070.9%2C57%2070.1%2C60%2069.8%2C63%2070.1%2C66%2070.9%2C69%2072.0%2C72%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpolyline%20points%3D%270%2C72.0%203%2C73.1%206%2C73.9%209%2C74.2%2012%2C73.9%2015%2C73.1%2018%2C72.0%2021%2C70.9%2024%2C70.1%2027%2C69.8%2030%2C70.1%2033%2C70.9%2036%2C72.0%2039%2C73.1%2042%2C73.9%2045%2C74.2%2048%2C73.9%2051%2C73.1%2054%2C72.0%2057%2C70.9%2060%2C70.1%2063%2C69.8%2066%2C70.1%2069%2C70.9%2072%2C72.0%27%20fill%3D%27none%27%20stroke%3D%27%237CAFE6%27%20stroke-width%3D%271.3%27%2F%3E%3Cpath%20d%3D%27M23.2%2019.1%20L24.2%2023.9%20L28.9%2025.0%20L24.6%2027.4%20L25.1%2032.3%20L21.5%2029.0%20L17.0%2030.9%20L19.0%2026.4%20L15.8%2022.7%20L20.7%2023.3%20Z%27%20fill%3D%27%23E0243A%27%2F%3E%3Cpath%20d%3D%27M55.0%2052.1%20L57.1%2055.7%20L61.3%2055.2%20L58.6%2058.4%20L60.3%2062.2%20L56.5%2060.6%20L53.4%2063.4%20L53.7%2059.2%20L50.1%2057.2%20L54.1%2056.2%20Z%27%20fill%3D%27%23E0243A%27%2F%3E%3C%2Fsvg%3E) 0 0/57.6px 57.6px" },
   again:{ name:'Завиток',
     light:{'acc': '#17349A', 'g1': '#17349A', 'g2': '#3557C8', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#A3B6FF', 'g1': '#2443B5', 'g2': '#3B5FD6', 'onAcc': '#0A1440', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#EFEADF', 'card': '#FBF8F1', 'ink': '#0F1836'},
-           dark: {'bg': '#0A0D1C', 'card': '#131830', 'ink': '#ECEFFB'} },
+    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#090B10'}, dark:{'bg': '#0B0C0F', 'card': '#18191D', 'ink': '#F5F6FA'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2748%27%20height%3D%2748%27%20viewBox%3D%270%200%2048%2048%27%3E%3Crect%20width%3D%2748%27%20height%3D%2748%27%20fill%3D%27%2317349A%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%270%27%20r%3D%2722.5%27%20fill%3D%27%23F1EBDD%27%2F%3E%3Cpolyline%20points%3D%270.0%2C0.0%200.1%2C0.0%200.3%2C0.1%200.4%2C0.1%200.5%2C0.3%200.5%2C0.4%200.6%2C0.5%200.6%2C0.7%200.6%2C0.9%200.5%2C1.1%200.4%2C1.2%200.3%2C1.4%200.1%2C1.6%20-0.1%2C1.7%20-0.3%2C1.8%20-0.6%2C1.9%20-0.9%2C1.9%20-1.2%2C1.9%20-1.5%2C1.8%20-1.8%2C1.7%20-2.1%2C1.5%20-2.4%2C1.3%20-2.7%2C1.1%20-2.9%2C0.8%20-3.1%2C0.4%20-3.3%2C0.0%20-3.4%2C-0.4%20-3.4%2C-0.9%20-3.4%2C-1.4%20-3.3%2C-1.8%20-3.2%2C-2.3%20-3.0%2C-2.8%20-2.7%2C-3.2%20-2.3%2C-3.7%20-1.9%2C-4.0%20-1.4%2C-4.4%20-0.9%2C-4.6%20-0.3%2C-4.8%200.3%2C-5.0%201.0%2C-5.0%201.6%2C-5.0%202.3%2C-4.9%203.0%2C-4.7%203.6%2C-4.3%204.2%2C-4.0%204.8%2C-3.5%205.3%2C-2.9%205.7%2C-2.3%206.1%2C-1.6%206.4%2C-0.8%206.6%2C-0.0%206.6%2C0.8%206.6%2C1.7%206.5%2C2.6%206.2%2C3.4%205.8%2C4.2%205.4%2C5.0%204.8%2C5.8%204.1%2C6.4%203.3%2C7.0%202.4%2C7.5%201.5%2C7.9%200.5%2C8.1%20-0.5%2C8.3%20-1.6%2C8.3%20-2.6%2C8.1%20-3.7%2C7.8%20-4.7%2C7.4%20-5.7%2C6.9%20-6.6%2C6.2%20-7.4%2C5.4%20-8.2%2C4.5%20-8.8%2C3.5%20-9.3%2C2.4%20-9.6%2C1.2%20-9.8%2C0.0%20-9.9%2C-1.3%20-9.8%2C-2.5%20-9.5%2C-3.8%20-9.1%2C-5.0%20-8.5%2C-6.2%20-7.7%2C-7.3%20-6.9%2C-8.3%20-5.8%2C-9.2%20-4.7%2C-10.0%20-3.4%2C-10.6%20-2.1%2C-11.1%20-0.7%2C-11.4%200.7%2C-11.5%202.2%2C-11.5%203.7%2C-11.2%205.1%2C-10.8%206.5%2C-10.2%207.8%2C-9.4%209.0%2C-8.4%2010.1%2C-7.3%2011.0%2C-6.1%2011.8%2C-4.7%2012.5%2C-3.2%2012.9%2C-1.6%2013.1%2C-0.0%2013.2%2C1.7%2013.0%2C3.3%2012.6%2C5.0%2012.0%2C6.6%2011.1%2C8.1%2010.1%2C9.5%209.0%2C10.8%207.6%2C12.0%206.1%2C12.9%204.5%2C13.7%202.7%2C14.3%200.9%2C14.7%20-0.9%2C14.8%20-2.8%2C14.7%20-4.7%2C14.4%20-6.5%2C13.8%20-8.2%2C13.0%20-9.9%2C11.9%20-11.4%2C10.7%20-12.7%2C9.3%20-13.9%2C7.7%20-14.9%2C5.9%20-15.6%2C4.0%20-16.1%2C2.0%20-16.4%2C0.0%20-16.4%2C-2.1%20-16.1%2C-4.1%20-15.6%2C-6.2%20-14.8%2C-8.2%20-13.8%2C-10.0%20-12.5%2C-11.8%20-11.0%2C-13.3%20-9.4%2C-14.7%20-7.5%2C-15.9%20-5.5%2C-16.9%20-3.3%2C-17.5%20-1.1%2C-17.9%201.1%2C-18.1%203.4%2C-17.9%205.7%2C-17.5%207.9%2C-16.7%2010.0%2C-15.7%2012.0%2C-14.5%2013.8%2C-12.9%2015.4%2C-11.2%2016.8%2C-9.2%2017.9%2C-7.1%2018.8%2C-4.8%2019.4%2C-2.5%2019.7%2C-0.0%2019.7%2C2.5%2019.3%2C5.0%2018.7%2C7.4%2017.7%2C9.7%2016.5%2C12.0%2014.9%2C14.0%2013.1%2C15.9%2011.1%2C17.5%208.9%2C18.9%206.5%2C20.0%27%20fill%3D%27none%27%20stroke%3D%27%2317349A%27%20stroke-width%3D%274.2%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2748%27%20cy%3D%270%27%20r%3D%2722.5%27%20fill%3D%27%23F1EBDD%27%2F%3E%3Cpolyline%20points%3D%2748.0%2C0.0%2048.1%2C0.0%2048.3%2C0.1%2048.4%2C0.1%2048.5%2C0.3%2048.5%2C0.4%2048.6%2C0.5%2048.6%2C0.7%2048.6%2C0.9%2048.5%2C1.1%2048.4%2C1.2%2048.3%2C1.4%2048.1%2C1.6%2047.9%2C1.7%2047.7%2C1.8%2047.4%2C1.9%2047.1%2C1.9%2046.8%2C1.9%2046.5%2C1.8%2046.2%2C1.7%2045.9%2C1.5%2045.6%2C1.3%2045.3%2C1.1%2045.1%2C0.8%2044.9%2C0.4%2044.7%2C0.0%2044.6%2C-0.4%2044.6%2C-0.9%2044.6%2C-1.4%2044.7%2C-1.8%2044.8%2C-2.3%2045.0%2C-2.8%2045.3%2C-3.2%2045.7%2C-3.7%2046.1%2C-4.0%2046.6%2C-4.4%2047.1%2C-4.6%2047.7%2C-4.8%2048.3%2C-5.0%2049.0%2C-5.0%2049.6%2C-5.0%2050.3%2C-4.9%2051.0%2C-4.7%2051.6%2C-4.3%2052.2%2C-4.0%2052.8%2C-3.5%2053.3%2C-2.9%2053.7%2C-2.3%2054.1%2C-1.6%2054.4%2C-0.8%2054.6%2C-0.0%2054.6%2C0.8%2054.6%2C1.7%2054.5%2C2.6%2054.2%2C3.4%2053.8%2C4.2%2053.4%2C5.0%2052.8%2C5.8%2052.1%2C6.4%2051.3%2C7.0%2050.4%2C7.5%2049.5%2C7.9%2048.5%2C8.1%2047.5%2C8.3%2046.4%2C8.3%2045.4%2C8.1%2044.3%2C7.8%2043.3%2C7.4%2042.3%2C6.9%2041.4%2C6.2%2040.6%2C5.4%2039.8%2C4.5%2039.2%2C3.5%2038.7%2C2.4%2038.4%2C1.2%2038.2%2C0.0%2038.1%2C-1.3%2038.2%2C-2.5%2038.5%2C-3.8%2038.9%2C-5.0%2039.5%2C-6.2%2040.3%2C-7.3%2041.1%2C-8.3%2042.2%2C-9.2%2043.3%2C-10.0%2044.6%2C-10.6%2045.9%2C-11.1%2047.3%2C-11.4%2048.7%2C-11.5%2050.2%2C-11.5%2051.7%2C-11.2%2053.1%2C-10.8%2054.5%2C-10.2%2055.8%2C-9.4%2057.0%2C-8.4%2058.1%2C-7.3%2059.0%2C-6.1%2059.8%2C-4.7%2060.5%2C-3.2%2060.9%2C-1.6%2061.1%2C-0.0%2061.2%2C1.7%2061.0%2C3.3%2060.6%2C5.0%2060.0%2C6.6%2059.1%2C8.1%2058.1%2C9.5%2057.0%2C10.8%2055.6%2C12.0%2054.1%2C12.9%2052.5%2C13.7%2050.7%2C14.3%2048.9%2C14.7%2047.1%2C14.8%2045.2%2C14.7%2043.3%2C14.4%2041.5%2C13.8%2039.8%2C13.0%2038.1%2C11.9%2036.6%2C10.7%2035.3%2C9.3%2034.1%2C7.7%2033.1%2C5.9%2032.4%2C4.0%2031.9%2C2.0%2031.6%2C0.0%2031.6%2C-2.1%2031.9%2C-4.1%2032.4%2C-6.2%2033.2%2C-8.2%2034.2%2C-10.0%2035.5%2C-11.8%2037.0%2C-13.3%2038.6%2C-14.7%2040.5%2C-15.9%2042.5%2C-16.9%2044.7%2C-17.5%2046.9%2C-17.9%2049.1%2C-18.1%2051.4%2C-17.9%2053.7%2C-17.5%2055.9%2C-16.7%2058.0%2C-15.7%2060.0%2C-14.5%2061.8%2C-12.9%2063.4%2C-11.2%2064.8%2C-9.2%2065.9%2C-7.1%2066.8%2C-4.8%2067.4%2C-2.5%2067.7%2C-0.0%2067.7%2C2.5%2067.3%2C5.0%2066.7%2C7.4%2065.7%2C9.7%2064.5%2C12.0%2062.9%2C14.0%2061.1%2C15.9%2059.1%2C17.5%2056.9%2C18.9%2054.5%2C20.0%27%20fill%3D%27none%27%20stroke%3D%27%2317349A%27%20stroke-width%3D%274.2%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%2748%27%20r%3D%2722.5%27%20fill%3D%27%23F1EBDD%27%2F%3E%3Cpolyline%20points%3D%270.0%2C48.0%200.1%2C48.0%200.3%2C48.1%200.4%2C48.1%200.5%2C48.3%200.5%2C48.4%200.6%2C48.5%200.6%2C48.7%200.6%2C48.9%200.5%2C49.1%200.4%2C49.2%200.3%2C49.4%200.1%2C49.6%20-0.1%2C49.7%20-0.3%2C49.8%20-0.6%2C49.9%20-0.9%2C49.9%20-1.2%2C49.9%20-1.5%2C49.8%20-1.8%2C49.7%20-2.1%2C49.5%20-2.4%2C49.3%20-2.7%2C49.1%20-2.9%2C48.8%20-3.1%2C48.4%20-3.3%2C48.0%20-3.4%2C47.6%20-3.4%2C47.1%20-3.4%2C46.6%20-3.3%2C46.2%20-3.2%2C45.7%20-3.0%2C45.2%20-2.7%2C44.8%20-2.3%2C44.3%20-1.9%2C44.0%20-1.4%2C43.6%20-0.9%2C43.4%20-0.3%2C43.2%200.3%2C43.0%201.0%2C43.0%201.6%2C43.0%202.3%2C43.1%203.0%2C43.3%203.6%2C43.7%204.2%2C44.0%204.8%2C44.5%205.3%2C45.1%205.7%2C45.7%206.1%2C46.4%206.4%2C47.2%206.6%2C48.0%206.6%2C48.8%206.6%2C49.7%206.5%2C50.6%206.2%2C51.4%205.8%2C52.2%205.4%2C53.0%204.8%2C53.8%204.1%2C54.4%203.3%2C55.0%202.4%2C55.5%201.5%2C55.9%200.5%2C56.1%20-0.5%2C56.3%20-1.6%2C56.3%20-2.6%2C56.1%20-3.7%2C55.8%20-4.7%2C55.4%20-5.7%2C54.9%20-6.6%2C54.2%20-7.4%2C53.4%20-8.2%2C52.5%20-8.8%2C51.5%20-9.3%2C50.4%20-9.6%2C49.2%20-9.8%2C48.0%20-9.9%2C46.7%20-9.8%2C45.5%20-9.5%2C44.2%20-9.1%2C43.0%20-8.5%2C41.8%20-7.7%2C40.7%20-6.9%2C39.7%20-5.8%2C38.8%20-4.7%2C38.0%20-3.4%2C37.4%20-2.1%2C36.9%20-0.7%2C36.6%200.7%2C36.5%202.2%2C36.5%203.7%2C36.8%205.1%2C37.2%206.5%2C37.8%207.8%2C38.6%209.0%2C39.6%2010.1%2C40.7%2011.0%2C41.9%2011.8%2C43.3%2012.5%2C44.8%2012.9%2C46.4%2013.1%2C48.0%2013.2%2C49.7%2013.0%2C51.3%2012.6%2C53.0%2012.0%2C54.6%2011.1%2C56.1%2010.1%2C57.5%209.0%2C58.8%207.6%2C60.0%206.1%2C60.9%204.5%2C61.7%202.7%2C62.3%200.9%2C62.7%20-0.9%2C62.8%20-2.8%2C62.7%20-4.7%2C62.4%20-6.5%2C61.8%20-8.2%2C61.0%20-9.9%2C59.9%20-11.4%2C58.7%20-12.7%2C57.3%20-13.9%2C55.7%20-14.9%2C53.9%20-15.6%2C52.0%20-16.1%2C50.0%20-16.4%2C48.0%20-16.4%2C45.9%20-16.1%2C43.9%20-15.6%2C41.8%20-14.8%2C39.8%20-13.8%2C38.0%20-12.5%2C36.2%20-11.0%2C34.7%20-9.4%2C33.3%20-7.5%2C32.1%20-5.5%2C31.1%20-3.3%2C30.5%20-1.1%2C30.1%201.1%2C29.9%203.4%2C30.1%205.7%2C30.5%207.9%2C31.3%2010.0%2C32.3%2012.0%2C33.5%2013.8%2C35.1%2015.4%2C36.8%2016.8%2C38.8%2017.9%2C40.9%2018.8%2C43.2%2019.4%2C45.5%2019.7%2C48.0%2019.7%2C50.5%2019.3%2C53.0%2018.7%2C55.4%2017.7%2C57.7%2016.5%2C60.0%2014.9%2C62.0%2013.1%2C63.9%2011.1%2C65.5%208.9%2C66.9%206.5%2C68.0%27%20fill%3D%27none%27%20stroke%3D%27%2317349A%27%20stroke-width%3D%274.2%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2748%27%20cy%3D%2748%27%20r%3D%2722.5%27%20fill%3D%27%23F1EBDD%27%2F%3E%3Cpolyline%20points%3D%2748.0%2C48.0%2048.1%2C48.0%2048.3%2C48.1%2048.4%2C48.1%2048.5%2C48.3%2048.5%2C48.4%2048.6%2C48.5%2048.6%2C48.7%2048.6%2C48.9%2048.5%2C49.1%2048.4%2C49.2%2048.3%2C49.4%2048.1%2C49.6%2047.9%2C49.7%2047.7%2C49.8%2047.4%2C49.9%2047.1%2C49.9%2046.8%2C49.9%2046.5%2C49.8%2046.2%2C49.7%2045.9%2C49.5%2045.6%2C49.3%2045.3%2C49.1%2045.1%2C48.8%2044.9%2C48.4%2044.7%2C48.0%2044.6%2C47.6%2044.6%2C47.1%2044.6%2C46.6%2044.7%2C46.2%2044.8%2C45.7%2045.0%2C45.2%2045.3%2C44.8%2045.7%2C44.3%2046.1%2C44.0%2046.6%2C43.6%2047.1%2C43.4%2047.7%2C43.2%2048.3%2C43.0%2049.0%2C43.0%2049.6%2C43.0%2050.3%2C43.1%2051.0%2C43.3%2051.6%2C43.7%2052.2%2C44.0%2052.8%2C44.5%2053.3%2C45.1%2053.7%2C45.7%2054.1%2C46.4%2054.4%2C47.2%2054.6%2C48.0%2054.6%2C48.8%2054.6%2C49.7%2054.5%2C50.6%2054.2%2C51.4%2053.8%2C52.2%2053.4%2C53.0%2052.8%2C53.8%2052.1%2C54.4%2051.3%2C55.0%2050.4%2C55.5%2049.5%2C55.9%2048.5%2C56.1%2047.5%2C56.3%2046.4%2C56.3%2045.4%2C56.1%2044.3%2C55.8%2043.3%2C55.4%2042.3%2C54.9%2041.4%2C54.2%2040.6%2C53.4%2039.8%2C52.5%2039.2%2C51.5%2038.7%2C50.4%2038.4%2C49.2%2038.2%2C48.0%2038.1%2C46.7%2038.2%2C45.5%2038.5%2C44.2%2038.9%2C43.0%2039.5%2C41.8%2040.3%2C40.7%2041.1%2C39.7%2042.2%2C38.8%2043.3%2C38.0%2044.6%2C37.4%2045.9%2C36.9%2047.3%2C36.6%2048.7%2C36.5%2050.2%2C36.5%2051.7%2C36.8%2053.1%2C37.2%2054.5%2C37.8%2055.8%2C38.6%2057.0%2C39.6%2058.1%2C40.7%2059.0%2C41.9%2059.8%2C43.3%2060.5%2C44.8%2060.9%2C46.4%2061.1%2C48.0%2061.2%2C49.7%2061.0%2C51.3%2060.6%2C53.0%2060.0%2C54.6%2059.1%2C56.1%2058.1%2C57.5%2057.0%2C58.8%2055.6%2C60.0%2054.1%2C60.9%2052.5%2C61.7%2050.7%2C62.3%2048.9%2C62.7%2047.1%2C62.8%2045.2%2C62.7%2043.3%2C62.4%2041.5%2C61.8%2039.8%2C61.0%2038.1%2C59.9%2036.6%2C58.7%2035.3%2C57.3%2034.1%2C55.7%2033.1%2C53.9%2032.4%2C52.0%2031.9%2C50.0%2031.6%2C48.0%2031.6%2C45.9%2031.9%2C43.9%2032.4%2C41.8%2033.2%2C39.8%2034.2%2C38.0%2035.5%2C36.2%2037.0%2C34.7%2038.6%2C33.3%2040.5%2C32.1%2042.5%2C31.1%2044.7%2C30.5%2046.9%2C30.1%2049.1%2C29.9%2051.4%2C30.1%2053.7%2C30.5%2055.9%2C31.3%2058.0%2C32.3%2060.0%2C33.5%2061.8%2C35.1%2063.4%2C36.8%2064.8%2C38.8%2065.9%2C40.9%2066.8%2C43.2%2067.4%2C45.5%2067.7%2C48.0%2067.7%2C50.5%2067.3%2C53.0%2066.7%2C55.4%2065.7%2C57.7%2064.5%2C60.0%2062.9%2C62.0%2061.1%2C63.9%2059.1%2C65.5%2056.9%2C66.9%2054.5%2C68.0%27%20fill%3D%27none%27%20stroke%3D%27%2317349A%27%20stroke-width%3D%274.2%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2724%27%20r%3D%2722.5%27%20fill%3D%27%23F1EBDD%27%2F%3E%3Cpolyline%20points%3D%2724.0%2C24.0%2024.1%2C24.0%2024.3%2C24.1%2024.4%2C24.1%2024.5%2C24.3%2024.5%2C24.4%2024.6%2C24.5%2024.6%2C24.7%2024.6%2C24.9%2024.5%2C25.1%2024.4%2C25.2%2024.3%2C25.4%2024.1%2C25.6%2023.9%2C25.7%2023.7%2C25.8%2023.4%2C25.9%2023.1%2C25.9%2022.8%2C25.9%2022.5%2C25.8%2022.2%2C25.7%2021.9%2C25.5%2021.6%2C25.3%2021.3%2C25.1%2021.1%2C24.8%2020.9%2C24.4%2020.7%2C24.0%2020.6%2C23.6%2020.6%2C23.1%2020.6%2C22.6%2020.7%2C22.2%2020.8%2C21.7%2021.0%2C21.2%2021.3%2C20.8%2021.7%2C20.3%2022.1%2C20.0%2022.6%2C19.6%2023.1%2C19.4%2023.7%2C19.2%2024.3%2C19.0%2025.0%2C19.0%2025.6%2C19.0%2026.3%2C19.1%2027.0%2C19.3%2027.6%2C19.7%2028.2%2C20.0%2028.8%2C20.5%2029.3%2C21.1%2029.7%2C21.7%2030.1%2C22.4%2030.4%2C23.2%2030.6%2C24.0%2030.6%2C24.8%2030.6%2C25.7%2030.5%2C26.6%2030.2%2C27.4%2029.8%2C28.2%2029.4%2C29.0%2028.8%2C29.8%2028.1%2C30.4%2027.3%2C31.0%2026.4%2C31.5%2025.5%2C31.9%2024.5%2C32.1%2023.5%2C32.3%2022.4%2C32.3%2021.4%2C32.1%2020.3%2C31.8%2019.3%2C31.4%2018.3%2C30.9%2017.4%2C30.2%2016.6%2C29.4%2015.8%2C28.5%2015.2%2C27.5%2014.7%2C26.4%2014.4%2C25.2%2014.2%2C24.0%2014.1%2C22.7%2014.2%2C21.5%2014.5%2C20.2%2014.9%2C19.0%2015.5%2C17.8%2016.3%2C16.7%2017.1%2C15.7%2018.2%2C14.8%2019.3%2C14.0%2020.6%2C13.4%2021.9%2C12.9%2023.3%2C12.6%2024.7%2C12.5%2026.2%2C12.5%2027.7%2C12.8%2029.1%2C13.2%2030.5%2C13.8%2031.8%2C14.6%2033.0%2C15.6%2034.1%2C16.7%2035.0%2C17.9%2035.8%2C19.3%2036.5%2C20.8%2036.9%2C22.4%2037.1%2C24.0%2037.2%2C25.7%2037.0%2C27.3%2036.6%2C29.0%2036.0%2C30.6%2035.1%2C32.1%2034.1%2C33.5%2033.0%2C34.8%2031.6%2C36.0%2030.1%2C36.9%2028.5%2C37.7%2026.7%2C38.3%2024.9%2C38.7%2023.1%2C38.8%2021.2%2C38.7%2019.3%2C38.4%2017.5%2C37.8%2015.8%2C37.0%2014.1%2C35.9%2012.6%2C34.7%2011.3%2C33.3%2010.1%2C31.7%209.1%2C29.9%208.4%2C28.0%207.9%2C26.0%207.6%2C24.0%207.6%2C21.9%207.9%2C19.9%208.4%2C17.8%209.2%2C15.8%2010.2%2C14.0%2011.5%2C12.2%2013.0%2C10.7%2014.6%2C9.3%2016.5%2C8.1%2018.5%2C7.1%2020.7%2C6.5%2022.9%2C6.1%2025.1%2C5.9%2027.4%2C6.1%2029.7%2C6.5%2031.9%2C7.3%2034.0%2C8.3%2036.0%2C9.5%2037.8%2C11.1%2039.4%2C12.8%2040.8%2C14.8%2041.9%2C16.9%2042.8%2C19.2%2043.4%2C21.5%2043.7%2C24.0%2043.7%2C26.5%2043.3%2C29.0%2042.7%2C31.4%2041.7%2C33.7%2040.5%2C36.0%2038.9%2C38.0%2037.1%2C39.9%2035.1%2C41.5%2032.9%2C42.9%2030.5%2C44.0%27%20fill%3D%27none%27%20stroke%3D%27%2317349A%27%20stroke-width%3D%274.2%27%20stroke-linecap%3D%27round%27%2F%3E%3C%2Fsvg%3E) 0 0/29.8px 29.8px" },
   peak:{ name:'Звездопад',
     light:{'acc': '#1A5FAE', 'g1': '#2A7FD4', 'g2': '#1D63B5', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#FFD23A', 'g1': '#2A7FD4', 'g2': '#1D63B5', 'onAcc': '#1A1200', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#E4EEF8', 'card': '#F8FBFF', 'ink': '#0B1A2E'},
-           dark: {'bg': '#07111F', 'card': '#0F1C30', 'ink': '#EAF2FC'} },
+    seed:{ light:{'bg': '#EDF0F4', 'card': '#FEFFFF', 'ink': '#080B10'}, dark:{'bg': '#0A0C0F', 'card': '#17191D', 'ink': '#F4F6F9'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2764%27%20height%3D%2764%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%232A7FD4%27%2F%3E%3Cpath%20d%3D%27M14.0%206.0%20L15.6%2012.1%20L21.1%208.9%20L17.9%2014.4%20L24.0%2016.0%20L17.9%2017.6%20L21.1%2023.1%20L15.6%2019.9%20L14.0%2026.0%20L12.4%2019.9%20L6.9%2023.1%20L10.1%2017.6%20L4.0%2016.0%20L10.1%2014.4%20L6.9%208.9%20L12.4%2012.1%20Z%27%20fill%3D%27%23FFD23A%27%2F%3E%3Cpath%20d%3D%27M46.0%205.0%20L46.8%208.1%20L49.5%206.5%20L47.9%209.2%20L51.0%2010.0%20L47.9%2010.8%20L49.5%2013.5%20L46.8%2011.9%20L46.0%2015.0%20L45.2%2011.9%20L42.5%2013.5%20L44.1%2010.8%20L41.0%2010.0%20L44.1%209.2%20L42.5%206.5%20L45.2%208.1%20Z%27%20fill%3D%27%23F6A93B%27%2F%3E%3Cpath%20d%3D%27M40.0%2030.0%20L41.9%2037.3%20L48.5%2033.5%20L44.7%2040.1%20L52.0%2042.0%20L44.7%2043.9%20L48.5%2050.5%20L41.9%2046.7%20L40.0%2054.0%20L38.1%2046.7%20L31.5%2050.5%20L35.3%2043.9%20L28.0%2042.0%20L35.3%2040.1%20L31.5%2033.5%20L38.1%2037.3%20Z%27%20fill%3D%27%23F6A93B%27%2F%3E%3Cpath%20d%3D%27M10.0%2045.5%20L10.7%2048.3%20L13.2%2046.8%20L11.7%2049.3%20L14.5%2050.0%20L11.7%2050.7%20L13.2%2053.2%20L10.7%2051.7%20L10.0%2054.5%20L9.3%2051.7%20L6.8%2053.2%20L8.3%2050.7%20L5.5%2050.0%20L8.3%2049.3%20L6.8%2046.8%20L9.3%2048.3%20Z%27%20fill%3D%27%23FFD23A%27%2F%3E%3Cpath%20d%3D%27M58.0%2053.0%20L58.8%2056.1%20L61.5%2054.5%20L59.9%2057.2%20L63.0%2058.0%20L59.9%2058.8%20L61.5%2061.5%20L58.8%2059.9%20L58.0%2063.0%20L57.2%2059.9%20L54.5%2061.5%20L56.1%2058.8%20L53.0%2058.0%20L56.1%2057.2%20L54.5%2054.5%20L57.2%2056.1%20Z%27%20fill%3D%27%23FFD23A%27%2F%3E%3Cpath%20d%3D%27M28.0%2031.0%20L28.5%2032.8%20L30.1%2031.9%20L29.2%2033.5%20L31.0%2034.0%20L29.2%2034.5%20L30.1%2036.1%20L28.5%2035.2%20L28.0%2037.0%20L27.5%2035.2%20L25.9%2036.1%20L26.8%2034.5%20L25.0%2034.0%20L26.8%2033.5%20L25.9%2031.9%20L27.5%2032.8%20Z%27%20fill%3D%27%23FFD23A%27%2F%3E%3C%2Fsvg%3E) 0 0/44.8px 44.8px" },
   bottom:{ name:'Скатерть',
     light:{'acc': '#BC2F19', 'g1': '#E8452E', 'g2': '#C93520', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#FF8D78', 'g1': '#E8452E', 'g2': '#C93520', 'onAcc': '#2A0B05', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#F6E8DE', 'card': '#FFFAF6', 'ink': '#2A120C'},
-           dark: {'bg': '#1A0F0B', 'card': '#271914', 'ink': '#FBEDE4'} },
+    seed:{ light:{'bg': '#F3EFEC', 'card': '#FFFFFD', 'ink': '#100908'}, dark:{'bg': '#0E0B0A', 'card': '#1C1816', 'ink': '#F9F5F3'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2736%27%20height%3D%2736%27%20viewBox%3D%270%200%2036%2036%27%3E%3Crect%20width%3D%2736%27%20height%3D%2736%27%20fill%3D%27%23FBEDE3%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%270%27%20width%3D%272.4%27%20height%3D%2736%27%20fill%3D%27%23E8452E%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%270%27%20width%3D%2736%27%20height%3D%272.4%27%20fill%3D%27%23E8452E%27%2F%3E%3Crect%20x%3D%2712%27%20y%3D%270%27%20width%3D%272.4%27%20height%3D%2736%27%20fill%3D%27%23E8452E%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2712%27%20width%3D%2736%27%20height%3D%272.4%27%20fill%3D%27%23E8452E%27%2F%3E%3Crect%20x%3D%2724%27%20y%3D%270%27%20width%3D%272.4%27%20height%3D%2736%27%20fill%3D%27%23E8452E%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2724%27%20width%3D%2736%27%20height%3D%272.4%27%20fill%3D%27%23E8452E%27%2F%3E%3Cellipse%20cx%3D%2719%27%20cy%3D%2719%27%20rx%3D%277%27%20ry%3D%274.6%27%20fill%3D%27%232B5BD7%27%20transform%3D%27rotate%28-30%2019%2019%29%27%2F%3E%3C%2Fsvg%3E) 0 0/27.0px 27.0px" },
   protocol:{ name:'Плитка',
     light:{'acc': '#7A1420', 'g1': '#5C0005', 'g2': '#8A1A28', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#F2A7C8', 'g1': '#7A1420', 'g2': '#9B2A3A', 'onAcc': '#2A0610', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#F2E6DE', 'card': '#FFFAF6', 'ink': '#24100E'},
-           dark: {'bg': '#170C0C', 'card': '#241515', 'ink': '#F8ECE6'} },
+    seed:{ light:{'bg': '#F3EFEC', 'card': '#FFFFFD', 'ink': '#100908'}, dark:{'bg': '#0E0B0B', 'card': '#1C1717', 'ink': '#F9F5F3'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2748%27%20height%3D%2748%27%20viewBox%3D%270%200%2048%2048%27%3E%3Crect%20x%3D%270%27%20y%3D%270%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%236497C6%27%2F%3E%3Crect%20x%3D%2712%27%20y%3D%270%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%23B6C9E2%27%2F%3E%3Crect%20x%3D%2724%27%20y%3D%270%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%236497C6%27%2F%3E%3Crect%20x%3D%2736%27%20y%3D%270%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%23B6C9E2%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2712%27%20width%3D%2712%27%20height%3D%278%27%20fill%3D%27%238A7A2E%27%2F%3E%3Crect%20x%3D%2712%27%20y%3D%2712%27%20width%3D%2712%27%20height%3D%278%27%20fill%3D%27%23F2A7C8%27%2F%3E%3Crect%20x%3D%2724%27%20y%3D%2712%27%20width%3D%2712%27%20height%3D%278%27%20fill%3D%27%238A7A2E%27%2F%3E%3Crect%20x%3D%2736%27%20y%3D%2712%27%20width%3D%2712%27%20height%3D%278%27%20fill%3D%27%23F2A7C8%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%276%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%2712%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%2718%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%2724%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%2730%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%2736%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%2742%27%20y%3D%2720%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%276%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%2712%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%2718%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%2724%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%2730%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%2736%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%23F2DFD3%27%2F%3E%3Crect%20x%3D%2742%27%20y%3D%2728%27%20width%3D%276%27%20height%3D%278%27%20fill%3D%27%235C0005%27%2F%3E%3Crect%20x%3D%270%27%20y%3D%2736%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%23F2A7C8%27%2F%3E%3Crect%20x%3D%2712%27%20y%3D%2736%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%238A7A2E%27%2F%3E%3Crect%20x%3D%2724%27%20y%3D%2736%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%23F2A7C8%27%2F%3E%3Crect%20x%3D%2736%27%20y%3D%2736%27%20width%3D%2712%27%20height%3D%2712%27%20fill%3D%27%238A7A2E%27%2F%3E%3C%2Fsvg%3E) 0 0/28.8px 28.8px" },
   spread:{ name:'Каракули',
     light:{'acc': '#1A56A0', 'g1': '#1E63B5', 'g2': '#2F7FD0', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#8EBBFF', 'g1': '#1E63B5', 'g2': '#2F7FD0', 'onAcc': '#0A1A33', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#ECE6DC', 'card': '#FBF8F3', 'ink': '#101A2A'},
-           dark: {'bg': '#0B1018', 'card': '#151C27', 'ink': '#EEF1F6'} },
+    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#080B10'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F4F6FA'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2760%27%20height%3D%2760%27%20viewBox%3D%270%200%2060%2060%27%3E%3Crect%20width%3D%2760%27%20height%3D%2760%27%20fill%3D%27%23EDE4D8%27%2F%3E%3Cpath%20d%3D%27M6%2010%20Q16%202%2022%2012%20T38%2014%27%20fill%3D%27none%27%20stroke%3D%27%231E63B5%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%2F%3E%3Cpath%20d%3D%27M44%206%20Q54%2010%2050%2022%27%20fill%3D%27none%27%20stroke%3D%27%231E63B5%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%2F%3E%3Cpath%20d%3D%27M8%2036%20Q4%2048%2016%2050%20T30%2044%27%20fill%3D%27none%27%20stroke%3D%27%231E63B5%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%2F%3E%3Cpath%20d%3D%27M34%2030%20Q46%2024%2050%2036%20T56%2054%27%20fill%3D%27none%27%20stroke%3D%27%231E63B5%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%2F%3E%3Cpath%20d%3D%27M24%2022%20Q28%2030%2022%2034%27%20fill%3D%27none%27%20stroke%3D%27%231E63B5%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%2740%27%20cy%3D%2746%27%20r%3D%273.4%27%20fill%3D%27%231E63B5%27%2F%3E%3Ccircle%20cx%3D%2754%27%20cy%3D%274%27%20r%3D%273.4%27%20fill%3D%27%231E63B5%27%2F%3E%3Ccircle%20cx%3D%274%27%20cy%3D%2724%27%20r%3D%273.4%27%20fill%3D%27%231E63B5%27%2F%3E%3C%2Fsvg%3E) 0 0/42.0px 42.0px" },
   weeks:{ name:'Шахматка',
     light:{'acc': '#A3091F', 'g1': '#AE0A21', 'g2': '#D2334A', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#FF95A6', 'g1': '#AE0A21', 'g2': '#C8263D', 'onAcc': '#2E0309', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#F7E6E9', 'card': '#FFF9FA', 'ink': '#2A0A10'},
-           dark: {'bg': '#19090C', 'card': '#271216', 'ink': '#FBEAED'} },
+    seed:{ light:{'bg': '#F4EEEF', 'card': '#FFFEFF', 'ink': '#10090A'}, dark:{'bg': '#0E0B0B', 'card': '#1C1718', 'ink': '#F9F5F5'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2764%27%20height%3D%2764%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20fill%3D%27%23F5AAB7%27%2F%3E%3Cpath%20d%3D%27M0.0%202.2%20L2.0%202.6%20L4.0%202.5%20L6.0%202.1%20L8.0%201.4%20L10.0%200.5%20L12.0%20-0.6%20L14.0%20-1.5%20L16.0%20-2.2%20L16.0%20-2.2%20L17.0%20-0.2%20L17.8%201.8%20L18.4%203.8%20L18.6%205.8%20L18.4%207.8%20L17.8%209.8%20L17.0%2011.8%20L16.0%2013.8%20L16.0%2013.8%20L14.0%2014.5%20L12.0%2015.4%20L10.0%2016.5%20L8.0%2017.4%20L6.0%2018.1%20L4.0%2018.5%20L2.0%2018.6%20L0.0%2018.2%20L0.0%2018.2%20L1.0%2016.2%20L1.8%2014.2%20L2.4%2012.2%20L2.6%2010.2%20L2.4%208.2%20L1.8%206.2%20L1.0%204.2%20L0.0%202.2%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M-0.0%2034.2%20L2.0%2034.6%20L4.0%2034.5%20L6.0%2034.1%20L8.0%2033.4%20L10.0%2032.5%20L12.0%2031.4%20L14.0%2030.5%20L16.0%2029.8%20L16.0%2029.8%20L17.0%2031.8%20L17.8%2033.8%20L18.4%2035.8%20L18.6%2037.8%20L18.4%2039.8%20L17.8%2041.8%20L17.0%2043.8%20L16.0%2045.8%20L16.0%2045.8%20L14.0%2046.5%20L12.0%2047.4%20L10.0%2048.5%20L8.0%2049.4%20L6.0%2050.1%20L4.0%2050.5%20L2.0%2050.6%20L0.0%2050.2%20L0.0%2050.2%20L1.0%2048.2%20L1.8%2046.2%20L2.4%2044.2%20L2.6%2042.2%20L2.4%2040.2%20L1.8%2038.2%20L1.0%2036.2%20L-0.0%2034.2%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M16.0%2013.8%20L18.0%2013.4%20L20.0%2013.5%20L22.0%2013.9%20L24.0%2014.6%20L26.0%2015.5%20L28.0%2016.6%20L30.0%2017.5%20L32.0%2018.2%20L32.0%2018.2%20L31.0%2020.2%20L30.2%2022.2%20L29.6%2024.2%20L29.4%2026.2%20L29.6%2028.2%20L30.2%2030.2%20L31.0%2032.2%20L32.0%2034.2%20L32.0%2034.2%20L30.0%2033.5%20L28.0%2032.6%20L26.0%2031.5%20L24.0%2030.6%20L22.0%2029.9%20L20.0%2029.5%20L18.0%2029.4%20L16.0%2029.8%20L16.0%2029.8%20L15.0%2027.8%20L14.2%2025.8%20L13.6%2023.8%20L13.4%2021.8%20L13.6%2019.8%20L14.2%2017.8%20L15.0%2015.8%20L16.0%2013.8%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M16.0%2045.8%20L18.0%2045.4%20L20.0%2045.5%20L22.0%2045.9%20L24.0%2046.6%20L26.0%2047.5%20L28.0%2048.6%20L30.0%2049.5%20L32.0%2050.2%20L32.0%2050.2%20L31.0%2052.2%20L30.2%2054.2%20L29.6%2056.2%20L29.4%2058.2%20L29.6%2060.2%20L30.2%2062.2%20L31.0%2064.2%20L32.0%2066.2%20L32.0%2066.2%20L30.0%2065.5%20L28.0%2064.6%20L26.0%2063.5%20L24.0%2062.6%20L22.0%2061.9%20L20.0%2061.5%20L18.0%2061.4%20L16.0%2061.8%20L16.0%2061.8%20L15.0%2059.8%20L14.2%2057.8%20L13.6%2055.8%20L13.4%2053.8%20L13.6%2051.8%20L14.2%2049.8%20L15.0%2047.8%20L16.0%2045.8%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M32.0%202.2%20L34.0%202.6%20L36.0%202.5%20L38.0%202.1%20L40.0%201.4%20L42.0%200.5%20L44.0%20-0.6%20L46.0%20-1.5%20L48.0%20-2.2%20L48.0%20-2.2%20L49.0%20-0.2%20L49.8%201.8%20L50.4%203.8%20L50.6%205.8%20L50.4%207.8%20L49.8%209.8%20L49.0%2011.8%20L48.0%2013.8%20L48.0%2013.8%20L46.0%2014.5%20L44.0%2015.4%20L42.0%2016.5%20L40.0%2017.4%20L38.0%2018.1%20L36.0%2018.5%20L34.0%2018.6%20L32.0%2018.2%20L32.0%2018.2%20L33.0%2016.2%20L33.8%2014.2%20L34.4%2012.2%20L34.6%2010.2%20L34.4%208.2%20L33.8%206.2%20L33.0%204.2%20L32.0%202.2%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M32.0%2034.2%20L34.0%2034.6%20L36.0%2034.5%20L38.0%2034.1%20L40.0%2033.4%20L42.0%2032.5%20L44.0%2031.4%20L46.0%2030.5%20L48.0%2029.8%20L48.0%2029.8%20L49.0%2031.8%20L49.8%2033.8%20L50.4%2035.8%20L50.6%2037.8%20L50.4%2039.8%20L49.8%2041.8%20L49.0%2043.8%20L48.0%2045.8%20L48.0%2045.8%20L46.0%2046.5%20L44.0%2047.4%20L42.0%2048.5%20L40.0%2049.4%20L38.0%2050.1%20L36.0%2050.5%20L34.0%2050.6%20L32.0%2050.2%20L32.0%2050.2%20L33.0%2048.2%20L33.8%2046.2%20L34.4%2044.2%20L34.6%2042.2%20L34.4%2040.2%20L33.8%2038.2%20L33.0%2036.2%20L32.0%2034.2%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M48.0%2013.8%20L50.0%2013.4%20L52.0%2013.5%20L54.0%2013.9%20L56.0%2014.6%20L58.0%2015.5%20L60.0%2016.6%20L62.0%2017.5%20L64.0%2018.2%20L64.0%2018.2%20L63.0%2020.2%20L62.2%2022.2%20L61.6%2024.2%20L61.4%2026.2%20L61.6%2028.2%20L62.2%2030.2%20L63.0%2032.2%20L64.0%2034.2%20L64.0%2034.2%20L62.0%2033.5%20L60.0%2032.6%20L58.0%2031.5%20L56.0%2030.6%20L54.0%2029.9%20L52.0%2029.5%20L50.0%2029.4%20L48.0%2029.8%20L48.0%2029.8%20L47.0%2027.8%20L46.2%2025.8%20L45.6%2023.8%20L45.4%2021.8%20L45.6%2019.8%20L46.2%2017.8%20L47.0%2015.8%20L48.0%2013.8%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3Cpath%20d%3D%27M48.0%2045.8%20L50.0%2045.4%20L52.0%2045.5%20L54.0%2045.9%20L56.0%2046.6%20L58.0%2047.5%20L60.0%2048.6%20L62.0%2049.5%20L64.0%2050.2%20L64.0%2050.2%20L63.0%2052.2%20L62.2%2054.2%20L61.6%2056.2%20L61.4%2058.2%20L61.6%2060.2%20L62.2%2062.2%20L63.0%2064.2%20L64.0%2066.2%20L64.0%2066.2%20L62.0%2065.5%20L60.0%2064.6%20L58.0%2063.5%20L56.0%2062.6%20L54.0%2061.9%20L52.0%2061.5%20L50.0%2061.4%20L48.0%2061.8%20L48.0%2061.8%20L47.0%2059.8%20L46.2%2057.8%20L45.6%2055.8%20L45.4%2053.8%20L45.6%2051.8%20L46.2%2049.8%20L47.0%2047.8%20L48.0%2045.8%20Z%27%20fill%3D%27%23AE0A21%27%2F%3E%3C%2Fsvg%3E) 0 0/46.1px 46.1px" },
   year:{ name:'Изразец',
     light:{'acc': '#BE0017', 'g1': '#E3001B', 'g2': '#B80016', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#FF7884', 'g1': '#E3001B', 'g2': '#B80016', 'onAcc': '#2E0005', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#EFE9DE', 'card': '#FCFAF5', 'ink': '#24100D'},
-           dark: {'bg': '#160D0B', 'card': '#231714', 'ink': '#F6EEE6'} },
+    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#100908'}, dark:{'bg': '#0E0B0A', 'card': '#1C1816', 'ink': '#F8F5F3'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2724%27%20height%3D%2724%27%20viewBox%3D%270%200%2024%2024%27%3E%3Crect%20width%3D%2724%27%20height%3D%2724%27%20fill%3D%27%23E3001B%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%270%27%20r%3D%279.5%27%20fill%3D%27%23D9CDB4%27%2F%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%270%27%20r%3D%279.5%27%20fill%3D%27%23D9CDB4%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%2724%27%20r%3D%279.5%27%20fill%3D%27%23D9CDB4%27%2F%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2724%27%20r%3D%279.5%27%20fill%3D%27%23D9CDB4%27%2F%3E%3Ccircle%20cx%3D%2712%27%20cy%3D%2712%27%20r%3D%279.5%27%20fill%3D%27%23D9CDB4%27%2F%3E%3C%2Fsvg%3E) 0 0/21.6px 21.6px" },
   coffeeday:{ name:'Арлекин',
     light:{'acc': '#6E1A22', 'g1': '#6E1A22', 'g2': '#93303A', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#EBA7AE', 'g1': '#7C222B', 'g2': '#9A3440', 'onAcc': '#2A070B', 'onGrad': '#FFFFFF'},
-    seed:{ light:{'bg': '#F1E8DE', 'card': '#FDF9F4', 'ink': '#22100F'},
-           dark: {'bg': '#150B0C', 'card': '#221416', 'ink': '#F6ECE6'} },
+    seed:{ light:{'bg': '#F3EFEC', 'card': '#FFFFFD', 'ink': '#100909'}, dark:{'bg': '#0E0B0B', 'card': '#1C1718', 'ink': '#F9F5F3'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2724%27%20height%3D%2736%27%20viewBox%3D%270%200%2024%2036%27%3E%3Crect%20width%3D%2724%27%20height%3D%2736%27%20fill%3D%27%23F1E6DA%27%2F%3E%3Cpath%20d%3D%27M12%200%20L24%2018%20L12%2036%20L0%2018%20Z%27%20fill%3D%27%236E1A22%27%2F%3E%3C%2Fsvg%3E) 0 0/16.8px 25.2px" }
 };
 const ACCENT_KEYS = ['raspberry', 'ice', 'honey', 'espresso', 'latte', 'dawn', 'midnight', 'pine', 'bordeaux', 'kraft', 'lime', 'diploma',
@@ -4127,6 +4156,7 @@ function applyPalette(isDark){
   // Нативные части (календарь даты, select, скроллбары, автозаполнение) берут тему из color-scheme —
   // ставим её из того же источника, что и палитру, иначе при тёмном Telegram и светлой системе они светлые.
   root.colorScheme = isDark ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-acc', accentKey); document.documentElement.setAttribute('data-scheme', isDark ? 'dark' : 'light');
   if(ACCENTS[accentKey].pat) document.documentElement.setAttribute('data-pat', ''); else document.documentElement.removeAttribute('data-pat');
   document.querySelectorAll('meta[name="theme-color"]').forEach(m=> m.setAttribute('content', p['--bg']));
   if(typeof renderAccentPick === 'function' && document.getElementById('themesBtn')) renderAccentPick();
@@ -5533,7 +5563,7 @@ const OCT_CFG = {
   noteMin: 20,                  // символов в заметке для «Крафта»
   bestMinRated: 2,              // оценённых брю на зерне, чтобы показать лучшую чашку
   weekMinPrev: 3,               // брю на прошлой неделе, чтобы показать её карточкой
-  peak: { light:[10, 35], medium:[7, 28], dark:[5, 21] },   // окно «пик вкуса», дни после обжарки
+  peak: { light:[8, 30], medium:[8, 30], dark:[8, 30] },    // окно «пик вкуса», дни после обжарки (одно на все обжарки — FRESH_STAGES)
   steps: [   // «Факультет»: условия ступеней
     { id:'abit', name:'Абитуриент', gen:'Абитуриента', sm:'Старт', cond:[] },
     { id:'stud', name:'Студент', gen:'Студента', sm:'3 брю', cond:[{ k:'brews', g:3, l:'Брю' }] },
@@ -7458,17 +7488,15 @@ function updateBeanPickRow(){
   if(beanLand.busy){ beanLand.pending = true; return; }
   const bean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
   if(bean){
-    el.innerHTML = '<div class="b-row-content ' + beanCardClasses(bean) + '">' + beanCardHTML(bean, null, 'calc') + '</div>';
+    el.innerHTML = '<div class="b-row-content ' + beanCardClasses(bean, undefined, 'calc') + '">' + beanCardHTML(bean, undefined, 'calc') + '</div>';
     el.setAttribute('aria-label', 'Зерно: ' + (bean.name || 'Без названия') + '. Выбрать другое');
   } else {
     const any = beans.some(b=> !b.archived && !b.finishedAt);
-    el.innerHTML = '<div class="b-row-content bc empty">' +
+    el.innerHTML = '<div class="b-row-content bc list empty">' +
       '<div class="bc-ringcol">' + beanRingSVG(0, false, false, 44, 5) + '</div>' +
       '<div class="bc-t"><div class="bc-name">' + (any ? 'Выбрать зерно' : 'Добавить зерно') + '</div>' +
       '<div class="bc-sub">' + (any ? 'или заваривать без него' : 'чтобы считать остаток и оценки') + '</div></div>' +
-      '<div class="bc-g" aria-hidden="true"><b>&nbsp;</b><span>&nbsp;</span></div>' +
-      // Ряд чипов-заглушек держит высоту обычной плитки: при выборе зерна и «Без зерна» ничего ниже не прыгает
-      '<div class="bc-chips" aria-hidden="true"><span class="bc-chip muted">остаток —</span><span class="bc-chip muted"><span class="s">★</span>—</span></div></div>';
+      '<div class="bc-g" aria-hidden="true"><b>&nbsp;</b><span>&nbsp;</span></div></div>';
     el.setAttribute('aria-label', any ? 'Выбрать зерно' : 'Добавить зерно');
   }
   octRefresh();
@@ -7481,13 +7509,31 @@ function updateBeanPickRow(){
 /* ---- Октализ: лучшая чашка, пик вкуса, итоги недели, Факультет ---- */
 let peakHidden = false;
 try{ peakHidden = localStorage.getItem('peak_chip_hidden') === '1'; }catch(e){}
+/* Свежесть по дням от обжарки (пачка с клапаном). Вскрытие ускоряет: 15–30 дн открыто — не лучше «Выдыхается»,
+   больше 30 — «Выдохся». cls — цвет: rest тихо, peak акцент, plateau обычный, fade предупреждение, dead серый. */
+const FRESH_STAGES = [
+  { to:3,  k:'degas',   label:'Дегазация',  cls:'rest' },
+  { to:7,  k:'rest',    label:'Отдых',      cls:'rest' },
+  { to:30, k:'peak',    label:'Пик',        cls:'peak' },
+  { to:60, k:'plateau', label:'Плато',      cls:'' },
+  { to:90, k:'fade',    label:'Выдыхается', cls:'fade' },
+  { to:Infinity, k:'dead', label:'Выдохся', cls:'dead' },
+];
+function freshStage(b){
+  const roast = daysSinceRoast(b.roastDate), opened = daysSinceRoast(b.openedDate);
+  const i0 = roast != null && roast >= 0 ? FRESH_STAGES.findIndex(s=> roast <= s.to) : -1;
+  let i = i0;
+  if(opened != null && opened >= 0){
+    if(opened > 30) i = 5;
+    else if(opened >= 15) i = Math.max(i, 4);
+  }
+  return i < 0 ? null : Object.assign({ roast, opened, byOpen:i !== i0 }, FRESH_STAGES[i]);
+}
 function peakPhase(b){
   if(!FEATURES.peakChip || peakHidden || !b) return null;
-  const w = OCT_CFG.peak[b.roast], d = daysSinceRoast(b.roastDate);
-  if(!w || d == null || d < 0) return null;
-  if(d < w[0]) return { k:'rest', left:w[0] - d };
-  if(d <= w[1]) return { k:'peak', left:w[1] - d };
-  return { k:'fade', left:0 };
+  const s = freshStage(b);
+  if(!s) return null;
+  return s.k === 'peak' ? { k:'peak', left:Math.max(0, 30 - s.roast) } : s.k === 'degas' || s.k === 'rest' ? { k:'rest', left:8 - s.roast } : { k:'fade', left:0 };
 }
 /* Лучшая чашка зерна: самая высокая оценка среди засчитанных брю, при равенстве — свежее. */
 function bestCupFor(beanId){
@@ -7608,46 +7654,54 @@ function beanRingSVG(pct, low, finished, size, stroke){
       (pct > 0 ? '<circle class="arc" cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="' + (low ? 'var(--warn)' : 'var(--brown)') + '" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - pct)).toFixed(1) + '"/>' : '') +
     '</svg></div>';
 }
-function beanCardHTML(b, selectedId){
+/* Свежесть зерна одной фразой: пик / отлёжка / уходит по окну обжарки, иначе — вскрыто или нет.
+   label — для строки списка, short + d — для ячейки «Свежесть» карточки. */
+function beanFresh(b, n){
+  if(n.finished) return { cls:'', label:'Закончилось', short:'Закончилось', d:'' };
+  const fs = FEATURES.peakChip && !peakHidden ? freshStage(b) : null;
+  if(fs) return { cls:fs.cls, label:fs.label === 'Пик' ? 'Пик вкуса' : fs.label, short:fs.label, d:fs.byOpen ? 'вскрыто\u00a0' + fs.opened + '\u00a0дн' : fs.roast != null && fs.roast >= 0 ? fs.roast + '\u00a0дн' : '' };
+  const opened = daysSinceRoast(b.openedDate);
+  if(opened == null) return { cls:'rest', label:'Не вскрыто', short:'Не вскрыто', d:'' };
+  const d = opened <= 0 ? 'сегодня' : opened + '\u00a0дн';
+  return { cls:'', label:'Вскрыто ' + d, short:'Вскрыто', d };
+}
+const BC_STAR = '<svg class="bc-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>';
+/* Плитка зерна. ctx 'calc' и пикеры (selectedId передан) — строка списка: кольцо, имя, свежесть · обжарщик,
+   справа граммы и оценка. Страница Зёрен — карточка «три зоны»: шапка + сетка Свежесть · Вода · Оценка. */
+function beanCardHTML(b, selectedId, ctx){
   const on = selectedId != null && b.id === selectedId;
-  const n = beanNumbers(b);
-  const st = beanStats(b.id);
+  const n = beanNumbers(b), st = beanStats(b.id), f = beanFresh(b, n);
   const roastLbl = (ROASTS.find(x=>x.id===b.roast) || {}).label || '';
   const procLbl = (PROCESSES.find(x=>x.id===b.process) || {}).label || '';
-  // «Скоро закончится» важнее обжарщика — подменяет его в подстроке
-  const sub = n.finished ? 'закончилось'
-    : n.low ? '<span class="warn">Скоро закончится</span>'
-    : (b.roaster ? escapeHTML(b.roaster) : [roastLbl, procLbl].filter(Boolean).join(' · ').toLowerCase());
-  const opened = daysSinceRoast(b.openedDate);
-  const chips = [];
-  const pk = !n.finished ? peakPhase(b) : null;
-  if(pk) chips.push(pk.k === 'peak' ? '<span class="bc-chip peak">пик вкуса · ещё\u00a0' + pk.left + '\u00a0дн</span>'
-    : pk.k === 'rest' ? '<span class="bc-chip muted">отлёживается · ещё\u00a0' + pk.left + '\u00a0дн</span>'
-    : '<span class="bc-chip warn">аромат уходит</span>');
-  if(!n.finished){
-    if(!pk) chips.push(opened == null
-      ? '<span class="bc-chip muted">не вскрыто</span>'
-      : '<span class="bc-chip' + (opened >= BEAN_STALE_OPENED ? ' warn' : '') + '" title="После вскрытия">вскрыто ' + (opened <= 0 ? 'сегодня' : opened + '\u00a0дн') + '</span>');
-    chips.push('<span class="bc-chip" title="Температура воды">' + computeBrewTemp(b.roast, b.process) + '°</span>');
+  const prof = [roastLbl, procLbl].filter(Boolean).join(' · ').toLowerCase();
+  const ringcol = '<div class="bc-ringcol">' + beanRingSVG(n.pct, n.low, n.finished, 44, 5) + (on ? '<span class="bc-lbl">Выбрано</span>' : '') + '</div>';
+  const name = '<div class="bc-name">' + escapeHTML(b.name || 'Без названия') + '</div>';
+  const grams = n.finished ? '—' : Math.round(n.remain) + '\u00a0г';
+  if(ctx === 'calc' || selectedId !== undefined){
+    const rate = st.rated ? BC_STAR + fmt(st.avg) : '<span class="bc-new">новое</span>';
+    const who = b.roaster ? escapeHTML(b.roaster) : prof;
+    return ringcol +
+      '<div class="bc-t">' + name + '<div class="bc-sub"><span class="bc-st ' + f.cls + '"><i></i>' + f.label + '</span>' + (who ? '<span class="bc-dot">·</span>' + who : '') + '</div></div>' +
+      '<div class="bc-g"><b>' + grams + '</b><span class="bc-rate">' + rate + '</span></div>';
   }
-  chips.push(st.rated
-    ? '<span class="bc-chip"><span class="s">★</span>' + fmt(st.avg) + '</span>'
-    : '<span class="bc-chip muted" title="Нет оценок"><span class="s">★</span>—</span>');
-  return (
-    '<div class="bc-ringcol">' + beanRingSVG(n.pct, n.low, n.finished, 44, 5) + (on ? '<span class="bc-lbl">Выбрано</span>' : '') + '</div>' +
-    '<div class="bc-t"><div class="bc-name">' + escapeHTML(b.name || 'Без названия') + '</div><div class="bc-sub">' + sub + '</div></div>' +
-    '<div class="bc-g"><b>' + (n.finished ? '—' : Math.round(n.remain) + '\u00a0г') + '</b><span>из ' + Math.round(n.start) + '</span></div>' +
-    '<div class="bc-chips">' + chips.join('') + '</div>'
-  );
+  const sub = [b.roaster ? escapeHTML(b.roaster) : '', prof].filter(Boolean).join(' · ');
+  return ringcol +
+    '<div class="bc-t">' + name + '<div class="bc-sub">' + (sub || '&nbsp;') + '</div></div>' +
+    '<div class="bc-g"><b>' + grams + '</b><span>из ' + Math.round(n.start) + '</span></div>' +
+    '<div class="bc-stats">' +
+      '<div><div class="bc-k">Свежесть</div><div class="bc-v ' + f.cls + '">' + f.short + (f.d ? '<small>· ' + f.d + '</small>' : '') + '</div></div>' +
+      '<div><div class="bc-k">Вода</div><div class="bc-v">' + (n.finished ? '—' : computeBrewTemp(b.roast, b.process) + '°') + '</div></div>' +
+      '<div><div class="bc-k">Оценка</div><div class="bc-v">' + (st.rated ? BC_STAR + fmt(st.avg) : '<span class="bc-none">' + BC_STAR + '—</span>') + '</div></div>' +
+    '</div>';
 }
-function beanCardClasses(b, selectedId){
+function beanCardClasses(b, selectedId, ctx){
   const n = beanNumbers(b);
-  return 'bc' + (selectedId != null && b.id === selectedId ? ' on' : '') + (n.finished ? ' finished' : '') + (n.low ? ' low' : '');
+  return 'bc' + (ctx === 'calc' || selectedId !== undefined ? ' list' : ' zones') + (selectedId != null && b.id === selectedId ? ' on' : '') + (n.finished ? ' finished' : '') + (n.low ? ' low' : '');
 }
 function beanPickCardHTML(b, selectedId, archived){
   const sel = selectedId === undefined ? activeBeanId : selectedId;
-  return '<div class="b-row-content bean-pick-card ' + beanCardClasses(b, sel) + (archived ? ' archived' : '') + '" data-id="' + b.id + '">' +
-    beanCardHTML(b, sel) + '</div>';
+  return '<div class="b-row-content bean-pick-card ' + beanCardClasses(b, sel, 'calc') + (archived ? ' archived' : '') + '" data-id="' + b.id + '">' +
+    beanCardHTML(b, sel, 'calc') + '</div>';
 }
 
 function openBeanPickSheet(){
@@ -7808,14 +7862,14 @@ function runBeanLand(tile, fromBean, toBean){
   const arc = svg.querySelector('.arc-a'), solid = svg.querySelector('.tr-solid'), dash = svg.querySelector('.tr-dash'), mk = svg.querySelector('.mk');
   const later = (fn, ms)=> beanLand.timers.push(setTimeout(fn, ms));
   const A = (el, kf, o)=> el.animate(kf, o);
-  const parts = t=> [t.querySelector('.bc-name'), t.querySelector('.bc-sub'), t.querySelector('.bc-g'), t.querySelector('.bc-chips')].filter(Boolean);
+  const parts = t=> [t.querySelector('.bc-name'), t.querySelector('.bc-sub'), t.querySelector('.bc-g'), t.querySelector('.bc-stats')].filter(Boolean);
   const textOut = dir=> parts(tile).forEach(el=> A(el, [{ opacity:1, transform:'translateY(0)' }, { opacity:0, transform:'translateY(' + (8 * dir) + 'px)' }], { duration:150, easing:BEAN_EXIT, fill:'forwards' }));
   const textIn = dir=> parts(tile).forEach((el, i)=> A(el, [{ opacity:0, transform:'translateY(' + (10 * dir) + 'px)' }, { opacity:1, transform:'translateY(0)' }],
     { duration:340, delay:[0, 35, 20, 70][i] || 0, easing:BEAN_EASE, fill:'backwards' }));
   // Новый текст — из той же разметки, что честный рендер
   const swapText = (bean)=>{
     const tmp = document.createElement('div');
-    if(bean){ tmp.innerHTML = '<div class="b-row-content ' + beanCardClasses(bean) + '">' + beanCardHTML(bean, null, 'calc') + '</div>'; }
+    if(bean){ tmp.innerHTML = '<div class="b-row-content ' + beanCardClasses(bean, undefined, 'calc') + '">' + beanCardHTML(bean, undefined, 'calc') + '</div>'; }
     else tmp.innerHTML = slotHTMLEmpty();
     const nt = tmp.firstElementChild;
     [...tile.children].forEach(c=>{ if(!c.classList.contains('bc-ringcol')) c.remove(); });
@@ -7921,12 +7975,11 @@ function runBeanLand(tile, fromBean, toBean){
 // Разметка пустой плитки — та же, что в updateBeanPickRow
 function slotHTMLEmpty(){
   const any = beans.some(b=> !b.archived && !b.finishedAt);
-  return '<div class="b-row-content bc empty">' +
+  return '<div class="b-row-content bc list empty">' +
     '<div class="bc-ringcol">' + beanRingSVG(0, false, false, 44, 5) + '</div>' +
     '<div class="bc-t"><div class="bc-name">' + (any ? 'Выбрать зерно' : 'Добавить зерно') + '</div>' +
     '<div class="bc-sub">' + (any ? 'или заваривать без него' : 'чтобы считать остаток и оценки') + '</div></div>' +
-    '<div class="bc-g" aria-hidden="true"><b>&nbsp;</b><span>&nbsp;</span></div>' +
-    '<div class="bc-chips" aria-hidden="true"><span class="bc-chip muted">остаток —</span><span class="bc-chip muted"><span class="s">★</span>—</span></div></div>';
+    '<div class="bc-g" aria-hidden="true"><b>&nbsp;</b><span>&nbsp;</span></div></div>';
 }
 
 /* ---- Зерно на «Кофе»: меню из плитки ----
@@ -7948,7 +8001,8 @@ function beanMenuOpen(){
     '<span class="ck">' + (checked ? BEAN_MENU_TICK : '') + '</span><span class="t"><b>' + title + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>' + (ic ? '<span class="ic">' + ic + '</span>' : '') + '</button>';
   popMenu.innerHTML = shown.map(b=>{
     const n = beanNumbers(b);
-    const sub = n.remain <= 0 ? '<span class="warn">0\u00a0г · закончилось</span>' : n.low ? '<span class="warn">' + Math.round(n.remain) + '\u00a0г · скоро закончится</span>' : (b.roaster ? escapeHTML(b.roaster) + ' · ' : '') + Math.round(n.remain) + '\u00a0г';
+    const f = beanFresh(b, n), g = Math.round(n.remain) + '\u00a0г';
+    const sub = '<span class="bc-st ' + f.cls + '"><i></i>' + f.label + '</span><span class="bc-dot">·</span>' + (n.low || n.remain <= 0 ? '<span class="warn">' + g + '</span>' : g);
     return row(b.id, b.id === activeBeanId, escapeHTML(b.name || 'Без названия'), sub, beanRingSVG(n.pct, n.low, n.finished, 22, 3));
   }).join('') +
     (sorted.length > BEAN_MENU_MAX ? row('all', false, 'Все зерна…', 'ещё ' + (sorted.length - shown.length), '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>', 'more') : '') +
