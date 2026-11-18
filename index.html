@@ -1767,6 +1767,10 @@
   .cap{ position:relative; flex-shrink:0; width:132px; height:34px; border-radius:999px; background:var(--fill);
     touch-action:none; cursor:ns-resize; user-select:none; -webkit-user-select:none; transition:background-color .25s, color .25s, transform .16s var(--ease-out); }
   .cap.press{ transform:scale(.96); }
+  /* Капсула в прокручиваемой шторке берётся удержанием: приподнимается — теперь тянется */
+  .cap.armed{ transform:scale(1.05); background:color-mix(in srgb, var(--accent, var(--blue)) 14%, var(--fill)); box-shadow:0 4px 14px rgba(0,0,0,.14); }
+  /* Значение в черновике изменено и ещё не сохранено */
+  .cap.chg .dr-i{ color:var(--accent, var(--blue)); }
   .cap.on{ background:color-mix(in srgb, var(--accent, var(--blue)) 12%, transparent); color:var(--accent, var(--blue)); }
   .cap.on .dr-i{ color:var(--accent, var(--blue)); }
   .cap .chev{ position:absolute; right:11px; top:50%; margin-top:-5px; color:var(--label-3); transition:transform .4s var(--ease-drawer), color .25s; pointer-events:none; }
@@ -4233,10 +4237,49 @@ function hx(type){
   haptics(type);
 }
 Gestures.claimX('.cap'); Gestures.claimX('.wheel');   // барабаны: капсулы и колёса дат
+/* Скролл против барабанов: палец, сразу поехавший по капсуле, прокручивает контейнер,
+   а не крутит значение. Капсула берётся удержанием HOLD без сдвига больше SLOP.
+   Касание контейнера, который ещё едет по инерции, только останавливает его. */
+const DrumScroll = (()=>{
+  const HOLD = 180, SLOP = 6, FRICTION = 0.9975;   // 1/мс — как у системного списка iOS
+  const st = new WeakMap();
+  const S = sc=>{ let o = st.get(sc); if(!o){ o = { last:0, raf:0 }; st.set(sc, o); sc.addEventListener('scroll', ()=>{ o.last = performance.now(); }, { passive:true }); sc.addEventListener('pointerdown', ()=> stop(sc), true); } return o; };
+  function scroller(el){
+    for(let n = el.parentElement; n && n !== document.body; n = n.parentElement){
+      const oy = getComputedStyle(n).overflowY;
+      if((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight + 1){ S(n); return n; }
+    }
+    return null;
+  }
+  const moving = sc=>{ const o = S(sc); return !!o.raf || performance.now() - o.last < 120; };
+  function stop(sc){ const o = S(sc); if(o.raf){ cancelAnimationFrame(o.raf); o.raf = 0; } else if(performance.now() - o.last < 120) sc.scrollTop = sc.scrollTop; }
+  function drag(g, y){
+    const now = performance.now();
+    g.sc.scrollTop = g.st0 - (y - g.y0);
+    g.samples.push([now, y]); while(g.samples.length > 2 && now - g.samples[0][0] > 90) g.samples.shift();
+  }
+  function fling(g){
+    const sm = g.samples, now = performance.now();
+    if(sm.length < 2 || now - sm[sm.length - 1][0] > 60) return;
+    let v = -(sm[sm.length - 1][1] - sm[0][1]) / Math.max(1, sm[sm.length - 1][0] - sm[0][0]);   // px/мс, + — вниз по контенту
+    if(Math.abs(v) < 0.05 || reduceMotion()) return;
+    const o = S(g.sc); let prev = now;
+    const step = t=>{
+      const dt = Math.min(32, t - prev); prev = t;
+      v *= Math.pow(FRICTION, dt);
+      const before = g.sc.scrollTop; g.sc.scrollTop = before + v * dt;
+      if(Math.abs(v) < 0.02 || g.sc.scrollTop === before){ o.raf = 0; return; }
+      o.raf = requestAnimationFrame(step);
+    };
+    o.raf = requestAnimationFrame(step);
+  }
+  return { HOLD, SLOP, scroller, moving, stop, drag, fling };
+})();
 class Drum{
   constructor(host, o){
     Object.assign(this, { itemH:15, wheel:false, win:2, step:1, min:0, max:9999, fmt:v=> String(v), onChange:()=>{}, onTap:null, fast:false }, o);
     this.host = host; host._drum = this;
+    this.v0 = this.value;   // исходное значение черновика: отличие подсвечивается в шторках
     this.anchor = this.value; this.p = 0; this.vel = 0; this.act = this.wheel ? 1 : 0; this.lastK = 0; this.anim = null;
     this.dr = document.createElement('div'); this.dr.className = 'dr'; host.appendChild(this.dr);
     this.items = [];
@@ -4280,21 +4323,34 @@ class Drum{
   }
   emit(){
     const [a, b] = this.range(), k = Math.round(Math.max(a, Math.min(b, this.p)));
-    if(k !== this.lastK){ this.lastK = k; if(!this.running) hx(this.tick ? this.tick(this.at(k)) : 'selection'); this.onChange(this.at(k)); }
+    if(k !== this.lastK){ this.lastK = k; if(!this.running) hx(this.tick ? this.tick(this.at(k)) : 'selection'); this.onChange(this.at(k)); if(!this.wheel && this.host.closest('#sheet')) this.host.classList.toggle('chg', this.at(k) !== this.v0); }
   }
   loop(fn){
     cancelAnimationFrame(this.anim); const t0 = performance.now(); let prev = t0;
     const step = now=>{ const done = fn(now - t0, now - prev); prev = now; this.paint(); this.anim = done ? null : requestAnimationFrame(step); };
     this.anim = requestAnimationFrame(step);
   }
+  markDraft(){ if(!this.wheel && this.host.closest('#sheet')) this.host.classList.toggle('chg', this.cur() !== this.v0); }
   rest(){ // остановились — соседи гаснут
-    this.vel = 0; this.reanchor(); if(this.onRest) setTimeout(()=> this.onRest(), 0);
+    this.vel = 0; this.reanchor(); this.markDraft(); if(this.onRest) setTimeout(()=> this.onRest(), 0);
     if(this.wheel){ this.paint(); return; }
     const a0 = this.act, hold = this.fast ? 120 : 280, fade = this.fast ? 180 : 260;
     this.loop(t=>{ const q = Math.max(0, (t - hold) / fade); this.act = a0 * (1 - Math.min(1, q)); return q >= 1; });
   }
   down(e){
     if(e.button > 0 || this.disabled) return;
+    // Капсула внутри прокручиваемого контейнера: сначала скролл, значение — только после удержания
+    this.gate = null;
+    const sc = !this.wheel && e.pointerType !== 'mouse' ? DrumScroll.scroller(this.host) : null;
+    if(sc){
+      const moving = DrumScroll.moving(sc);
+      DrumScroll.stop(sc);
+      this.gate = { sc, mode: moving ? 'scroll' : 'wait', y0: e.clientY, t0: performance.now(), st0: sc.scrollTop, samples: [] };
+      if(!moving){
+        clearTimeout(this.armT);
+        this.armT = setTimeout(()=>{ if(this.pressed && this.gate && this.gate.mode === 'wait'){ this.gate.mode = 'armed'; this.host.classList.remove('press'); this.host.classList.add('armed'); hx('selection'); } }, DrumScroll.HOLD);
+      }
+    }
     this.wasMoving = Math.abs(this.p - Math.round(this.p)) > 0.001 || Math.abs(this.vel) > 0.0005; // касание ловит барабан на лету
     cancelAnimationFrame(this.anim); this.anim = null;
     try{ this.host.setPointerCapture(e.pointerId); }catch(_){}
@@ -4303,8 +4359,17 @@ class Drum{
   }
   move(e){
     if(!this.pressed) return;
+    const g = this.gate;
+    if(g && g.mode !== 'armed'){
+      if(g.mode === 'wait'){
+        if(Math.abs(e.clientY - g.y0) <= DrumScroll.SLOP) return;
+        g.mode = 'scroll'; clearTimeout(this.armT); this.host.classList.remove('press');
+      }
+      DrumScroll.drag(g, e.clientY);
+      return;
+    }
     const dy = e.clientY - this.y0;
-    if(!this.drag && Math.abs(dy) > 4){ this.drag = true; this.host.classList.remove('press'); }
+    if(!this.drag && Math.abs(dy) > 4){ this.drag = true; this.host.classList.remove('press'); if(g){ this.y0 = e.clientY; return; } }
     if(!this.drag) return;
     this.act = 1;
     let p = this.p0 - dy / this.itemH; const [a, b] = this.range();
@@ -4319,6 +4384,9 @@ class Drum{
   }
   up(e, cancel){
     if(!this.pressed) return; this.pressed = false; this.host.classList.remove('press');
+    clearTimeout(this.armT); this.host.classList.remove('armed');
+    const g = this.gate; this.gate = null;
+    if(g && g.mode === 'scroll'){ if(!cancel) DrumScroll.fling(g); return; }   // это был скролл: ни значения, ни тапа
     const [a, b] = this.range(), now = performance.now();
     if(!this.drag){
       // тап на лету: встаёт на ближайшее значение, и тап всё равно срабатывает
@@ -4354,7 +4422,7 @@ class Drum{
       return false;
     });
   }
-  set(v){ cancelAnimationFrame(this.anim); this.anim = null; this.anchor = Math.min(this.max, Math.max(this.min, v)); this.p = 0; this.lastK = 0; this.vel = 0; this.paint(); }
+  set(v){ cancelAnimationFrame(this.anim); this.anim = null; this.anchor = Math.min(this.max, Math.max(this.min, v)); this.p = 0; this.lastK = 0; this.vel = 0; this.paint(); this.markDraft(); }
   peek(delay){ // подсказка при первом открытии: значение чуть вздрагивает, показывая соседей
     if(reduceMotion()) return;
     setTimeout(()=>{ if(this.pressed || this.anim) return; this.loop(t=>{ const q = Math.min(1, t / 760);
