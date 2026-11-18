@@ -985,6 +985,39 @@
   #calcBeanCard{ margin:16px 0; }
   #calcBeanCard .b-row-content{ border-radius:22px; }
   #calcBeanCard.locked{ opacity:.45; pointer-events:none; }
+
+  /* ---- Октализ: лучшая чашка, итоги недели, факультет ---- */
+  #calcBest{ margin:-8px 0 16px; }
+  #calcBest:empty{ display:none; }
+  .bt-best{ display:flex; align-items:center; gap:12px; min-height:56px; padding:10px 14px; background:var(--card); border-radius:22px; }
+  .bt-best .t1{ font-size:15px; font-weight:600; color:var(--label); }
+  .bt-best .t2{ font-size:13px; color:var(--label-2); font-variant-numeric:tabular-nums; }
+  .bt-best .t2 .s{ color:var(--orange); }
+  .bt-best .tx{ flex:1; min-width:0; }
+  .bt-best.empty .t1{ color:var(--label-2); }
+  .pillbtn{ flex-shrink:0; min-height:36px; padding:0 14px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font:600 14px/1 inherit; font-family:inherit; touch-action:manipulation; }
+  .pillbtn:active{ opacity:.6; }
+  .bc-chip.peak{ color:var(--green, #34C759); background:color-mix(in srgb, var(--green, #34C759) 14%, transparent); }
+  #weekSum:empty, #facPlaque:empty{ display:none; }
+  .wk-sum{ background:var(--card); border-radius:22px; padding:14px 16px; margin-bottom:16px; }
+  .wk-sum .wk-t{ font-size:17px; font-weight:600; color:var(--label); }
+  .wk-sum .wk-s{ font-size:13px; color:var(--label-2); margin-top:2px; }
+  .wk-sum .kv{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px; }
+  .wk-sum .kv b{ display:block; font-size:22px; font-weight:600; color:var(--label); font-variant-numeric:tabular-nums; }
+  .wk-sum .kv span{ font-size:12px; color:var(--label-2); }
+  .fac{ background:var(--card); border-radius:22px; margin-bottom:8px; overflow:hidden; }
+  .fac-head{ display:flex; align-items:center; gap:12px; width:100%; min-height:64px; padding:12px 14px; border:none; background:none; text-align:left; font-family:inherit; color:var(--label); touch-action:manipulation; }
+  .fac-head:active{ background:var(--fill); }
+  .fac-head .mid{ flex:1; min-width:0; }
+  .fac-head .t{ font-size:17px; font-weight:600; }
+  .fac-head .s{ font-size:13px; color:var(--label-2); margin-top:2px; }
+  .fac-body{ padding:0 14px 14px; display:grid; gap:10px; }
+  .fac-body[hidden]{ display:none; }
+  .fac-cond{ display:flex; justify-content:space-between; gap:12px; font-size:15px; color:var(--label); font-variant-numeric:tabular-nums; }
+  .fac-cond.ok{ color:var(--label-2); }
+  .fac-cond em{ font-style:normal; color:var(--label-2); }
+  .fac-bar{ height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
+  .fac-bar i{ display:block; height:100%; border-radius:3px; background:var(--acc, var(--blue)); }
   .sheet .b-row-content{ background:var(--sheet-group); }
   .pick-none{
     width:100%; min-height:50px; margin-top:10px; padding:0 16px; border:none; border-radius:22px;
@@ -1955,6 +1988,7 @@ const Gestures = (()=>{
   <div class="fold"><div>
   <p class="section-header">Зерно</p>
   <div id="calcBeanCard" role="button" tabindex="0" aria-label="Выбрать зерно"></div>
+  <div id="calcBest"></div>
   </div></div>
 
   <div class="fold"><div>
@@ -2007,6 +2041,7 @@ const Gestures = (()=>{
 
       <div class="page" id="pageJournal">
         <h1>История</h1>
+        <div id="weekSum"></div>
         <div id="journalListCard" style="margin-bottom:8px; display:none;">
           <div id="journalList"></div>
         </div>
@@ -2019,6 +2054,7 @@ const Gestures = (()=>{
 
       <div class="page" id="pageMore">
         <h1>Настройки</h1>
+        <div id="facPlaque"></div>
         <p class="section-header">Оформление</p>
         <div class="card">
           <div class="theme-mode" id="themeMode"></div>
@@ -2028,6 +2064,7 @@ const Gestures = (()=>{
             <span class="th-cnt" id="thRowCnt"></span>
             <svg aria-hidden="true" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>
           </button>
+          <div class="row" id="peakRow"><span class="row-label">Пик вкуса на зёрнах</span><label class="bs-sw"><input type="checkbox" id="peakSw" checked aria-label="Показывать пик вкуса"><i></i></label></div>
           <div class="row"><span class="row-label">Градиент</span><label class="bs-sw"><input type="checkbox" id="accentGradSw" checked aria-label="Градиент акцента"><i></i></label></div>
         </div>
         <p class="ratio-hint">Цвет кнопок, колец и главных чисел во всём приложении.</p>
@@ -5300,7 +5337,10 @@ function saveBrewDuration(elapsedSec){
     const last = rows.length ? Math.round(rows[rows.length-1].time) : 0;
     const el = Math.max(0, Math.round(elapsedSec != null ? elapsedSec : Brew.elapsed()));
     entry.duration = last ? Math.min(el, last) : el;
+    const wasDone = entry.done === true;
+    entry.done = !!last && el >= last - OCT_CFG.doneSlack;
     await journalUpdateEntry(entry);
+    if(entry.done && !wasDone) ua('brew_completed', { mode: entry.mode, cup: entry.cup || 'custom', bean: entry.beanId != null ? 1 : 0 });
     return entry;
   })();
   return brewDurationPromise;
@@ -5344,7 +5384,40 @@ document.getElementById('tfRateBtn').addEventListener('click', ()=>{
    Условия считаются по журналу и зёрнам (задним числом), открытое сохраняется отдельно и не закрывается
    обратно: удалил записи — тема осталась. Выбранная раньше тема, чьё условие ещё не выполнено, остаётся
    «в долг» (gf), пока человек с неё не уйдёт: вернуться на неё можно только после выполнения. */
-const THEME_RULES = {
+/* ---- Геймификация (октализ): конфиг, флаги, зачёт брю ----
+   Все пороги — здесь, не в коде. Флаги можно переопределить в localStorage: ff_<имя> = '0' | '1'. */
+const OCT_CFG = {
+  doneSlack: 2,                 // с — брю считается завершённым, если таймер дошёл до конца графика минус это
+  legacyMinDur: 20,             // с — для записей без поля done
+  dawn: [5, 9],                 // часы [с, до): «Рассвет»
+  night: [22, 4], nightShiftH: 4, // «Полночь»: вечер = день старта минус 4 ч
+  noteMin: 20,                  // символов в заметке для «Крафта»
+  bestMinRated: 2,              // оценённых брю на зерне, чтобы показать лучшую чашку
+  weekMinPrev: 3,               // брю на прошлой неделе, чтобы показать её карточкой
+  peak: { light:[10, 35], medium:[7, 28], dark:[5, 21] },   // окно «пик вкуса», дни после обжарки
+  steps: [   // «Факультет»: условия ступеней
+    { id:'abit', name:'Абитуриент', gen:'Абитуриента', sm:'Старт', cond:[] },
+    { id:'stud', name:'Студент', gen:'Студента', sm:'3 брю', cond:[{ k:'brews', g:3, l:'Брю' }] },
+    { id:'bach', name:'Бакалавр', gen:'Бакалавра', sm:'15 брю · 2 зерна · 5 оценок', cond:[{ k:'brews', g:15, l:'Брю' }, { k:'beans', g:2, l:'Зёрна заварено' }, { k:'rated', g:5, l:'Брю с оценкой' }] },
+    { id:'mast', name:'Магистр', gen:'Магистра', sm:'40 брю · 3 обработки · Iced · Кастом', cond:[{ k:'brews', g:40, l:'Брю' }, { k:'proc', g:3, l:'Виды обработки' }, { k:'iced', g:1, l:'Iced V60' }, { k:'custom', g:1, l:'Брю по «Кастом»' }] },
+    { id:'dipl', name:'Диплом', gen:'Диплома', sm:'100 брю · 30 оценок', cond:[{ k:'brews', g:100, l:'Брю' }, { k:'rated', g:30, l:'Брю с оценкой' }] }
+  ]
+};
+const FEATURES = (()=>{
+  const f = { bestRecipe:true, faculty:true, weekSummary:true, peakChip:true, themeRulesV2:true };
+  try{ Object.keys(f).forEach(k=>{ const v = localStorage.getItem('ff_' + k); if(v === '0') f[k] = false; else if(v === '1') f[k] = true; }); }catch(e){}
+  return f;
+})();
+/* Брю идёт в зачёт тем и ступеней, только если дошло до конца таймера. Записи старше поля done —
+   по длительности: не короче 20 с и не короче последнего пролива. */
+function isCounted(e){
+  if(!e) return false;
+  if(e.done === true) return true;
+  if(e.done === false) return false;
+  const P = e.pours || [], last = P.length ? (P[P.length - 1].time || 0) : 0, d = e.duration || 0;
+  return d > 0 && d >= Math.max(OCT_CFG.legacyMinDur, last);
+}
+const THEME_RULES_V1 = {
   ice:      { goal:1,   short:'1 Iced V60',          pick:st=> st.iced },
   honey:    { goal:5,   short:'5 горячих V60',       pick:st=> st.hot },
   espresso: { goal:25,  short:'25 брю',          pick:st=> st.total },
@@ -5366,28 +5439,55 @@ const THEME_RULES = {
   cascade:    { goal:1,  short:'Брю каскадом',           pick:st=> st.rcCascade },
   equal:      { goal:1,  short:'Брю «поровну»',          pick:st=> st.rcEqual }
 };
+/* v2: темы открываются за настоящие брю, а не за настройки и пустые зёрна */
+const THEME_RULES_V2 = Object.assign({}, THEME_RULES_V1, {
+  dawn:       { goal:5,  short:'5 утр с брю до 9',          pick:st=> st.earlyDays },
+  midnight:   { goal:3,  short:'3 вечера с брю после 22:00', pick:st=> st.nightDays },
+  pine:       { goal:3,  short:'3 зерна заварено',          pick:st=> st.brewedBeans },
+  kraft:      { goal:10, short:'10 заметок от 20 символов', pick:st=> st.notes20 },
+  lime:       { goal:7,  short:'7 дней подряд',             pick:st=> st.streak },
+  sprout:     { goal:1,  short:'Первое брю на своём зерне', pick:st=> st.brewedBeans },
+  cardamom:   { goal:5,  short:'5 зёрен допито до конца',   pick:st=> st.finishedBeans },
+  gold:       { goal:10, short:'10 разных зёрен заварено',  pick:st=> st.brewedBeans },
+  porcelain:  { goal:3,  short:'3 брю в размере S',         pick:st=> st.cupS },
+  terracotta: { goal:3,  short:'3 брю в размере M',         pick:st=> st.cupM },
+  cast:       { goal:3,  short:'3 брю в размере L',         pick:st=> st.cupL }
+});
+const THEME_RULES = FEATURES.themeRulesV2 ? THEME_RULES_V2 : THEME_RULES_V1;
 var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до этой строки
   const KEY = 'themes_unlocked', DAY = 86400000;
   const FKEY = 'themes_flags';
   let map = {}, flags = {}, ready = false, toastT = 0;
-  const counts = e=> !(e.duration > 0 && e.duration < 20);   // отменённый на старте брю не в счёт
+  const counts = e=> FEATURES.themeRulesV2 ? isCounted(e) : !(e.duration > 0 && e.duration < 20);   // v1: отменённый на старте брю не в счёт
+  const dayKey = d=> Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / DAY);
   function stats(entries, beansArr){
     const es = (entries || []).filter(counts), byId = new Map((beansArr || []).map(b=> [b.id, b]));
     const st = { hot:0, iced:0, total:es.length, rated:0, early:0, night:0, beans:(beansArr || []).length, notes:0, processes:0, streak:0,
-      fS:flags.sizeS ? 1 : 0, fM:flags.sizeM ? 1 : 0, fL:flags.sizeL ? 1 : 0, rcCustom:0, rcCascade:0, rcEqual:0 };
-    const procs = new Set(), days = new Set();
+      fS:flags.sizeS ? 1 : 0, fM:flags.sizeM ? 1 : 0, fL:flags.sizeL ? 1 : 0, rcCustom:0, rcCascade:0, rcEqual:0,
+      earlyDays:0, nightDays:0, brewedBeans:0, finishedBeans:0, notes20:0, cupS:0, cupM:0, cupL:0 };
+    const procs = new Set(), days = new Set(), eDays = new Set(), nDays = new Set(), brewed = new Map();
+    const [dw0, dw1] = OCT_CFG.dawn, [nt0, nt1] = OCT_CFG.night;
     es.forEach(e=>{
       if(e.mode === 'v60') st.hot++; else if(e.mode === 'v60ice') st.iced++;
       if((e.rating || 0) > 0) st.rated++;
-      if(String(e.note || '').trim()) st.notes++;
+      const note = String(e.note || '').trim();
+      if(note) st.notes++;
+      if(note.length >= OCT_CFG.noteMin) st.notes20++;
       if(e.recipe === 'custom') st.rcCustom++; else if(e.recipe === 'cascade') st.rcCascade++; else if(e.recipe === 'equal') st.rcEqual++;
+      if(e.cup === 'S') st.cupS++; else if(e.cup === 'M') st.cupM++; else if(e.cup === 'L') st.cupL++;
       const d = new Date(e.id), h = d.getHours();
       if(h < 9) st.early++;
       if(h >= 22 || h < 4) st.night++;
+      if(h >= dw0 && h < dw1) eDays.add(dayKey(d));
+      if(h >= nt0 || h < nt1) nDays.add(dayKey(new Date(e.id - OCT_CFG.nightShiftH * 3600000)));
       days.add(Math.floor((e.id - d.getTimezoneOffset() * 60000) / DAY));
-      const b = byId.get(normId(e.beanId)); if(b && b.process) procs.add(b.process);
+      const bid = normId(e.beanId);
+      if(bid != null) brewed.set(bid, (brewed.get(bid) || 0) + 1);
+      const b = byId.get(bid); if(b && b.process) procs.add(b.process);
     });
     st.processes = procs.size;
+    st.earlyDays = eDays.size; st.nightDays = nDays.size; st.brewedBeans = brewed.size;
+    st.finishedBeans = (beansArr || []).filter(b=> (b.finishedAt || b.archived) && (brewed.get(normId(b.id)) || 0) >= 3).length;
     let run = 0, best = 0, prev = null;
     [...days].sort((x, y)=> x - y).forEach(x=>{ run = prev != null && x === prev + 1 ? run + 1 : 1; prev = x; if(run > best) best = run; });
     st.streak = best;
@@ -5453,7 +5553,7 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
       if(!map[id]){ map[id] = { at:Date.now() }; fresh.push(id); }
       else if(map[id].gf) delete map[id].gf;
     });
-    if(fresh.length){ save(); renderAccentPick(); announce(fresh); }
+    if(fresh.length){ save(); renderAccentPick(); announce(fresh); fresh.forEach(id=> ua('theme_unlocked', { theme:id })); }
   }
   // разовые действия (смена размера порции), которые нельзя вывести из журнала
   function flag(name){
@@ -5588,7 +5688,7 @@ function applyCupSize(k, v){
   if(cup.sizes[k] === v) return;
   cup.sizes[k] = v;
   saveCupPrefs();
-  if(v !== ({ S:220, M:320, L:420 })[k] && Themes && Themes.flag) Themes.flag('size' + k);
+  if(!FEATURES.themeRulesV2 && v !== ({ S:220, M:320, L:420 })[k] && Themes && Themes.flag) Themes.flag('size' + k);
   setArtLevel(document.querySelector('#sizeSettings [data-row="size-' + k + '"]'), v);
   if(cup.size === k && isBrewMode() && Brew.phase === 'idle'){ state.inputType = 'water'; state.value = v; }
   compute();
@@ -5814,6 +5914,7 @@ function renderJournal(){
   jSwipeOpenRow = null;
   // Средние оценки на странице Зёрен считаются из журнала — перерисовываем и их.
   if(typeof renderBeans === 'function' && document.getElementById('beansList')) renderBeans();
+  octRefresh();
   if(!journalEntries.length){
     list.innerHTML = '';
     listCard.style.display = 'none';
@@ -6307,7 +6408,9 @@ async function createBrewEntry(){
     beanId: activeBean ? activeBean.id : null,
     bean: activeBean ? (activeBean.name || '') : '',
     note: '',
-    duration: 0
+    duration: 0,
+    cup: cup.size === 'custom' ? null : cup.size,   // размер порции S/M/L (null — своя порция)
+    done: false                                      // станет true, когда таймер дойдёт до конца
   };
   brewEntryId = entry.id;
   await journalSaveEntry(entry);
@@ -6805,7 +6908,7 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
       if(normId(before.beanId) !== normId(entry.beanId)) track('journal_bean_changed');
       await applyGramsChange(before, entry);
     }
-    if((entry.rating || 0) > 0 && !(before && (before.rating || 0) > 0)) ua('entry_rate');
+    if((entry.rating || 0) > 0 && !(before && (before.rating || 0) > 0)){ ua('entry_rate'); ua('brew_rated', { rating: entry.rating }); }
     await journalUpdateEntry(entry);
   } else if(mode === 'bean-add'){
     entry.remaining = entry.startWeight;
@@ -7160,12 +7263,122 @@ function updateBeanPickRow(){
       '<div class="bc-chips" aria-hidden="true"><span class="bc-chip muted">остаток —</span><span class="bc-chip muted"><span class="s">★</span>—</span></div></div>';
     el.setAttribute('aria-label', any ? 'Выбрать зерно' : 'Добавить зерно');
   }
+  octRefresh();
 }
 
 /* ---- Плитка зерна — одна разметка на все экраны ----
    selectedId передаёт только пикер (Калькулятора или записи журнала): там выбранное
    отмечено обводкой и «Выбрано» под кольцом. В Зернах и в Калькуляторе плитка ничего
    не подсвечивает — выбор живёт в Калькуляторе и просто запоминается. */
+/* ---- Октализ: лучшая чашка, пик вкуса, итоги недели, Факультет ---- */
+let peakHidden = false;
+try{ peakHidden = localStorage.getItem('peak_chip_hidden') === '1'; }catch(e){}
+function peakPhase(b){
+  if(!FEATURES.peakChip || peakHidden || !b) return null;
+  const w = OCT_CFG.peak[b.roast], d = daysSinceRoast(b.roastDate);
+  if(!w || d == null || d < 0) return null;
+  if(d < w[0]) return { k:'rest', left:w[0] - d };
+  if(d <= w[1]) return { k:'peak', left:w[1] - d };
+  return { k:'fade', left:0 };
+}
+/* Лучшая чашка зерна: самая высокая оценка среди засчитанных брю, при равенстве — свежее. */
+function bestCupFor(beanId){
+  const id = normId(beanId);
+  if(id == null) return { rated:0, entry:null };
+  const rated = journalEntries.filter(e=> normId(e.beanId) === id && isCounted(e) && (e.rating || 0) > 0 && (e.pours || []).length);
+  if(rated.length < OCT_CFG.bestMinRated) return { rated:rated.length, entry:null };
+  return { rated:rated.length, entry:rated.reduce((a, b)=> (b.rating > a.rating || (b.rating === a.rating && b.id > a.id)) ? b : a) };
+}
+let bestShownFor = null;
+function renderBestRow(){
+  const el = document.getElementById('calcBest');
+  if(!el) return;
+  const bean = FEATURES.bestRecipe && activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
+  if(!bean){ el.innerHTML = ''; return; }
+  const r = bestCupFor(bean.id);
+  if(!r.entry){
+    const need = OCT_CFG.bestMinRated - r.rated;
+    el.innerHTML = '<div class="bt-best empty"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2">Оцени ещё ' + need + '\u00a0' + pluralRu(need, 'брю', 'брю', 'брю') + ' на этом зерне</div></div></div>';
+    return;
+  }
+  const e = r.entry, w = jsWater(e) || e.water || 0, c = e.coffee || 0;
+  const ratio = c > 0 ? fmtRatio(w / c).replace('.', ',') : fmtRatio(e.ratio || 16).replace('.', ',');
+  el.innerHTML = '<div class="bt-best"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2"><span class="s">★</span>' + e.rating + ' · 1:' + ratio + ' · ' + fmt(w) + '\u00a0мл</div></div>' +
+    '<button class="pillbtn" type="button" id="bestApplyBtn">Повторить</button></div>';
+  document.getElementById('bestApplyBtn').addEventListener('click', ()=>{ ua('best_recipe_applied'); haptics('light'); repeatEntryRecipe(e); });
+  if(bestShownFor !== bean.id){ bestShownFor = bean.id; ua('best_recipe_shown'); }
+}
+function weekBounds(offset){
+  const n = new Date(), dow = (n.getDay() + 6) % 7;
+  const from = new Date(n.getFullYear(), n.getMonth(), n.getDate() - dow + offset * 7);
+  return [from.getTime(), from.getTime() + 7 * 86400000];
+}
+function renderWeekSum(){
+  const el = document.getElementById('weekSum');
+  if(!el) return;
+  if(!FEATURES.weekSummary){ el.innerHTML = ''; return; }
+  const inWeek = off=>{ const [a, z] = weekBounds(off); return journalEntries.filter(e=> e.id >= a && e.id < z && isCounted(e)); };
+  const cur = inWeek(0), prev = inWeek(-1);
+  const useCur = cur.length > 0, list = useCur ? cur : prev;
+  if(!list.length || (!useCur && prev.length < OCT_CFG.weekMinPrev)){ el.innerHTML = ''; return; }
+  const rated = list.filter(e=> (e.rating || 0) > 0);
+  const avg = rated.length ? rated.reduce((a, e)=> a + e.rating, 0) / rated.length : null;
+  const beansN = new Set(list.map(e=> normId(e.beanId)).filter(x=> x != null)).size;
+  const sub = useCur ? (prev.length ? 'Прошлая неделя: ' + prev.length + '\u00a0' + 'брю' : 'Первая неделя в журнале') : 'Неделя закончилась';
+  el.innerHTML = '<div class="wk-sum"><div class="wk-t">' + (useCur ? 'Эта неделя' : 'Прошлая неделя') + '</div><div class="wk-s">' + sub + '</div>' +
+    '<div class="kv"><div><b>' + list.length + '</b><span>брю</span></div><div><b>' + (avg == null ? '—' : fmt(Math.round(avg * 10) / 10)) + '</b><span>средняя оценка</span></div><div><b>' + beansN + '</b><span>' + pluralRu(beansN, 'зерно', 'зерна', 'зёрен') + '</span></div></div></div>';
+}
+function facStats(){
+  const st = Themes.stats(journalEntries, beans);
+  return { brews:st.total, beans:st.brewedBeans, rated:st.rated, proc:st.processes, iced:st.iced, custom:st.rcCustom };
+}
+function facStepOf(s){
+  const S = OCT_CFG.steps; let i = 0;
+  for(let j = 1; j < S.length; j++){ if(S[j].cond.every(c=> s[c.k] >= c.g)) i = j; else break; }
+  return i;
+}
+let facOpen = false;
+function renderFaculty(){
+  const el = document.getElementById('facPlaque');
+  if(!el) return;
+  if(!FEATURES.faculty){ el.innerHTML = ''; return; }
+  const S = OCT_CFG.steps, s = facStats();
+  let i = facStepOf(s), saved = 0;
+  try{ saved = Number(localStorage.getItem('faculty_step')) || 0; }catch(e){}
+  if(i < saved) i = saved;                         // ступень не откатывается
+  if(i > saved){ try{ localStorage.setItem('faculty_step', String(i)); }catch(e){} if(saved > 0 || i > 0) ua('step_reached', { step:S[i].id }); }
+  const next = S[i + 1];
+  const ps = next ? next.cond.map(c=> Math.min(1, (s[c.k] || 0) / c.g)) : [1];
+  const p = ps.reduce((a, b)=> a + b, 0) / ps.length;
+  const rem = next ? next.cond.filter(c=> (s[c.k] || 0) < c.g).slice(0, 2).map(c=>{
+    const d = c.g - (s[c.k] || 0);
+    return c.k === 'brews' ? d + '\u00a0брю' : c.k === 'beans' ? d + '\u00a0' + pluralRu(d, 'зерно', 'зерна', 'зёрен') : c.k === 'rated' ? d + '\u00a0' + pluralRu(d, 'оценка', 'оценки', 'оценок') : c.k === 'proc' ? d + '\u00a0' + pluralRu(d, 'вид', 'вида', 'видов') + ' обработки' : c.k === 'iced' ? 'Iced V60' : 'брю по «Кастом»';
+  }).join(' и ') : '';
+  const sub = next ? 'До «' + next.gen + '»: ' + rem : 'Диплом получен';
+  el.innerHTML = '<div class="fac"><button class="fac-head" type="button" id="facHead" aria-expanded="' + facOpen + '"><div class="mid"><div class="t">' + S[i].name + '</div><div class="s">' + sub + '</div></div></button>' +
+    '<div class="fac-body" id="facBody"' + (facOpen ? '' : ' hidden') + '><div class="fac-bar" aria-hidden="true"><i style="width:' + Math.round(p * 100) + '%"></i></div>' +
+    (next ? next.cond.map(c=>{ const v = Math.min(s[c.k] || 0, c.g); return '<div class="fac-cond' + (v >= c.g ? ' ok' : '') + '"><span>' + c.l + '</span><em>' + v + ' / ' + c.g + '</em></div>'; }).join('') : '<div class="fac-cond ok"><span>Все ступени пройдены</span></div>') + '</div></div>';
+  document.getElementById('facHead').addEventListener('click', ()=>{
+    facOpen = !facOpen;
+    document.getElementById('facBody').hidden = !facOpen;
+    document.getElementById('facHead').setAttribute('aria-expanded', String(facOpen));
+    if(facOpen) ua('faculty_opened');
+  });
+}
+function octRefresh(){
+  try{ renderBestRow(); renderWeekSum(); renderFaculty(); }catch(e){}
+}
+(function(){
+  const sw = document.getElementById('peakSw');
+  if(!sw) return;
+  sw.checked = !peakHidden;
+  sw.addEventListener('change', ()=>{
+    peakHidden = !sw.checked;
+    try{ localStorage.setItem('peak_chip_hidden', peakHidden ? '1' : '0'); }catch(e){}
+    updateBeanPickRow(); if(typeof renderBeans === 'function') renderBeans();
+  });
+})();
+
 const BEAN_STALE_OPENED = 21; // дней после вскрытия — аромат заметно уходит
 function beanNumbers(b){
   const start = Math.max(0, b.startWeight || 0);
@@ -7198,8 +7411,12 @@ function beanCardHTML(b, selectedId){
     : (b.roaster ? escapeHTML(b.roaster) : [roastLbl, procLbl].filter(Boolean).join(' · ').toLowerCase());
   const opened = daysSinceRoast(b.openedDate);
   const chips = [];
+  const pk = !n.finished ? peakPhase(b) : null;
+  if(pk) chips.push(pk.k === 'peak' ? '<span class="bc-chip peak">пик вкуса · ещё\u00a0' + pk.left + '\u00a0дн</span>'
+    : pk.k === 'rest' ? '<span class="bc-chip muted">отлёживается · ещё\u00a0' + pk.left + '\u00a0дн</span>'
+    : '<span class="bc-chip warn">аромат уходит</span>');
   if(!n.finished){
-    chips.push(opened == null
+    if(!pk) chips.push(opened == null
       ? '<span class="bc-chip muted">не вскрыто</span>'
       : '<span class="bc-chip' + (opened >= BEAN_STALE_OPENED ? ' warn' : '') + '" title="После вскрытия">вскрыто ' + (opened <= 0 ? 'сегодня' : opened + '\u00a0дн') + '</span>');
     chips.push('<span class="bc-chip" title="Температура воды">' + computeBrewTemp(b.roast, b.process) + '°</span>');
