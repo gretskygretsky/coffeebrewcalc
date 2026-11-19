@@ -1684,6 +1684,14 @@
 
   /* ================= Стеклянные контролы ================= */
   :root{ --gl-spring:cubic-bezier(.34,1.56,.55,1); --gl-press:color-mix(in srgb, var(--accent, var(--blue)) 16%, transparent); }
+  /* Уменьшение движения: без перелёта пружины, аккордеон — только прозрачность, блик не играет */
+  @media (prefers-reduced-motion: reduce){
+    :root{ --gl-spring:var(--ease-out); }
+    .xp{ transition:none !important; }
+    .xpi > *{ transform:none !important; transition:opacity .15s ease !important; }
+    :root[data-acc="diploma"] .action.play::before, :root[data-acc="diploma"] .action.add::before, .acc-opt[data-acc="diploma"] .sw::before{ animation:none !important; opacity:0 !important; }
+    .rc .sizes .size.cust{ transform:none !important; transition:opacity .15s ease !important; }
+  }
   /* ---------- Степпер ±: одна стеклянная капсула во всех местах ----------
      Капсула из стекла таб-бара: блик сверху, тонкий обод. У каждой кнопки своя подложка-линза (::before):
      вспыхивает под пальцем, кнопка вдавливается и пружиной отскакивает. Удержание — повтор с разгоном,
@@ -1921,7 +1929,7 @@
 .acc-opt[data-acc="diploma"]:not(.locked) .sw{ overflow:hidden; }
 .acc-opt[data-acc="diploma"]:not(.locked) .sw::before, :root[data-acc="diploma"] .action.play::before, :root[data-acc="diploma"] .action.add::before{
   content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:1;
-  background:linear-gradient(105deg, transparent 30%, rgba(255,244,200,.75) 48%, transparent 64%); animation:empGlint 3.4s ease-in-out infinite; }
+  background:linear-gradient(105deg, transparent 30%, rgba(255,244,200,.75) 48%, transparent 64%); animation:empGlint 1.8s var(--ease-out) .4s 1 both; }
 .acc-opt[data-acc="diploma"]:not(.locked) .sw{ box-shadow:inset 0 0 0 1.5px #E3B44C, inset 0 1px 0 rgba(255,255,255,.35); }
 :root[data-acc="diploma"] .action.play, :root[data-acc="diploma"] .action.add{ color:#FFF4D6; box-shadow:inset 0 0 0 2px #E3B44C, 0 10px 26px rgba(201,146,42,.45); overflow:hidden; }
 
