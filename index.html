@@ -1023,7 +1023,7 @@
   .bt-best .t2 .s{ color:var(--orange); }
   .bt-best .tx{ flex:1; min-width:0; }
   .bt-best.empty .t1{ color:var(--label-2); }
-  .pillbtn{ flex-shrink:0; min-height:36px; padding:0 14px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font:600 14px/1 inherit; font-family:inherit; touch-action:manipulation;
+  .pillbtn{ flex-shrink:0; min-height:36px; padding:0 14px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font-family:inherit; font-size:14px; font-weight:600; line-height:1; font-family:inherit; touch-action:manipulation;
     transition:transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 240ms ease, color 240ms ease; }
   .pillbtn:active{ transform:scale(.96); }
   /* «Повторить» ⇄ «✓ Готово»: обе подписи в одной клетке — ширина кнопки не прыгает */
@@ -2020,6 +2020,41 @@
   background:var(--gold-metal) 0 0/100% 60px;
   -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
 :root[data-acc="diploma"] .res-nums b .od .strip i, :root[data-acc="diploma"] .res-nums b .dg{ background-size:100% 1em; background-position:0 0; }
+
+/* ---- Вибро-лаборатория ---- */
+.sheet.lab-mode #beanSheetSave{ visibility:hidden; }
+.hl{ display:grid; gap:18px; padding:2px 2px 28px; }
+.hl section{ display:grid; gap:10px; }
+.hl h4{ margin:0; font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--label-2); }
+.hl h5{ margin:6px 0 0; font-size:12.5px; font-weight:600; color:var(--label-2); }
+.hl-note{ margin:0; font-size:12.5px; line-height:1.35; color:var(--label-2); }
+.hl-pads{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.hl-pad{ position:relative; min-height:56px; border:none; border-radius:18px; background:var(--sheet-group, var(--card)); color:var(--label); font-family:inherit; font-size:14px; font-weight:600; line-height:1.1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; transition:transform 90ms ease-out, background 160ms ease-out; }
+.hl-pad i{ width:10px; height:10px; border-radius:50%; }
+.hl-pad:active, .hl-pad.hit{ transform:scale(.95); background:var(--fill); }
+.hl-chips{ display:flex; flex-wrap:wrap; gap:8px; }
+.hl-chip, .hl-btn{ border:none; border-radius:999px; padding:9px 14px; min-height:38px; background:var(--sheet-group, var(--card)); color:var(--label); font-family:inherit; font-size:14px; font-weight:600; line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; transition:transform 90ms ease-out, background 160ms ease-out, color 160ms ease-out; }
+.hl-chip:active, .hl-btn:active{ transform:scale(.96); }
+.hl-chip.on, .hl-btn.on, .hl-btn.pri{ background:var(--accent, var(--orange)); color:var(--on-acc, #fff); }
+.hl-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.hl-player{ position:sticky; top:0; z-index:3; margin:0 -4px; padding:6px 4px 10px; background:var(--glass-solid, var(--card)); border-radius:0 0 22px 22px; box-shadow:0 -40px 0 0 var(--glass-solid, var(--card)), 0 10px 18px -12px rgba(0,0,0,.45); }
+.hl-graph{ background:var(--sheet-group, var(--card)); border-radius:18px; padding:10px 12px; }
+.hl-graph svg{ display:block; }
+.hl-sl{ display:grid; gap:2px; }
+.hl-sl.hl-inline{ flex:1; min-width:140px; }
+.hl-sh{ display:flex; justify-content:space-between; align-items:baseline; font-size:14px; color:var(--label); }
+.hl-sh b{ font-variant-numeric:tabular-nums; font-weight:700; color:var(--label-2); }
+.hl-gen.dim .hl-sl, .hl-gen.dim .hl-chips{ opacity:.45; }
+.hl-num{ display:grid; gap:2px; font-size:12px; font-weight:600; color:var(--label-2); }
+.hl-num input{ width:86px; height:38px; border:none; border-radius:12px; background:var(--sheet-group, var(--card)); color:var(--label); font-family:inherit; font-size:16px; font-weight:600; line-height:1; padding:0 10px; }
+.hl-pour-ms{ font-variant-numeric:tabular-nums; font-size:15px; color:var(--label); }
+.hl-slots{ display:grid; gap:8px; }
+.hl-slot{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:18px; background:var(--sheet-group, var(--card)); }
+.hl-slot b{ font-size:18px; width:22px; }
+.hl-slot small{ flex:1; font-size:12.5px; color:var(--label-2); }
+.hl-slot .hl-btn{ background:var(--fill); min-height:34px; padding:8px 12px; }
+.hl-spec{ width:100%; box-sizing:border-box; border:none; border-radius:16px; padding:12px; background:var(--sheet-group, var(--card)); color:var(--label); font:500 16px/1.35 ui-monospace, Menlo, monospace; resize:vertical; }
+#hapticLabBtn .th-sw{ display:grid; place-items:center; background:var(--fill); color:var(--accent, var(--orange)); box-shadow:none; }
 </style>
 <!-- Umami (cloud.umami.is) — вторая аналитика, параллельно Метрике -->
 <script defer id="umamiScript" src="https://cloud.umami.is/script.js" data-website-id="a6b50b1f-5857-4b6e-b020-7d3cf0adf4bd"></script>
@@ -2247,7 +2282,13 @@ const Gestures = (()=>{
         <p class="section-header">Пропорция по умолчанию</p>
         <div class="card bs-group" id="ratioSettings"></div>
         <p class="ratio-hint">С неё начинается каждая чашка. На Калькуляторе её подстраивают «мягче / крепче».</p>
-        <p class="ratio-hint" id="buildTag" style="text-align:center;opacity:.6">Сборка 19.11 · 17:55 · цифры без шума</p>
+        <p class="section-header">Лаборатория</p>
+        <div class="card"><button class="th-row" id="hapticLabBtn" type="button" aria-haspopup="dialog">
+          <span class="th-sw" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2.5l2-6 3.5 12 3-9 2 5 1.5-2H22"/></svg></span>
+          <span class="th-mid"><span class="th-t">Вибро-лаборатория</span><span class="th-s">Синтез и проба вибро-рисунков</span></span>
+          <svg aria-hidden="true" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>
+        </button></div>
+        <p class="ratio-hint" id="buildTag" style="text-align:center;opacity:.6">Сборка 19.11 · 18:10 · вибро-лаборатория</p>
       </div>
     </div>
   </div>
@@ -6827,7 +6868,8 @@ function showSheet(){
   // чтобы ни одна шторка не открылась с хвостом от предыдущей.
   if(sheetMode !== 'bean-edit'){ sheetStatEl.style.display = 'none'; sheetActionEl.style.display = 'none'; }
   if(sheetMode !== 'saved') sheetSavedMark.style.display = 'none';
-  sheetEl.classList.toggle('bean-mode', sheetMode === 'bean-add' || sheetMode === 'bean-edit' || sheetMode === 'themes');
+  sheetEl.classList.toggle('bean-mode', sheetMode === 'bean-add' || sheetMode === 'bean-edit' || sheetMode === 'themes' || sheetMode === 'haptic-lab');
+  sheetEl.classList.toggle('lab-mode', sheetMode === 'haptic-lab');
   sheetEl.classList.toggle('themes-mode', sheetMode === 'themes');
   sheetEl.classList.toggle('journal-mode', sheetMode === 'edit');
   // В пикере зерна выбор сам закрывает шторку — кнопка «Готово» там лишняя
@@ -6847,6 +6889,7 @@ function closeSheet(){
   const vp = document.querySelector('.pages-viewport');
   if(vp && vp.scrollLeft) vp.scrollLeft = 0;
   const wasOpen = sheetEl.classList.contains('show');
+  if(typeof HapticLab !== 'undefined') HapticLab.stop();
   sheetScrimEl.classList.remove('show');
   sheetEl.classList.remove('show');
   sheetMode = null; sheetEntry = null; sheetSnap = null;
@@ -7963,6 +8006,217 @@ document.getElementById('calcBest').addEventListener('click', e=>{
   bestCelebrate(land);
   ua('best_recipe_applied');
 });
+/* ================= Вибро-лаборатория =================
+   «Настройки» → «Вибро-лаборатория». Стол для синтеза вибро-рисунков: отдельные удары (пэды),
+   запись своего ритма пальцем, генератор «огибающая + плотность + сила» с графиком и курсором,
+   три слота A/B/C для сравнения на слух и копирование спеки текстом. Генератор — тот же принцип,
+   что у вибро-пролёта «Лучшей чашки»: зазор между толчками зависит от «яркости» огибающей, тип
+   толчка — ступень лесенки сил. Ничего в рабочие экраны не пишет, кроме localStorage 'hapticLab'. */
+const HapticLab = (()=>{
+  const LADDER = ['selection', 'soft', 'light', 'medium', 'rigid', 'heavy'];
+  const PADS = LADDER.concat(['success', 'warning', 'error']);
+  const COL = { selection:'#8E8E93', soft:'#6FA8FF', light:'#4FC9A0', medium:'#FFB13C', rigid:'#C98BFF', heavy:'#FF5C7A', success:'#FF5C9A', warning:'#FFD24A', error:'#FF4D4D' };
+  const SHAPES = [['bell', 'Колокол'], ['rise', 'Нарастание'], ['fall', 'Затухание'], ['flat', 'Ровная'], ['twin', 'Две волны']];
+  const EDGES = ['none', 'selection', 'light', 'medium', 'rigid', 'heavy', 'success', 'warning', 'error'];
+  const DEF = { dur:1100, shape:'bell', peak:30, edge:60, core:34, curve:100, cut:10, gain:100, jit:0, seed:7,
+    ladder:['soft', 'light', 'medium', 'heavy'], start:'rigid', end:'none', loop:false, pause:400, ml:60, flow:5, stretch:100, manual:null };
+  const PRESETS = [
+    ['Блик', {}],
+    ['Налив', { dur:3000, shape:'bell', peak:25, edge:70, core:40, curve:80, cut:15, ladder:['soft', 'light', 'medium'], start:'light' }],
+    ['Нарастание', { dur:3000, shape:'rise', edge:130, core:30, curve:120, cut:5, ladder:['selection', 'soft', 'light', 'medium', 'rigid', 'heavy'], start:'none', end:'rigid' }],
+    ['Капли', { dur:2400, shape:'fall', edge:420, core:90, curve:140, cut:12, jit:35, ladder:['light', 'medium'], start:'none' }],
+    ['Сердце', { dur:1600, shape:'twin', edge:400, core:60, cut:20, ladder:['medium', 'heavy'], start:'none' }],
+    ['Ровный', { dur:1500, shape:'flat', edge:50, core:50, cut:0, ladder:['light'], start:'none' }],
+    ['Отсчёт 3-2-1', { manual:[[0, 'selection'], [1000, 'selection'], [2000, 'selection'], [3000, 'rigid']] }]
+  ];
+  const SL = [
+    ['dur', 'Длительность', 'мс', 100, 6000, 50], ['peak', 'Положение пика', '%', 5, 95, 1], ['edge', 'Зазор на краях', 'мс', 30, 500, 5],
+    ['core', 'Зазор в пике', 'мс', 20, 300, 2], ['curve', 'Крутизна формы', '%', 40, 300, 5], ['cut', 'Порог (ниже — тишина)', '%', 0, 60, 1],
+    ['gain', 'Общая сила', '%', 50, 200, 5], ['jit', 'Рваность зазоров', '%', 0, 80, 1]
+  ];
+  let P = Object.assign({}, DEF), slots = { A:null, B:null, C:null };
+  let root = null, gen = 0, tm = 0, raf = 0, t0 = 0, headTotal = 1, playing = false;
+  let rec = null;   // { t0, list } — запись ритма
+  try{ const s = JSON.parse(localStorage.getItem('hapticLab') || 'null'); if(s){ P = Object.assign({}, DEF, s.P || {}); slots = Object.assign(slots, s.slots || {}); P.loop = false; } }catch(e){}
+  const save = ()=>{ try{ localStorage.setItem('hapticLab', JSON.stringify({ P:P, slots:slots })); }catch(e){} };
+  const rng = seed=>{ let a = seed >>> 0; return ()=>{ a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+  function env(shape, x, pk){
+    let k = 1;
+    if(shape === 'bell') k = x < pk ? x / pk : (1 - x) / (1 - pk);
+    else if(shape === 'rise') k = x;
+    else if(shape === 'fall') k = 1 - x;
+    else if(shape === 'twin'){ const y = (x * 2) % 1; k = y < .5 ? y * 2 : (1 - y) * 2; }
+    return Math.max(0, Math.min(1, k));
+  }
+  const shaped = (p, x)=> Math.min(1, Math.pow(env(p.shape, x, p.peak / 100), p.curve / 100) * p.gain / 100);
+  function build(p){
+    if(p.manual) return p.manual.map(e=> [Math.round(e[0] * p.stretch / 100), e[1]]);
+    const out = [], lad = LADDER.filter(x=> p.ladder.includes(x)), rnd = rng(p.seed);
+    if(!lad.length) lad.push('light');
+    if(p.start !== 'none') out.push([0, p.start]);
+    let last = -1e9;
+    for(let t = 0; t < p.dur && out.length < 500; t += 2){
+      const k = shaped(p, t / p.dur);
+      if(k * 100 < p.cut || k <= 0) continue;
+      let gap = p.edge - (p.edge - p.core) * k;
+      if(p.jit) gap *= 1 + (rnd() - .5) * 2 * p.jit / 100;
+      if(t - last >= gap){ last = t; out.push([t, lad[Math.min(lad.length - 1, Math.floor(k * lad.length))]]); }
+    }
+    if(p.end !== 'none') out.push([p.dur + 40, p.end]);
+    return out;
+  }
+  const supportInfo = ()=>{
+    const tg = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback;
+    return tg ? 'Вибро: Telegram HapticFeedback' : navigator.vibrate ? 'Вибро: navigator.vibrate (вне Telegram, паттерны грубее)' : 'На этом устройстве вибро недоступно — открой лабораторию в Telegram на айфоне';
+  };
+  /* ---- воспроизведение: расписание заранее, таймерами; запоздавший толчок пропускается ---- */
+  function stop(){
+    gen++; clearTimeout(tm); cancelAnimationFrame(raf); playing = false;
+    if(root){ const b = root.querySelector('[data-a="play"]'); if(b) b.textContent = '▶ Играть'; const h = root.querySelector('.hl-head'); if(h) h.setAttribute('opacity', '0'); }
+  }
+  function play(plan){
+    stop(); const my = gen; plan = plan || build(P); playing = true;
+    const last = plan.length ? plan[plan.length - 1][0] : 0; headTotal = Math.max(P.manual ? 0 : P.dur, last) + 60;
+    const b = root && root.querySelector('[data-a="play"]'); if(b) b.textContent = '■ Стоп';
+    const run = ()=>{
+      t0 = performance.now(); let i = 0;
+      const head = ()=>{ if(my !== gen) return; const h = root && root.querySelector('.hl-head'); if(h){ const x = Math.min(1, (performance.now() - t0) / headTotal) * 320; h.setAttribute('x1', x); h.setAttribute('x2', x); h.setAttribute('opacity', '1'); } raf = requestAnimationFrame(head); };
+      raf = requestAnimationFrame(head);
+      const next = ()=>{
+        if(my !== gen) return;
+        if(i >= plan.length){
+          tm = setTimeout(()=>{ if(my !== gen) return; if(P.loop){ cancelAnimationFrame(raf); run(); } else stop(); }, Math.max(0, t0 + headTotal - performance.now()) + (P.loop ? P.pause : 0));
+          return;
+        }
+        const e = plan[i++];
+        tm = setTimeout(()=>{ if(my !== gen) return; if(performance.now() - (t0 + e[0]) < 70) haptics(e[1]); next(); }, Math.max(0, t0 + e[0] - performance.now()));
+      };
+      next();
+    };
+    run();
+  }
+  /* ---- отрисовка ---- */
+  function graph(plan){
+    const W = 320, H = 96, total = Math.max(P.manual ? 0 : P.dur, plan.length ? plan[plan.length - 1][0] : 0) + 60;
+    let path = '';
+    if(!P.manual){ for(let i = 0; i <= 80; i++){ const x = i / 80, k = shaped(P, x); path += (i ? 'L' : 'M') + (x * P.dur / total * W).toFixed(1) + ' ' + (H - 6 - k * (H - 26)).toFixed(1); } }
+    const bars = plan.map(e=>{
+      const r = LADDER.indexOf(e[1]), h = r < 0 ? H - 22 : 10 + r / 5 * (H - 34), x = (e[0] / total * W).toFixed(1);
+      return '<line x1="' + x + '" x2="' + x + '" y1="' + (H - 6) + '" y2="' + (H - 6 - h) + '" stroke="' + (COL[e[1]] || '#999') + '" stroke-width="2.4" stroke-linecap="round"/>';
+    }).join('');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" aria-hidden="true"><path d="' + path + '" fill="none" stroke="var(--label-3)" stroke-width="1.2" stroke-dasharray="3 3"/>' + bars +
+      '<line class="hl-head" x1="0" x2="0" y1="0" y2="' + H + '" stroke="var(--label)" stroke-width="1.2" opacity="0"/></svg>';
+  }
+  function specText(plan){
+    const gaps = plan.slice(1).map((e, i)=> e[0] - plan[i][0]).filter(g=> g > 0);
+    const p = Object.assign({}, P); delete p.loop;
+    return 'ВИБРО-СПЕКА v1\n' + (P.manual ? 'ручной ритм ×' + P.stretch + '%' : 'генератор: ' + (SHAPES.find(s=> s[0] === P.shape) || [0, P.shape])[1] + ', ' + P.dur + ' мс') +
+      '\nтолчков: ' + plan.length + (gaps.length ? ' · зазор мин ' + Math.min.apply(null, gaps) + ' / средн ' + Math.round(gaps.reduce((a, b)=> a + b, 0) / gaps.length) + ' мс' : '') +
+      '\nплан (мс:тип): ' + plan.map(e=> e[0] + ':' + e[1]).join(' ') + '\nJSON: ' + JSON.stringify(p);
+  }
+  function view(){
+    const plan = build(P);
+    root.querySelector('.hl-graph').innerHTML = graph(plan);
+    SL.forEach(s=>{ const i = root.querySelector('[data-k="' + s[0] + '"]'); if(i){ i.value = P[s[0]]; i.style.setProperty('--range-p', ((P[s[0]] - s[3]) / (s[4] - s[3]) * 100) + '%'); root.querySelector('[data-v="' + s[0] + '"]').textContent = P[s[0]] + ' ' + s[2]; } });
+    const st = root.querySelector('[data-k="stretch"]'); st.value = P.stretch; st.style.setProperty('--range-p', ((P.stretch - 50) / 150 * 100) + '%'); root.querySelector('[data-v="stretch"]').textContent = P.stretch + ' %';
+    root.querySelectorAll('[data-shape]').forEach(b=> b.classList.toggle('on', b.dataset.shape === P.shape && !P.manual));
+    root.querySelectorAll('[data-lad]').forEach(b=> b.classList.toggle('on', P.ladder.includes(b.dataset.lad)));
+    root.querySelectorAll('[data-edge]').forEach(b=> b.classList.toggle('on', P[b.dataset.edge[0] === 's' ? 'start' : 'end'] === b.dataset.edge.slice(2)));
+    root.querySelector('[data-a="loop"]').classList.toggle('on', P.loop);
+    root.querySelector('[data-k="pause"]').value = P.pause; root.querySelector('[data-v="pause"]').textContent = P.pause + ' мс';
+    root.querySelector('.hl-manual').hidden = !P.manual;
+    root.querySelector('.hl-gen').classList.toggle('dim', !!P.manual);
+    root.querySelector('.hl-pour-ms').textContent = Math.round(P.ml / P.flow * 1000) + ' мс';
+    root.querySelector('.hl-spec').value = specText(plan);
+    ['A', 'B', 'C'].forEach(k=>{ const s = slots[k]; root.querySelector('[data-slot="' + k + '"] small').textContent = s ? (s.manual ? 'ритм' : s.dur + ' мс') : 'пусто'; });
+    save();
+  }
+  const set = (k, v)=>{ P[k] = v; if(['dur', 'peak', 'edge', 'core', 'curve', 'cut', 'gain', 'jit', 'shape', 'ladder', 'start', 'end', 'seed'].includes(k) && P.manual) P.manual = null; view(); };
+  function html(){
+    const sliders = SL.map(s=> '<div class="hl-sl"><div class="hl-sh"><span>' + s[1] + '</span><b data-v="' + s[0] + '"></b></div><input type="range" data-k="' + s[0] + '" min="' + s[3] + '" max="' + s[4] + '" step="' + s[5] + '" aria-label="' + s[1] + '"></div>').join('');
+    const chips = (arr, attr, lab)=> arr.map(x=> '<button type="button" class="hl-chip" ' + attr + '="' + x + '">' + (lab ? lab(x) : x) + '</button>').join('');
+    return '<div class="hl">' +
+      '<p class="hl-note" id="hlSupport"></p>' +
+      '<section class="hl-player"><div class="hl-graph"></div>' +
+      '<div class="hl-row"><button type="button" class="hl-btn pri" data-a="play">▶ Играть</button><button type="button" class="hl-btn" data-a="loop">Повтор</button></div></section>' +
+      '<section><h4>Удары</h4><div class="hl-pads">' + PADS.map(k=> '<button type="button" class="hl-pad" data-pad="' + k + '"><i style="background:' + COL[k] + '"></i>' + k + '</button>').join('') + '</div>' +
+      '<div class="hl-row"><button type="button" class="hl-btn" data-a="rec">● Записать ритм</button><span class="hl-note" id="hlRecInfo">Жми пэды в своём ритме — запись станет ручным рисунком.</span></div></section>' +
+      '<section><h4>Заготовки</h4><div class="hl-chips">' + PRESETS.map((p, i)=> '<button type="button" class="hl-chip" data-preset="' + i + '">' + p[0] + '</button>').join('') + '</div></section>' +
+      '<section class="hl-manual" hidden><h4>Ручной ритм</h4><div class="hl-sl"><div class="hl-sh"><span>Растянуть по времени</span><b data-v="stretch"></b></div><input type="range" data-k="stretch" min="50" max="200" step="5" aria-label="Растянуть"></div>' +
+      '<div class="hl-row"><button type="button" class="hl-btn" data-a="togen">Вернуть генератор</button></div></section>' +
+      '<section class="hl-gen"><h4>Генератор</h4><div class="hl-chips">' + SHAPES.map(s=> '<button type="button" class="hl-chip" data-shape="' + s[0] + '">' + s[1] + '</button>').join('') + '</div>' + sliders +
+      '<h5>Лесенка сил (какие удары можно использовать)</h5><div class="hl-chips">' + chips(LADDER, 'data-lad') + '</div>' +
+      '<h5>Первый толчок</h5><div class="hl-chips">' + chips(EDGES, 'data-edge', x=> x === 'none' ? 'нет' : x).replace(/data-edge="/g, 'data-edge="s:') + '</div>' +
+      '<h5>Последний толчок</h5><div class="hl-chips">' + chips(EDGES, 'data-edge', x=> x === 'none' ? 'нет' : x).replace(/data-edge="/g, 'data-edge="e:') + '</div>' +
+      '<div class="hl-sl"><div class="hl-sh"><span>Пауза между повторами</span><b data-v="pause"></b></div><input type="range" data-k="pause" min="0" max="3000" step="50" aria-label="Пауза между повторами"></div><div class="hl-row"><button type="button" class="hl-btn" data-a="reseed">Перемешать рваность</button></div></section>' +
+      '<section><h4>Налив: сколько длится</h4><div class="hl-row"><label class="hl-num">мл<input type="number" inputmode="decimal" data-k="ml" min="10" max="600" aria-label="Объём пролива, мл"></label><label class="hl-num">мл/с<input type="number" inputmode="decimal" data-k="flow" min="1" max="20" step="0.5" aria-label="Скорость налива"></label><b class="hl-pour-ms"></b><button type="button" class="hl-btn" data-a="pour">Взять в длительность</button></div></section>' +
+      '<section><h4>Слоты для сравнения</h4><div class="hl-slots">' + ['A', 'B', 'C'].map(k=> '<div class="hl-slot" data-slot="' + k + '"><b>' + k + '</b><small></small><button type="button" class="hl-btn" data-a="slot-play">▶</button><button type="button" class="hl-btn" data-a="slot-save">Сохранить</button></div>').join('') + '</div></section>' +
+      '<section><h4>Спека</h4><textarea class="hl-spec" readonly rows="7" aria-label="Спека"></textarea><div class="hl-row"><button type="button" class="hl-btn pri" data-a="copy">Копировать спеку</button><button type="button" class="hl-btn" data-a="import">Вставить из буфера</button></div><p class="hl-note">Хочешь вернуть сохранённый рисунок — вставь текст спеки в поле выше (оно станет редактируемым после нажатия «Вставить из буфера»).</p></section></div>';
+  }
+  function open(){
+    sheetMode = 'haptic-lab'; sheetEntry = null;
+    document.getElementById('beanSheetTitle').textContent = 'Вибро-лаборатория';
+    document.getElementById('sheetBean').innerHTML = html();
+    root = document.getElementById('sheetBean');
+    root.querySelector('#hlSupport').textContent = supportInfo();
+    root.querySelectorAll('[data-k="ml"]').forEach(i=> i.value = P.ml); root.querySelector('[data-k="flow"]').value = P.flow;
+    root.onclick = onClick; root.oninput = onInput;
+    showSheet(); sheetEl.scrollTop = 0; view();
+  }
+  function onInput(e){
+    const i = e.target.closest('input[data-k]'); if(!i) return;
+    const k = i.dataset.k, v = parseFloat(i.value);
+    if(isNaN(v)) return;
+    if(k === 'ml' || k === 'flow'){ P[k] = Math.max(k === 'ml' ? 10 : 1, v); view(); return; }
+    if(k === 'pause' || k === 'stretch'){ P[k] = v; view(); return; }
+    set(k, v);
+  }
+  function onClick(e){
+    const t = e.target.closest('button'); if(!t) return;
+    if(t.dataset.pad){
+      haptics(t.dataset.pad); t.classList.remove('hit'); void t.offsetWidth; t.classList.add('hit');
+      if(rec){ const now = performance.now(); if(!rec.list.length) rec.t0 = now; rec.list.push([Math.round(now - rec.t0), t.dataset.pad]); root.querySelector('#hlRecInfo').textContent = 'Записано ударов: ' + rec.list.length; }
+      return;
+    }
+    if(t.dataset.preset != null){ stop(); const pr = PRESETS[+t.dataset.preset]; const loop = P.loop, pause = P.pause, ml = P.ml, flow = P.flow; P = Object.assign({}, DEF, pr[1], { loop:loop, pause:pause, ml:ml, flow:flow }); view(); return; }
+    if(t.dataset.shape){ set('shape', t.dataset.shape); return; }
+    if(t.dataset.lad){ const s = new Set(P.ladder); s.has(t.dataset.lad) ? s.delete(t.dataset.lad) : s.add(t.dataset.lad); if(!s.size) return; set('ladder', LADDER.filter(x=> s.has(x))); return; }
+    if(t.dataset.edge){ const [w, v] = t.dataset.edge.split(':'); set(w === 's' ? 'start' : 'end', v); return; }
+    const a = t.dataset.a;
+    if(a === 'play'){ playing ? stop() : play(); }
+    else if(a === 'loop'){ P.loop = !P.loop; view(); }
+    else if(a === 'reseed'){ set('seed', Math.floor(Math.random() * 1e6)); }
+    else if(a === 'togen'){ P.manual = null; view(); }
+    else if(a === 'pour'){ set('dur', Math.max(100, Math.min(6000, Math.round(P.ml / P.flow * 1000 / 50) * 50))); }
+    else if(a === 'rec'){
+      if(!rec){ stop(); rec = { t0:0, list:[] }; t.textContent = '■ Стоп записи'; t.classList.add('pri'); root.querySelector('#hlRecInfo').textContent = 'Пишу: жми пэды…'; }
+      else { const list = rec.list; rec = null; t.textContent = '● Записать ритм'; t.classList.remove('pri'); root.querySelector('#hlRecInfo').textContent = list.length ? 'Записано ' + list.length + ' ударов — играй и подкручивай растяжение.' : 'Ничего не записано.'; if(list.length){ P.manual = list; P.stretch = 100; view(); } }
+    }
+    else if(a === 'slot-save'){ const k = t.closest('.hl-slot').dataset.slot; slots[k] = JSON.parse(JSON.stringify(P)); slots[k].loop = false; haptics('success'); view(); }
+    else if(a === 'slot-play'){ const k = t.closest('.hl-slot').dataset.slot; if(!slots[k]) return; stop(); const loop = P.loop, pause = P.pause; P = Object.assign({}, DEF, slots[k], { loop:loop, pause:pause }); view(); play(); }
+    else if(a === 'copy'){
+      const ta = root.querySelector('.hl-spec'), done = ()=>{ t.textContent = 'Скопировано ✓'; setTimeout(()=>{ t.textContent = 'Копировать спеку'; }, 1600); };
+      try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done, ()=>{ ta.select(); document.execCommand('copy'); done(); }); return; } }catch(err){}
+      try{ ta.removeAttribute('readonly'); ta.select(); document.execCommand('copy'); ta.setAttribute('readonly', ''); done(); }catch(err){ t.textContent = 'Выдели и скопируй вручную'; }
+    }
+    else if(a === 'import'){
+      const ta = root.querySelector('.hl-spec');
+      const apply = txt=>{
+        try{
+          const m = String(txt).match(/\{[\s\S]*\}/); if(!m) throw 0;
+          const o = JSON.parse(m[0]); stop(); P = Object.assign({}, DEF, o, { loop:false }); view(); t.textContent = 'Принято ✓';
+        }catch(err){ t.textContent = 'Не похоже на спеку'; }
+        setTimeout(()=>{ t.textContent = 'Вставить из буфера'; }, 1600);
+      };
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if(tg && tg.readTextFromClipboard && tg.isVersionAtLeast && tg.isVersionAtLeast('6.4')) tg.readTextFromClipboard(txt=>{ if(txt) apply(txt); else { t.textContent = 'Буфер пуст'; setTimeout(()=>{ t.textContent = 'Вставить из буфера'; }, 1600); } });
+      else if(navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(apply, ()=>{ ta.removeAttribute('readonly'); ta.value = ''; ta.focus(); ta.oninput = ()=> apply(ta.value); });
+      else { ta.removeAttribute('readonly'); ta.value = ''; ta.focus(); ta.oninput = ()=> apply(ta.value); }
+    }
+  }
+  return { open:open, stop:stop, _build:build, _P:()=> P };
+})();
+document.getElementById('hapticLabBtn').addEventListener('click', ()=>{ haptics('light'); HapticLab.open(); });
 function weekBounds(offset){
   const n = new Date(), dow = (n.getDay() + 6) % 7;
   const from = new Date(n.getFullYear(), n.getMonth(), n.getDate() - dow + offset * 7);
