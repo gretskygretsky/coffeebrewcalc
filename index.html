@@ -1051,19 +1051,6 @@
   .wk-sum .kv{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px; }
   .wk-sum .kv b{ display:block; font-size:22px; font-weight:600; color:var(--label); font-variant-numeric:tabular-nums; }
   .wk-sum .kv span{ font-size:12px; color:var(--label-2); }
-  .fac{ background:var(--card); border-radius:22px; margin-bottom:8px; overflow:hidden; }
-  .fac-head{ display:flex; align-items:center; gap:12px; width:100%; min-height:64px; padding:12px 14px; border:none; background:none; text-align:left; font-family:inherit; color:var(--label); touch-action:manipulation; }
-  .fac-head:active{ background:var(--fill); }
-  .fac-head .mid{ flex:1; min-width:0; }
-  .fac-head .t{ font-size:17px; font-weight:600; }
-  .fac-head .s{ font-size:13px; color:var(--label-2); margin-top:2px; }
-  .fac-body{ padding:0 14px 14px; display:grid; gap:10px; }
-  .fac-body[hidden]{ display:none; }
-  .fac-cond{ display:flex; justify-content:space-between; gap:12px; font-size:15px; color:var(--label); font-variant-numeric:tabular-nums; }
-  .fac-cond.ok{ color:var(--label-2); }
-  .fac-cond em{ font-style:normal; color:var(--label-2); }
-  .fac-bar{ height:6px; border-radius:3px; background:var(--track); overflow:hidden; }
-  .fac-bar i{ display:block; height:100%; border-radius:3px; background:var(--acc, var(--blue)); }
   .sheet .b-row-content{ background:var(--sheet-group); }
   .pick-none{
     width:100%; min-height:50px; margin-top:10px; padding:0 16px; border:none; border-radius:22px;
@@ -1135,10 +1122,6 @@
   .th-row .th-mid{ flex:1; min-width:0; display:grid; gap:5px; }
   .th-row .th-t{ font-size:16px; font-weight:600; }
   .th-row .th-s{ font-size:12.5px; color:var(--label-2); font-variant-numeric:tabular-nums; }
-  .th-row .th-bar{ height:4px; border-radius:4px; background:var(--track); overflow:hidden; }
-  .th-row .th-bar i{ display:block; height:100%; width:0; border-radius:4px; background:var(--grad); transition:width .6s var(--ease-out); }
-  .th-row .th-cnt{ font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--label-2); white-space:nowrap; }
-  .th-row .th-cnt b{ color:var(--label); }
   .th-row svg{ color:var(--label-3); flex-shrink:0; }
   .sheet.themes-mode #beanSheetSave{ visibility:hidden; }
   .th-sum{ display:grid; gap:8px; padding:4px 2px 12px; }
@@ -1156,6 +1139,66 @@
   .acc-opt .sw::after{ content:""; position:absolute; inset:-5px; border-radius:50%; box-shadow:0 0 0 2px transparent; transition:box-shadow .3s var(--ease-out); }
   .acc-opt[aria-checked="true"] .sw::after{ box-shadow:0 0 0 2px var(--label); }
   .acc-pick{ grid-template-columns:repeat(3,1fr); row-gap:2px; }
+
+  /* ---- Уровни: Медь → Бриллиант ---- */
+  .tr-plaque{ display:block; width:100%; margin:0 0 8px; padding:16px 16px 12px; border:none; border-radius:22px; background:var(--card); color:var(--label); text-align:left; font-family:inherit; touch-action:manipulation; cursor:pointer; transition:transform .2s var(--ease-out); }
+  .tr-plaque:active{ transform:scale(.985); }
+  .tr-head{ display:flex; align-items:center; gap:12px; }
+  .tr-head .tx{ flex:1; min-width:0; }
+  .tr-head .t{ font-size:24px; font-weight:700; letter-spacing:-.01em; }
+  .tr-head .s{ font-size:13px; color:var(--label-2); margin-top:2px; }
+  .tr-medal{ flex:none; width:44px; height:44px; border-radius:50%; position:relative; background:var(--fill); box-shadow:inset 0 0 0 1.5px var(--separator); }
+  .tr-medal::after{ content:""; position:absolute; inset:7px; border-radius:50%; border:1.5px dashed var(--label-3); }
+  .tr-track{ display:grid; grid-template-columns:repeat(5, 1fr); gap:4px; margin-top:14px; }
+  .tr-seg .bar{ height:10px; border-radius:5px; background:var(--track); overflow:hidden; }
+  .tr-seg .bar i{ display:block; height:100%; border-radius:5px; transition:width .6s var(--ease-out); }
+  .tr-seg span{ display:block; margin-top:6px; font-size:11px; font-weight:600; color:var(--label-3); text-align:center; white-space:nowrap; }
+  .tr-seg.done span{ color:var(--label-2); }
+  .tr-seg.cur span{ color:var(--label); }
+  /* Металл текущего уровня под стеклом во всю плашку */
+  .tr-plaque.tex{ position:relative; overflow:hidden; isolation:isolate; color:#FFFFFF; background:#6B6B6B; padding:18px 16px 14px; box-shadow:0 14px 30px -18px rgba(0,0,0,.6); }
+  .tr-plaque.tex > *{ position:relative; z-index:1; }
+  .tr-plaque .tr-bg{ position:absolute; z-index:0; inset:-40%; transform:scale(var(--k, 1.6)); pointer-events:none; }
+  .tr-plaque .tr-glass{ position:absolute; z-index:0; inset:0; border-radius:inherit; pointer-events:none;
+    -webkit-backdrop-filter:blur(2.2px) saturate(1.6) brightness(1.05); backdrop-filter:blur(2.2px) saturate(1.6) brightness(1.05);
+    background:var(--gl-tint); box-shadow:inset 0 1.5px 0 var(--gl-hi), inset 0 0 0 .75px var(--gl-edge), inset 0 -14px 22px -14px var(--gl-lo), inset 14px 0 20px -18px var(--gl-hi); }
+  .tr-plaque .tr-glass::before{ content:""; position:absolute; inset:0; border-radius:inherit;
+    background:radial-gradient(120% 70% at 18% -10%, var(--gl-sheen), transparent 55%), linear-gradient(115deg, transparent 58%, rgba(255,255,255,.14) 64%, transparent 72%); }
+  .tr-plaque.ink-light{ --gl-tint:rgba(24,12,6,.2); --gl-hi:rgba(255,236,220,.6); --gl-edge:rgba(255,255,255,.28); --gl-lo:rgba(0,0,0,.45); --gl-sheen:rgba(255,240,228,.22); }
+  .tr-plaque.ink-dark{ --gl-tint:rgba(255,255,255,.3); --gl-hi:rgba(255,255,255,.95); --gl-edge:rgba(255,255,255,.7); --gl-lo:rgba(30,26,18,.2); --gl-sheen:rgba(255,255,255,.5); }
+  .tr-plaque.tex .tr-head .t{ text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  .tr-plaque.tex .tr-head .s{ color:rgba(255,255,255,.84); text-shadow:0 1px 2px rgba(0,0,0,.3); }
+  .tr-plaque.tex .tr-seg .bar{ background:rgba(255,255,255,.22); box-shadow:inset 0 1px 2px rgba(0,0,0,.28), 0 1px 0 rgba(255,255,255,.22); }
+  .tr-plaque.tex .tr-seg .bar i{ box-shadow:inset 0 1px 0 rgba(255,255,255,.35); }
+  .tr-plaque.tex .tr-seg span{ color:rgba(255,255,255,.5); }
+  .tr-plaque.tex .tr-seg.done span{ color:rgba(255,255,255,.8); }
+  .tr-plaque.tex .tr-seg.cur span{ color:#FFFFFF; }
+  .tr-plaque.tex.ink-dark{ color:#14110C; }
+  .tr-plaque.tex.ink-dark .tr-head .t{ text-shadow:0 1px 0 rgba(255,255,255,.35); }
+  .tr-plaque.tex.ink-dark .tr-head .s{ color:rgba(20,17,12,.72); text-shadow:none; }
+  .tr-plaque.tex.ink-dark .tr-seg .bar{ background:rgba(20,17,12,.13); }
+  .tr-plaque.tex.ink-dark .tr-seg span{ color:rgba(20,17,12,.42); }
+  .tr-plaque.tex.ink-dark .tr-seg.done span{ color:rgba(20,17,12,.68); }
+  .tr-plaque.tex.ink-dark .tr-seg.cur span{ color:#14110C; }
+  .th-sum .tr-plaque{ margin:0 0 4px; pointer-events:none; }
+  /* Шторка тем по уровням: уровень и его тема — одна строка */
+  #accentPick.tiered{ display:block; }
+  .tr-sec{ margin-top:22px; }
+  .tr-sec:first-child{ margin-top:6px; }
+  .tr-h{ margin:0; padding:0 4px 8px; font-size:17px; font-weight:700; }
+  .tr-grid{ display:grid; grid-template-columns:repeat(3,1fr); row-gap:2px; margin-top:6px; }
+  .tr-lv{ display:flex; align-items:center; gap:14px; padding:12px 14px 12px 12px; border-radius:20px; background:var(--sheet-group); cursor:pointer; touch-action:manipulation; }
+  .tr-lv .acc-opt{ flex:none; display:block; padding:0; width:auto; }
+  .tr-lv .acc-opt .sw{ display:block; width:58px; height:58px; }
+  .tr-lv .acc-opt.locked .sw{ display:grid; }
+  .tr-lv .acc-opt b, .tr-lv .acc-opt small{ display:none; }
+  .tr-lv .tx{ flex:1; min-width:0; }
+  .tr-lv .n{ font-size:20px; font-weight:700; letter-spacing:-.01em; }
+  .tr-lv .st{ font-size:13px; color:var(--label-2); margin-top:2px; line-height:1.3; }
+  .tr-lv .rt{ flex:none; }
+  .tr-lv .pill{ display:inline-block; height:32px; padding:0 14px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font:600 14px/32px inherit; font-family:inherit; touch-action:manipulation; }
+  .tr-lv .pill.on{ background:none; color:var(--label-2); padding:0 2px; }
+  .tr-sec.ahead .tr-lv .n{ color:var(--label-2); }
   .acc-opt b{ font-size:14px; font-weight:600; }
   /* Закрытая тема — матовое стекло: цвета темы едва проступают, видно только что они разные */
   .acc-opt.locked .sw{ display:grid; place-items:center; overflow:hidden;
@@ -1924,7 +1967,39 @@
   .bp-arch{ font-size:12px; font-weight:600; color:var(--label-2); text-transform:uppercase; letter-spacing:.03em; padding:12px 16px 2px; }
   .js-cap-n{ font-size:12.5px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--label-2); }
 
-/* Блик «Императрицы» */
+/* Металлы уровней: цифры, ободок кнопки, блик — как у Золота */
+:root[data-acc="copper"]{ --m-metal:linear-gradient(170deg, #F3C3A2 0%, #E3A27C 42%, #CC8660 72%, #E0A27E 100%); }
+:root[data-acc="copper"][data-scheme="light"]{ --m-metal:linear-gradient(170deg, #B26A47 0%, #8E4A2E 45%, #7A3B24 75%, #95553A 100%); }
+:root[data-acc="copper"] .res-nums b, :root[data-acc="copper"] .res-nums b *{ background:var(--m-grain) 0 0/80px 80px, var(--m-metal) 0 0/100% 60px; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+:root[data-acc="copper"] .res-nums b .od .strip i, :root[data-acc="copper"] .res-nums b .dg{ background-size:80px 80px, 100% 1em; background-position:0 0, 0 0; }
+:root[data-acc="copper"] .action.play, :root[data-acc="copper"] .action.add{ box-shadow:inset 0 0 0 2px #E7AC86, 0 10px 26px rgba(176,106,71,.45); overflow:hidden; }
+.acc-opt[data-acc="copper"]:not(.locked) .sw{ overflow:hidden; box-shadow:inset 0 0 0 1.5px #E7AC86, inset 0 1px 0 rgba(255,255,255,.35); }
+.acc-opt[data-acc="copper"]:not(.locked) .sw::before, :root[data-acc="copper"] .action.play::before, :root[data-acc="copper"] .action.add::before{ content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:1; background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.7) 48%, transparent 64%); animation:empGlint 1.8s var(--ease-out) .4s 1 both; }
+:root[data-acc="bronze"]{ --m-metal:linear-gradient(170deg, #E6CD96 0%, #D1B070 42%, #B99556 72%, #CCAB6C 100%); }
+:root[data-acc="bronze"][data-scheme="light"]{ --m-metal:linear-gradient(170deg, #8C6A3A 0%, #6E5126 45%, #5E4420 75%, #7A5C2E 100%); }
+:root[data-acc="bronze"] .res-nums b, :root[data-acc="bronze"] .res-nums b *{ background:var(--m-grain) 0 0/80px 80px, var(--m-metal) 0 0/100% 60px; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+:root[data-acc="bronze"] .res-nums b .od .strip i, :root[data-acc="bronze"] .res-nums b .dg{ background-size:80px 80px, 100% 1em; background-position:0 0, 0 0; }
+:root[data-acc="bronze"] .action.play, :root[data-acc="bronze"] .action.add{ box-shadow:inset 0 0 0 2px #CDAE70, 0 10px 26px rgba(140,106,58,.45); overflow:hidden; }
+.acc-opt[data-acc="bronze"]:not(.locked) .sw{ overflow:hidden; box-shadow:inset 0 0 0 1.5px #CDAE70, inset 0 1px 0 rgba(255,255,255,.35); }
+.acc-opt[data-acc="bronze"]:not(.locked) .sw::before, :root[data-acc="bronze"] .action.play::before, :root[data-acc="bronze"] .action.add::before{ content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:1; background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.7) 48%, transparent 64%); animation:empGlint 1.8s var(--ease-out) .4s 1 both; }
+:root[data-acc="silver"]{ --m-metal:linear-gradient(170deg, #F7F9FB 0%, #D7DDE5 42%, #B7BFCA 72%, #DEE3E9 100%); }
+:root[data-acc="silver"][data-scheme="light"]{ --m-metal:linear-gradient(170deg, #6E7989 0%, #4E5868 45%, #404959 75%, #5C6778 100%); }
+:root[data-acc="silver"] .res-nums b, :root[data-acc="silver"] .res-nums b *{ background:var(--m-grain) 0 0/80px 80px, var(--m-metal) 0 0/100% 60px; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+:root[data-acc="silver"] .res-nums b .od .strip i, :root[data-acc="silver"] .res-nums b .dg{ background-size:80px 80px, 100% 1em; background-position:0 0, 0 0; }
+:root[data-acc="silver"] .action.play, :root[data-acc="silver"] .action.add{ box-shadow:inset 0 0 0 2px #E9EDF2, 0 10px 26px rgba(92,102,117,.45); overflow:hidden; }
+.acc-opt[data-acc="silver"]:not(.locked) .sw{ overflow:hidden; box-shadow:inset 0 0 0 1.5px #E9EDF2, inset 0 1px 0 rgba(255,255,255,.35); }
+.acc-opt[data-acc="silver"]:not(.locked) .sw::before, :root[data-acc="silver"] .action.play::before, :root[data-acc="silver"] .action.add::before{ content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:1; background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.7) 48%, transparent 64%); animation:empGlint 1.8s var(--ease-out) .4s 1 both; }
+:root[data-acc="diamond"]{ --m-metal:linear-gradient(170deg, #F6FBFD 0%, #CFE0EA 42%, #ADC4D3 72%, #E0EDF4 100%); }
+:root[data-acc="diamond"][data-scheme="light"]{ --m-metal:linear-gradient(170deg, #5E7D91 0%, #3F5F73 45%, #2F4D60 75%, #4E6E83 100%); }
+:root[data-acc="diamond"] .res-nums b, :root[data-acc="diamond"] .res-nums b *{ background:var(--m-grain) 0 0/80px 80px, var(--m-metal) 0 0/100% 60px; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+:root[data-acc="diamond"] .res-nums b .od .strip i, :root[data-acc="diamond"] .res-nums b .dg{ background-size:80px 80px, 100% 1em; background-position:0 0, 0 0; }
+:root[data-acc="diamond"] .action.play, :root[data-acc="diamond"] .action.add{ box-shadow:inset 0 0 0 2px #FFFFFF, 0 10px 26px rgba(63,95,115,.45); overflow:hidden; }
+.acc-opt[data-acc="diamond"]:not(.locked) .sw{ overflow:hidden; box-shadow:inset 0 0 0 1.5px #FFFFFF, inset 0 1px 0 rgba(255,255,255,.35); }
+.acc-opt[data-acc="diamond"]:not(.locked) .sw::before, :root[data-acc="diamond"] .action.play::before, :root[data-acc="diamond"] .action.add::before{ content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:1; background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.7) 48%, transparent 64%); animation:empGlint 1.8s var(--ease-out) .4s 1 both; }
+:root{ --m-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.24 0 0 0 0 0.12 0 0 0 1.1 -0.45'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E"); }
+@media (prefers-reduced-motion:reduce){ .acc-opt .sw::before, .action::before{ animation:none !important; } }
+
+/* Блик Золота (бывшая «Императрица») */
 @keyframes empGlint{ 0%,62%{ transform:translateX(-120%) } 100%{ transform:translateX(120%) } }
 .acc-opt[data-acc="diploma"]:not(.locked) .sw{ overflow:hidden; }
 .acc-opt[data-acc="diploma"]:not(.locked) .sw::before, :root[data-acc="diploma"] .action.play::before, :root[data-acc="diploma"] .action.add::before{
@@ -2159,8 +2234,7 @@ const Gestures = (()=>{
           <div class="theme-mode" id="themeMode"></div>
           <button class="th-row" id="themesBtn" type="button" aria-haspopup="dialog">
             <span class="th-sw" id="thRowSw" aria-hidden="true"></span>
-            <span class="th-mid"><span class="th-t">Темы</span><span class="th-s" id="thRowSub"></span><span class="th-bar" aria-hidden="true"><i id="thRowBar"></i></span></span>
-            <span class="th-cnt" id="thRowCnt"></span>
+            <span class="th-mid"><span class="th-t">Темы</span><span class="th-s" id="thRowSub"></span></span>
             <svg aria-hidden="true" width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5l6 6-6 6"/></svg>
           </button>
           <div class="row" id="peakRow"><span class="row-label">Пик вкуса на зёрнах</span><label class="bs-sw"><input type="checkbox" id="peakSw" checked aria-label="Показывать пик вкуса"><i></i></label></div>
@@ -4097,11 +4171,11 @@ const ACCENTS = {
     dark: {'acc': '#FFB84D', 'g1': '#FFA62B', 'g2': '#FFC24A', 'onAcc': '#1A1200', 'onGrad': '#1A1200'},
     seed:{ light:{'bg': '#F1F0EB', 'card': '#FFFFFD', 'ink': '#090B10'}, dark:{'bg': '#0B0C0F', 'card': '#17191D', 'ink': '#F7F6F2'} },
     pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2732%27%20height%3D%2732%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20fill%3D%27%232E5AA7%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%279%27%20r%3D%277%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%279%27%20r%3D%275.60%27%20fill%3D%27%23FFB52B%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%2714.60%27%20y2%3D%279.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%2712.96%27%20y2%3D%2712.96%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%279.00%27%20y2%3D%2714.60%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%275.04%27%20y2%3D%2712.96%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%273.40%27%20y2%3D%279.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%275.04%27%20y2%3D%275.04%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%279.00%27%20y2%3D%273.40%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%279%27%20y1%3D%279%27%20x2%3D%2712.96%27%20y2%3D%275.04%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Ccircle%20cx%3D%279%27%20cy%3D%279%27%20r%3D%270.98%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%2725%27%20cy%3D%2725%27%20r%3D%276%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%2725%27%20cy%3D%2725%27%20r%3D%274.80%27%20fill%3D%27%23FFB52B%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2729.80%27%20y2%3D%2725.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2728.39%27%20y2%3D%2728.39%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2725.00%27%20y2%3D%2729.80%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2721.61%27%20y2%3D%2728.39%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2720.20%27%20y2%3D%2725.00%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2721.61%27%20y2%3D%2721.61%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2725.00%27%20y2%3D%2720.20%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Cline%20x1%3D%2725%27%20y1%3D%2725%27%20x2%3D%2728.39%27%20y2%3D%2721.61%27%20stroke%3D%27%23FFF3C4%27%20stroke-width%3D%27.9%27%2F%3E%3Ccircle%20cx%3D%2725%27%20cy%3D%2725%27%20r%3D%270.84%27%20fill%3D%27%23FFF3C4%27%2F%3E%3Ccircle%20cx%3D%2726%27%20cy%3D%277%27%20r%3D%271.3%27%20fill%3D%27%2386C5FF%27%2F%3E%3Ccircle%20cx%3D%277%27%20cy%3D%2725%27%20r%3D%271.3%27%20fill%3D%27%2386C5FF%27%2F%3E%3C%2Fsvg%3E) 0 0/26px 26px" },
-  diploma:{ name:'Императрица',
-    light:{'acc': '#A3161F', 'g1': '#C9922A', 'g2': '#ECC65E', 'onAcc': '#FFFFFF', 'onGrad': '#1A1200'},
-    dark: {'acc': '#ECC062', 'g1': '#C9922A', 'g2': '#ECC65E', 'onAcc': '#1A1200', 'onGrad': '#1A1200'},
-    seed:{ light:{'bg': '#F2F0EB', 'card': '#FFFFFD', 'ink': '#070C10'}, dark:{'bg': '#0A0C0E', 'card': '#16191C', 'ink': '#F8F6F2'} },
-    pat:"repeating-conic-gradient(#A3161F 0 25%, #E3B44C 0 50%) left bottom/8px 8px repeat-x, url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2744%27%20height%3D%2744%27%20viewBox%3D%270%200%2044%2044%27%3E%3Cpolygon%20points%3D%279.00%2C6.80%209.86%2C9.14%2012.20%2C10.00%209.86%2C10.86%209.00%2C13.20%208.14%2C10.86%205.80%2C10.00%208.14%2C9.14%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Cpolygon%20points%3D%2731.00%2C4.20%2031.48%2C5.52%2032.80%2C6.00%2031.48%2C6.48%2031.00%2C7.80%2030.52%2C6.48%2029.20%2C6.00%2030.52%2C5.52%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Cpolygon%20points%3D%2735.00%2C27.40%2035.70%2C29.30%2037.60%2C30.00%2035.70%2C30.70%2035.00%2C32.60%2034.30%2C30.70%2032.40%2C30.00%2034.30%2C29.30%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Cpolygon%20points%3D%2716.00%2C32.50%2016.40%2C33.60%2017.50%2C34.00%2016.40%2C34.40%2016.00%2C35.50%2015.60%2C34.40%2014.50%2C34.00%2015.60%2C33.60%27%20fill%3D%27%23E9C25A%27%2F%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2720%27%20r%3D%27.8%27%20fill%3D%27%23F6E7C4%27%2F%3E%3Ccircle%20cx%3D%274%27%20cy%3D%2726%27%20r%3D%27.6%27%20fill%3D%27%23F6E7C4%27%2F%3E%3C%2Fsvg%3E) 0 0/40px 40px, radial-gradient(circle at 24% 76%, rgba(11,28,39,.95) 0, rgba(11,28,39,0) 20%), repeating-conic-gradient(from 0deg at 24% 76%, rgba(233,183,74,.95) 0 3.2deg, transparent 3.2deg 10deg), linear-gradient(152deg, transparent 60%, #B3202A 60%), radial-gradient(circle at 24% 76%, #22465A 0 20%, #0B1C27 80%)" },
+  diploma:{ name:'Золото',
+    light:{"acc": "#7D5E1E", "g1": "#9C7A36", "g2": "#BD9956", "onAcc": "#FFFFFF", "onGrad": "#1A1200"},
+    dark: {"acc": "#E6CC86", "g1": "#9C7A36", "g2": "#BD9956", "onAcc": "#1A1200", "onGrad": "#1A1200"},
+    seed:{ light:{"bg": "#F2EFE8", "card": "#FFFDF8", "ink": "#16120A"}, dark:{"bg": "#0E0C08", "card": "#1A1710", "ink": "#F7F1E2"} },
+    pat:"linear-gradient(115deg, rgba(255,248,225,0) 28%, rgba(255,248,225,.42) 47%, rgba(255,248,225,0) 66%), url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.24 0 0 0 0 0.12 0 0 0 1.1 -0.45'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E\") 0 0/80px 80px, linear-gradient(170deg, #E9D6A6 0%, #D6BC84 40%, #C4A66C 70%, #D2B980 100%)" },
   /* Темы с текстурой: узор лежит поверх градиента акцента (--gradx) — на главной кнопке, прогрессе, образце. */
   sprout:{ name:'Кактус',
     light:{'acc': '#B20000', 'g1': '#B20000', 'g2': '#D3261A', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
@@ -4194,11 +4268,38 @@ const ACCENTS = {
     light:{'acc': '#6E1A22', 'g1': '#6E1A22', 'g2': '#93303A', 'onAcc': '#FFFFFF', 'onGrad': '#FFFFFF'},
     dark: {'acc': '#EBA7AE', 'g1': '#7C222B', 'g2': '#9A3440', 'onAcc': '#2A070B', 'onGrad': '#FFFFFF'},
     seed:{ light:{'bg': '#F3EFEC', 'card': '#FFFFFD', 'ink': '#100909'}, dark:{'bg': '#0E0B0B', 'card': '#1C1718', 'ink': '#F9F5F3'} },
-    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2724%27%20height%3D%2736%27%20viewBox%3D%270%200%2024%2036%27%3E%3Crect%20width%3D%2724%27%20height%3D%2736%27%20fill%3D%27%23F1E6DA%27%2F%3E%3Cpath%20d%3D%27M12%200%20L24%2018%20L12%2036%20L0%2018%20Z%27%20fill%3D%27%236E1A22%27%2F%3E%3C%2Fsvg%3E) 0 0/16.8px 25.2px" }
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2724%27%20height%3D%2736%27%20viewBox%3D%270%200%2024%2036%27%3E%3Crect%20width%3D%2724%27%20height%3D%2736%27%20fill%3D%27%23F1E6DA%27%2F%3E%3Cpath%20d%3D%27M12%200%20L24%2018%20L12%2036%20L0%2018%20Z%27%20fill%3D%27%236E1A22%27%2F%3E%3C%2Fsvg%3E) 0 0/16.8px 25.2px" },
+  /* Темы уровней: металл под стеклом — медь, бронза, серебро, золото (diploma выше), бриллиант. Открываются только переходом на уровень. */
+  copper:{ name:'Медь',
+    light:{"acc": "#8E4127", "g1": "#A85B3C", "g2": "#BA7049", "onAcc": "#FFFFFF", "onGrad": "#FFFFFF"},
+    dark: {"acc": "#E6A07A", "g1": "#A85B3C", "g2": "#BA7049", "onAcc": "#24120A", "onGrad": "#FFFFFF"},
+    seed:{ light:{"bg": "#F2EAE5", "card": "#FFFAF7", "ink": "#22130D"}, dark:{"bg": "#131B26", "card": "#1C2735", "ink": "#F3E9E2"} },
+    pat:"radial-gradient(circle at 34% 30%, rgba(255,228,206,.62) 0 16%, rgba(255,228,206,0) 44%) 0 0/12px 12px, radial-gradient(circle at 34% 30%, rgba(255,228,206,.55) 0 16%, rgba(255,228,206,0) 44%) 6px 6px/12px 12px, radial-gradient(circle at 66% 72%, rgba(70,24,10,.42) 0 18%, rgba(70,24,10,0) 50%) 0 0/12px 12px, radial-gradient(circle at 66% 72%, rgba(70,24,10,.38) 0 18%, rgba(70,24,10,0) 50%) 6px 6px/12px 12px, linear-gradient(125deg, #6A3322 0%, #A9643F 26%, #E7AC86 44%, #C27B56 56%, #8A4A30 78%, #6A3322 100%)" },
+  bronze:{ name:'Бронза',
+    light:{"acc": "#6E4C1C", "g1": "#7A5A2C", "g2": "#9C7840", "onAcc": "#FFFFFF", "onGrad": "#FFFFFF"},
+    dark: {"acc": "#D3B270", "g1": "#6E5126", "g2": "#8C6A3A", "onAcc": "#1E1406", "onGrad": "#FFFFFF"},
+    seed:{ light:{"bg": "#EFE8E1", "card": "#FCF8F4", "ink": "#24150F"}, dark:{"bg": "#1A0C10", "card": "#28151B", "ink": "#F6ECE4"} },
+    pat:"linear-gradient(180deg, rgba(255,236,190,.28) 0%, rgba(255,236,190,0) 40%, rgba(25,14,0,0) 60%, rgba(25,14,0,.4) 100%), repeating-linear-gradient(90deg, #3E2A12 0px, #6E5126 1.8px, #A9854A 3.6px, #CDAE70 4.4px, #8C6A3A 6px, #4A3216 7.4px, #3E2A12 8.2px)" },
+  silver:{ name:'Серебро',
+    light:{"acc": "#3B4B63", "g1": "#5C6675", "g2": "#7A8594", "onAcc": "#FFFFFF", "onGrad": "#FFFFFF"},
+    dark: {"acc": "#C8D2E0", "g1": "#5C6675", "g2": "#7A8594", "onAcc": "#0E1426", "onGrad": "#FFFFFF"},
+    seed:{ light:{"bg": "#ECEEF2", "card": "#FBFCFD", "ink": "#10151F"}, dark:{"bg": "#0D1326", "card": "#161E37", "ink": "#EEF1F7"} },
+    pat:"repeating-linear-gradient(0deg, rgba(255,255,255,.22) 0 1px, rgba(255,255,255,0) 1px 2px, rgba(0,10,30,.07) 2px 3px), conic-gradient(from 210deg at 32% 38%, #7D848D, #F5F7F9 8%, #A3AAB3 17%, #E9ECEF 27%, #8A919A 38%, #FBFCFD 50%, #9CA3AC 61%, #DDE1E5 72%, #7F868F 84%, #F2F4F6 92%, #7D848D)" },
+  diamond:{ name:'Бриллиант',
+    light:{"acc": "#3F5F73", "g1": "#3F5F73", "g2": "#5E7D91", "onAcc": "#FFFFFF", "onGrad": "#FFFFFF"},
+    dark: {"acc": "#C5D9E6", "g1": "#3F5F73", "g2": "#56778C", "onAcc": "#0E1C26", "onGrad": "#FFFFFF"},
+    seed:{ light:{"bg": "#E8F0F4", "card": "#FAFDFE", "ink": "#0E1C26"}, dark:{"bg": "#0D151C", "card": "#17222C", "ink": "#EAF3F7"} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20100%20100%27%20preserveAspectRatio%3D%27xMidYMid%20slice%27%3E%3Ccircle%20cx%3D%2750%27%20cy%3D%2750%27%20r%3D%2750%27%20fill%3D%27%23C5D1D9%27%2F%3E%3Cpolygon%20points%3D%2775.46%2C75.46%2096.19%2C69.13%2085.36%2C85.36%27%20fill%3D%27%23DFEDF2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2786.00%2C50.00%2096.19%2C69.13%20100.00%2C50.00%27%20fill%3D%27%236F8EA2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2750.00%2C86.00%2069.13%2C96.19%2050.00%2C100.00%27%20fill%3D%27%236F8EA2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2775.46%2C75.46%2069.13%2C96.19%2085.36%2C85.36%27%20fill%3D%27%23DFEDF2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2724.54%2C75.46%2030.87%2C96.19%2014.64%2C85.36%27%20fill%3D%27%23B7C9D4%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2750.00%2C86.00%2030.87%2C96.19%2050.00%2C100.00%27%20fill%3D%27%23EAF4F8%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2714.00%2C50.00%203.81%2C69.13%200.00%2C50.00%27%20fill%3D%27%23C5D1D9%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2724.54%2C75.46%203.81%2C69.13%2014.64%2C85.36%27%20fill%3D%27%239DB3C2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2724.54%2C24.54%203.81%2C30.87%2014.64%2C14.64%27%20fill%3D%27%233F5F73%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2714.00%2C50.00%203.81%2C30.87%200.00%2C50.00%27%20fill%3D%27%23FFFFFF%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2750.00%2C14.00%2030.87%2C3.81%2050.00%2C0.00%27%20fill%3D%27%23FFFFFF%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2724.54%2C24.54%2030.87%2C3.81%2014.64%2C14.64%27%20fill%3D%27%233F5F73%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2775.46%2C24.54%2069.13%2C3.81%2085.36%2C14.64%27%20fill%3D%27%239DB3C2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2750.00%2C14.00%2069.13%2C3.81%2050.00%2C0.00%27%20fill%3D%27%23C5D1D9%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2786.00%2C50.00%2096.19%2C30.87%20100.00%2C50.00%27%20fill%3D%27%23EAF4F8%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2775.46%2C24.54%2096.19%2C30.87%2085.36%2C14.64%27%20fill%3D%27%23B7C9D4%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2770.33%2C58.42%2086.00%2C50.00%2096.19%2C69.13%2075.46%2C75.46%27%20fill%3D%27%23C5D1D9%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2758.42%2C70.33%2075.46%2C75.46%2069.13%2C96.19%2050.00%2C86.00%27%20fill%3D%27%233F5F73%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2741.58%2C70.33%2050.00%2C86.00%2030.87%2C96.19%2024.54%2C75.46%27%20fill%3D%27%23FFFFFF%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2729.67%2C58.42%2024.54%2C75.46%203.81%2C69.13%2014.00%2C50.00%27%20fill%3D%27%239DB3C2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2729.67%2C41.58%2014.00%2C50.00%203.81%2C30.87%2024.54%2C24.54%27%20fill%3D%27%23EAF4F8%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2741.58%2C29.67%2024.54%2C24.54%2030.87%2C3.81%2050.00%2C14.00%27%20fill%3D%27%23DFEDF2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2758.42%2C29.67%2050.00%2C14.00%2069.13%2C3.81%2075.46%2C24.54%27%20fill%3D%27%236F8EA2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2770.33%2C41.58%2075.46%2C24.54%2096.19%2C30.87%2086.00%2C50.00%27%20fill%3D%27%23B7C9D4%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2770.33%2C41.58%2070.33%2C58.42%2086.00%2C50.00%27%20fill%3D%27%23EAF4F8%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2770.33%2C58.42%2058.42%2C70.33%2075.46%2C75.46%27%20fill%3D%27%239DB3C2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2758.42%2C70.33%2041.58%2C70.33%2050.00%2C86.00%27%20fill%3D%27%23FFFFFF%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2741.58%2C70.33%2029.67%2C58.42%2024.54%2C75.46%27%20fill%3D%27%233F5F73%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2729.67%2C58.42%2029.67%2C41.58%2014.00%2C50.00%27%20fill%3D%27%23C5D1D9%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2729.67%2C41.58%2041.58%2C29.67%2024.54%2C24.54%27%20fill%3D%27%23B7C9D4%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2741.58%2C29.67%2058.42%2C29.67%2050.00%2C14.00%27%20fill%3D%27%236F8EA2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2758.42%2C29.67%2070.33%2C41.58%2075.46%2C24.54%27%20fill%3D%27%23DFEDF2%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2770.33%2C58.42%2058.42%2C70.33%2041.58%2C70.33%2029.67%2C58.42%2029.67%2C41.58%2041.58%2C29.67%2058.42%2C29.67%2070.33%2C41.58%27%20fill%3D%27%23EEF6F9%27%20fill-opacity%3D%271%27%2F%3E%3Cpolygon%20points%3D%2770.33%2C58.42%2058.42%2C70.33%2041.58%2C70.33%2050.00%2C50.00%27%20fill%3D%27%23FFFFFF%27%20fill-opacity%3D%270.55%27%2F%3E%3Cpolygon%20points%3D%2741.58%2C29.67%2050.00%2C14.00%2030.87%2C3.81%27%20fill%3D%27%23FFC2E0%27%20fill-opacity%3D%270.55%27%2F%3E%3Cpolygon%20points%3D%2758.42%2C70.33%2050.00%2C86.00%2069.13%2C96.19%27%20fill%3D%27%23BDE9FF%27%20fill-opacity%3D%270.6%27%2F%3E%3Cpolygon%20points%3D%2729.67%2C58.42%2024.54%2C75.46%2041.58%2C70.33%27%20fill%3D%27%23E8F6FF%27%20fill-opacity%3D%270.5%27%2F%3E%3Cpath%20d%3D%27M70.33%2058.42L75.46%2075.46M70.33%2058.42L86.00%2050.00M86.00%2050.00L96.19%2069.13M75.46%2075.46L96.19%2069.13M70.33%2058.42L58.42%2070.33M86.00%2050.00L100.00%2050.00M96.19%2069.13L85.36%2085.36M96.19%2069.13L100.00%2050.00M58.42%2070.33L50.00%2086.00M58.42%2070.33L75.46%2075.46M75.46%2075.46L69.13%2096.19M50.00%2086.00L69.13%2096.19M58.42%2070.33L41.58%2070.33M75.46%2075.46L85.36%2085.36M69.13%2096.19L50.00%20100.00M69.13%2096.19L85.36%2085.36M41.58%2070.33L24.54%2075.46M41.58%2070.33L50.00%2086.00M50.00%2086.00L30.87%2096.19M24.54%2075.46L30.87%2096.19M41.58%2070.33L29.67%2058.42M50.00%2086.00L50.00%20100.00M30.87%2096.19L14.64%2085.36M30.87%2096.19L50.00%20100.00M29.67%2058.42L14.00%2050.00M29.67%2058.42L24.54%2075.46M24.54%2075.46L3.81%2069.13M14.00%2050.00L3.81%2069.13M29.67%2058.42L29.67%2041.58M24.54%2075.46L14.64%2085.36M3.81%2069.13L0.00%2050.00M3.81%2069.13L14.64%2085.36M29.67%2041.58L24.54%2024.54M29.67%2041.58L14.00%2050.00M14.00%2050.00L3.81%2030.87M24.54%2024.54L3.81%2030.87M29.67%2041.58L41.58%2029.67M14.00%2050.00L0.00%2050.00M3.81%2030.87L14.64%2014.64M3.81%2030.87L0.00%2050.00M41.58%2029.67L50.00%2014.00M41.58%2029.67L24.54%2024.54M24.54%2024.54L30.87%203.81M50.00%2014.00L30.87%203.81M41.58%2029.67L58.42%2029.67M24.54%2024.54L14.64%2014.64M30.87%203.81L50.00%200.00M30.87%203.81L14.64%2014.64M58.42%2029.67L75.46%2024.54M58.42%2029.67L50.00%2014.00M50.00%2014.00L69.13%203.81M75.46%2024.54L69.13%203.81M58.42%2029.67L70.33%2041.58M50.00%2014.00L50.00%200.00M69.13%203.81L85.36%2014.64M69.13%203.81L50.00%200.00M70.33%2041.58L86.00%2050.00M70.33%2041.58L75.46%2024.54M75.46%2024.54L96.19%2030.87M86.00%2050.00L96.19%2030.87M70.33%2041.58L70.33%2058.42M75.46%2024.54L85.36%2014.64M96.19%2030.87L100.00%2050.00M96.19%2030.87L85.36%2014.64%27%20stroke%3D%27%23FFFFFF%27%20stroke-opacity%3D%27.55%27%20stroke-width%3D%27.45%27%20fill%3D%27none%27%2F%3E%3C%2Fsvg%3E) center/cover no-repeat, #C5D1D9" },
+  hundred:{ name:'Сотня',
+    light:{"acc": "#2B3A5E", "g1": "#2B3A5E", "g2": "#3E5180", "onAcc": "#FFFFFF", "onGrad": "#FFFFFF"},
+    dark: {"acc": "#C9D3EA", "g1": "#2B3A5E", "g2": "#3E5180", "onAcc": "#10162A", "onGrad": "#FFFFFF"},
+    seed:{ light:{"bg": "#ECEEF3", "card": "#FBFCFE", "ink": "#10162A"}, dark:{"bg": "#0C1120", "card": "#151C30", "ink": "#EEF1F8"} },
+    pat:"url(data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2710%27%20height%3D%2710%27%3E%3Crect%20width%3D%2710%27%20height%3D%2710%27%20fill%3D%27%2322304F%27%2F%3E%3Ccircle%20cx%3D%275%27%20cy%3D%275%27%20r%3D%271.7%27%20fill%3D%27%23F1E6D2%27%2F%3E%3C%2Fsvg%3E) 0 0/7px 7px" }
 };
 const ACCENT_KEYS = ['raspberry', 'ice', 'honey', 'espresso', 'latte', 'dawn', 'midnight', 'pine', 'bordeaux', 'kraft', 'lime', 'diploma',
   'sprout', 'cardamom', 'gold', 'porcelain', 'terracotta', 'cast', 'lab', 'cascade', 'equal',
-  'tune', 'again', 'peak', 'bottom', 'protocol', 'spread', 'weeks', 'year', 'coffeeday'];
+  'tune', 'again', 'peak', 'bottom', 'protocol', 'spread', 'weeks', 'year', 'coffeeday',
+  'hundred', 'copper', 'bronze', 'silver', 'diamond'];
 let accentKey = 'raspberry', accentGrad = true, themeDark = false, themeMode = 'auto';   // themeMode: auto | light | dark
 try{
   const k = localStorage.getItem('accent'); if(ACCENTS[k]) accentKey = k;
@@ -5651,12 +5752,12 @@ const OCT_CFG = {
   bestMinRated: 2,              // оценённых брю на зерне, чтобы показать лучшую чашку
   weekMinPrev: 3,               // брю на прошлой неделе, чтобы показать её карточкой
   peak: { light:[8, 30], medium:[8, 30], dark:[8, 30] },    // окно «пик вкуса», дни после обжарки (одно на все обжарки — FRESH_STAGES)
-  steps: [   // «Факультет»: условия ступеней
-    { id:'abit', name:'Абитуриент', gen:'Абитуриента', sm:'Старт', cond:[] },
-    { id:'stud', name:'Студент', gen:'Студента', sm:'3 брю', cond:[{ k:'brews', g:3, l:'Брю' }] },
-    { id:'bach', name:'Бакалавр', gen:'Бакалавра', sm:'15 брю · 2 зерна · 5 оценок', cond:[{ k:'brews', g:15, l:'Брю' }, { k:'beans', g:2, l:'Зёрна заварено' }, { k:'rated', g:5, l:'Брю с оценкой' }] },
-    { id:'mast', name:'Магистр', gen:'Магистра', sm:'40 брю · 3 обработки · Iced · Кастом', cond:[{ k:'brews', g:40, l:'Брю' }, { k:'proc', g:3, l:'Виды обработки' }, { k:'iced', g:1, l:'Iced V60' }, { k:'custom', g:1, l:'Брю по «Кастом»' }] },
-    { id:'dipl', name:'Диплом', gen:'Диплома', sm:'100 брю · 30 оценок', cond:[{ k:'brews', g:100, l:'Брю' }, { k:'rated', g:30, l:'Брю с оценкой' }] }
+  tiers: [   // уровни: темы уровня, сколько собрать для перехода, тема-награда
+    { id:'copper',  name:'Медь',      gen:'Меди',       reward:'copper',  need:3, themes:['ice', 'sprout', 'cascade', 'equal', 'lab'] },
+    { id:'bronze',  name:'Бронза',    gen:'Бронзы',     reward:'bronze',  need:5, themes:['honey', 'latte', 'pine', 'midnight', 'porcelain', 'terracotta', 'cast'] },
+    { id:'silver',  name:'Серебро',   gen:'Серебра',    reward:'silver',  need:5, themes:['espresso', 'dawn', 'bordeaux', 'lime', 'protocol', 'spread', 'peak', 'again'] },
+    { id:'gold',    name:'Золото',    gen:'Золота',     reward:'diploma', need:4, themes:['kraft', 'gold', 'cardamom', 'tune', 'bottom'] },
+    { id:'diamond', name:'Бриллиант', gen:'Бриллианта', reward:'diamond', need:4, themes:['weeks', 'year', 'coffeeday', 'hundred'] }
   ]
 };
 const FEATURES = (()=>{
@@ -5724,6 +5825,19 @@ const THEME_RULES_PAT = {
 };
 Object.assign(THEME_RULES_V1, THEME_RULES_PAT); Object.assign(THEME_RULES_V2, THEME_RULES_PAT);
 const THEME_RULES = FEATURES.themeRulesV2 ? THEME_RULES_V2 : THEME_RULES_V1;
+/* Уровни: награда открывается, когда собрано need тем своего уровня и пройдены все уровни до него.
+   Ступень — из открытых тем (Themes.isOpen), поэтому не откатывается: открытые темы не закрываются. */
+const TIERS = OCT_CFG.tiers;
+const tierOpenIn = t=> t.themes.filter(k=> Themes.isOpen(k)).length;
+function tierIdx(){ let i = 0; while(i < TIERS.length && tierOpenIn(TIERS[i]) >= TIERS[i].need) i++; return i; }
+const TIER_OF = {};
+TIERS.forEach((t, i)=>{
+  t.themes.forEach(k=> TIER_OF[k] = t.id);
+  THEME_RULES[t.reward] = { goal:t.need, short:'Уровень ' + t.name, za:'уровень ' + t.name, tier:t.id,
+    long:'собрать ' + t.need + ' из ' + t.themes.length + ' тем уровня ' + t.name,
+    pick:()=> i <= tierIdx() ? tierOpenIn(t) : Math.min(tierOpenIn(t), t.need - 1) };
+});
+THEME_RULES.hundred = { goal:100, short:'100 брю', pick:st=> st.total };
 /* Подсчёт для тем-узоров. es — только засчитанные брю (isCounted). */
 function patStats(st, es, beansArr, byId, dayKey){
   const DAY = 86400000, byBean = new Map(), months = new Set(), weeks = new Set();
@@ -5807,6 +5921,21 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
     return { n, goal:r.goal, done:n >= r.goal };
   }
   const earnedIds = st=> Object.keys(THEME_RULES).filter(id=> progress(id, st).done);
+  // темы уровня открывают награду уровня, а та — путь к следующему: считаем до неподвижной точки
+  function earnedChain(){
+    const st = statsNow(), keep = map, tmp = Object.assign({}, map);
+    let out = [];
+    try{
+      map = tmp;
+      for(let pass = 0; pass < 8; pass++){
+        const ids = earnedIds(st), add = ids.filter(id=> !map[id]);
+        out = ids;
+        if(!add.length) break;
+        add.forEach(id=> map[id] = { at:0 });
+      }
+    } finally { map = keep; }
+    return out;
+  }
   const statsNow = ()=> stats(journalEntries, beans);
   const isOpen = id=> !THEME_RULES[id] || !!map[id];
   const save = ()=> storeSet(KEY, JSON.stringify(map));
@@ -5835,6 +5964,14 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
     const busy = Brew.phase === 'counting' || Brew.phase === 'running' || sheetEl.classList.contains('show') || alertBoxEl.classList.contains('show');
     if(busy){ setTimeout(()=> announce(ids), 2500); return; }
     haptics('success');
+    const tiers = ids.filter(id=> THEME_RULES[id] && THEME_RULES[id].tier);
+    if(tiers.length){   // переход на уровень важнее отдельных тем
+      const id = tiers[tiers.length - 1], t = TIERS.find(x=> x.reward === id), ad = ACCENTS[id][themeDark ? 'dark' : 'light'];
+      tiers.forEach(x=> ua('tier_reached', { tier:THEME_RULES[x].tier }));
+      toast({ title:'Уровень ' + t.name, sub:'Твоя тема — «' + ACCENTS[id].name + '»', sw:texBg(id, ad.g1, ad.g2),
+        action:{ label:'Применить', run:()=> useTheme(id) }, ms:7000 });
+      return;
+    }
     if(ids.length === 1){
       const id = ids[0];
       const ad = ACCENTS[id][themeDark ? 'dark' : 'light'];
@@ -5847,7 +5984,7 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
   async function start(){
     try{ const raw = await storeGet(KEY); map = raw ? JSON.parse(raw) || {} : {}; }catch(e){ map = {}; }
     try{ const rf = await storeGet(FKEY); flags = rf ? JSON.parse(rf) || {} : {}; }catch(e){ flags = {}; }
-    const earned = earnedIds(statsNow());
+    const earned = earnedChain();
     let changed = false;
     // выбранная раньше тема, которую ещё не заработали, остаётся в долг
     if(THEME_RULES[accentKey] && !map[accentKey] && !earned.includes(accentKey)){ map[accentKey] = { at:Date.now(), gf:1 }; changed = true; }
@@ -5864,7 +6001,7 @@ var Themes = (()=>{   // var: applyPalette зовёт renderAccentPick до эт
   function sync(){
     if(!ready) return;
     const fresh = [];
-    earnedIds(statsNow()).forEach(id=>{
+    earnedChain().forEach(id=>{
       if(!map[id]){ map[id] = { at:Date.now() }; fresh.push(id); }
       else if(map[id].gf) delete map[id].gf;
     });
@@ -5917,9 +6054,7 @@ function renderThemeRow(){
   const a = ACCENTS[accentKey][themeDark ? 'dark' : 'light'], total = ACCENT_KEYS.length, ready = Themes && Themes.ready;
   const open = ready ? Themes.openCount() : total, left = total - open;
   document.getElementById('thRowSw').style.background = texBg(accentKey, a.g1, accentGrad ? a.g2 : a.g1);
-  document.getElementById('thRowSub').textContent = ACCENTS[accentKey].name + (left ? ' · осталось ' + left : ' · открыты все');
-  document.getElementById('thRowCnt').innerHTML = '<b>' + open + '</b> из ' + total;
-  document.getElementById('thRowBar').style.width = (open / total * 100).toFixed(1) + '%';
+  document.getElementById('thRowSub').textContent = 'Сейчас: ' + ACCENTS[accentKey].name;
   btn.setAttribute('aria-label', 'Темы: открыто ' + open + ' из ' + total + (left ? ', осталось ' + left : '') + '. Сейчас ' + ACCENTS[accentKey].name);
 }
 function openThemesSheet(){
@@ -5932,6 +6067,7 @@ function openThemesSheet(){
 function renderAccentPick(){
   renderThemeMode();
   renderThemeRow();
+  if(typeof Themes !== 'undefined' && Themes && Themes.ready) renderFaculty();   // плашка уровня в «Еще» живёт от тех же открытых тем (зовём, когда темы загружены)
   const gsw = document.getElementById('accentGradSw');
   if(gsw && !gsw._b){
     gsw._b = 1;
@@ -5944,8 +6080,13 @@ function renderAccentPick(){
   if(gsw) gsw.checked = accentGrad;
   const wrap = document.getElementById('accentPick'); if(!wrap || !Themes) return;
   if(!wrap.firstChild){
-    wrap.innerHTML = ACCENT_KEYS.map(k=> '<button type="button" class="acc-opt" role="radio" data-acc="' + k + '"><span class="sw" aria-hidden="true"></span><b>' +
-      '</b><small></small></button>').join('');
+    const opt = k=> '<button type="button" class="acc-opt" role="radio" data-acc="' + k + '"><span class="sw" aria-hidden="true"></span><b></b><small></small></button>';
+    const inTier = new Set(TIERS.flatMap(t=> [t.reward].concat(t.themes)));
+    wrap.classList.add('tiered');
+    wrap.innerHTML = '<section class="tr-sec"><h3 class="tr-h">С первого дня</h3><div class="tr-grid">' + ACCENT_KEYS.filter(k=> !inTier.has(k)).map(opt).join('') + '</div></section>' +
+      TIERS.map(t=> '<section class="tr-sec" data-sec="' + t.id + '"><div class="tr-lv">' + opt(t.reward) + '<div class="tx"><div class="n">' + t.name + '</div><div class="st"></div></div><div class="rt"></div></div>' +
+        '<div class="tr-grid">' + t.themes.map(opt).join('') + '</div></section>').join('');
+    wrap.querySelectorAll('.tr-lv').forEach(lv=> lv.addEventListener('click', e=>{ if(!e.target.closest('.acc-opt')) lv.querySelector('.acc-opt').click(); }));
     wrap.addEventListener('click', e=>{
       const b = e.target.closest('.acc-opt'); if(!b) return;
       const k = b.dataset.acc;
@@ -5983,12 +6124,20 @@ function renderAccentPick(){
       b.setAttribute('aria-label', secret ? 'Секретная тема, закрыта' : ACCENTS[k].name + ', закрыта: ' + THEME_RULES[k].short + ', ' + pr.n + ' из ' + pr.goal);
     }
   });
-  const sum = document.getElementById('thSum');
-  if(sum){
-    const total = ACCENT_KEYS.length, open = Themes.ready ? Themes.openCount() : total, left = total - open;
-    sum.innerHTML = '<div class="th-big">' + open + ' <small>из ' + total + ' открыто</small></div><div class="th-bar"><i style="width:' + (open / total * 100).toFixed(1) + '%"></i></div>' +
-      '<div class="th-sub">' + (left ? 'Осталось ' + left + '. Закрытые темы откроются за дела в приложении — нажми на любую, чтобы узнать за какое.' : 'Открыты все темы.') + '</div>';
+  if(Themes.ready){
+    const ti = tierIdx();
+    TIERS.forEach((t, i)=>{
+      const sec = wrap.querySelector('[data-sec="' + t.id + '"]'); if(!sec) return;
+      const done = i < ti, own = ACCENTS[t.reward].name !== t.name ? ' «' + ACCENTS[t.reward].name + '»' : '', left = Math.max(0, t.need - tierOpenIn(t));
+      sec.classList.toggle('ahead', i > ti);
+      sec.querySelector('.st').textContent = done ? 'Твоя тема' + own
+        : i === ti ? 'Ещё ' + left + ' ' + tierPlural(left, 'тема', 'темы', 'тем') + ' ниже — и тема уровня' + own + ' твоя'
+        : 'Откроется после уровня ' + TIERS[i - 1].name;
+      sec.querySelector('.rt').innerHTML = !done ? '' : accentKey === t.reward ? '<span class="pill on">✓ Выбрана</span>' : '<button class="pill" type="button" tabindex="-1">Применить</button>';
+    });
   }
+  const sum = document.getElementById('thSum');
+  if(sum && Themes.ready){ sum.innerHTML = tierPlaqueHTML(''); const b = sum.querySelector('.tr-plaque'); if(b){ b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); } }
 }
 function setAccent(k, grad){
   accentKey = ACCENTS[k] && (Themes.isOpen(k) || !Themes.ready) ? k : 'raspberry'; accentGrad = !!grad;
@@ -7792,42 +7941,31 @@ function renderWeekSum(){
   el.innerHTML = '<div class="wk-sum"><div class="wk-t">' + (useCur ? 'Эта неделя' : 'Прошлая неделя') + '</div><div class="wk-s">' + sub + '</div>' +
     '<div class="kv"><div><b>' + list.length + '</b><span>брю</span></div><div><b>' + (avg == null ? '—' : fmt(Math.round(avg * 10) / 10)) + '</b><span>средняя оценка</span></div><div><b>' + beansN + '</b><span>' + pluralRu(beansN, 'зерно', 'зерна', 'зёрен') + '</span></div></div></div>';
 }
-function facStats(){
-  const st = Themes.stats(journalEntries, beans);
-  return { brews:st.total, beans:st.brewedBeans, rated:st.rated, proc:st.processes, iced:st.iced, custom:st.rcCustom };
+/* Плашка уровня: металл текущего уровня под стеклом во всю плашку, ниже — пять уровней плоским цветом металла */
+const TIER_PLQ = { copper:{ ink:'light', k:1.9 }, bronze:{ ink:'light', k:1.7 }, silver:{ ink:'dark', k:1.3 }, gold:{ ink:'dark', k:1 }, diamond:{ ink:'dark', k:.55 } };
+const tierPlural = (n, a, b, c)=>{ const m = n % 10, h = n % 100; return h >= 11 && h <= 14 ? c : m === 1 ? a : m >= 2 && m <= 4 ? b : c; };
+function tierPlaqueHTML(id){
+  const ti = tierIdx(), t = ti ? TIERS[ti - 1] : null, q = t && TIER_PLQ[t.id], esc = v=> String(v).replace(/"/g, '&quot;');
+  let title, sub;
+  if(ti >= TIERS.length){ title = TIERS[TIERS.length - 1].name; sub = 'Все уровни пройдены'; }
+  else { const cur = TIERS[ti], left = cur.need - tierOpenIn(cur); title = t ? t.name : 'Путь к Меди'; sub = 'До ' + cur.gen + ': ещё ' + left + ' ' + tierPlural(left, 'тема', 'темы', 'тем') + ' уровня'; }
+  const tone = q ? q.ink : null;
+  const segs = TIERS.map((x, i)=>{
+    const f = i < ti ? 1 : i === ti ? Math.min(1, tierOpenIn(x) / x.need) : 0;
+    const col = ACCENTS[x.reward][tone ? (tone === 'light' ? 'dark' : 'light') : (themeDark ? 'dark' : 'light')].acc;
+    return '<div class="tr-seg' + (i < ti ? ' done' : i === ti ? ' cur' : '') + '"><div class="bar"><i style="width:' + (f * 100).toFixed(0) + '%;background:' + col + '"></i></div><span>' + x.name + '</span></div>';
+  }).join('');
+  const layers = t ? '<span class="tr-bg" aria-hidden="true" style="--k:' + q.k + ';background:' + esc(ACCENTS[t.reward].pat) + '"></span><span class="tr-glass" aria-hidden="true"></span>' : '';
+  const medal = t ? '' : '<span class="tr-medal" aria-hidden="true"></span>';
+  return '<button class="tr-plaque' + (t ? ' tex ink-' + q.ink : '') + '" type="button"' + (id ? ' id="' + id + '"' : '') + ' aria-label="' + esc(title + '. ' + sub + '. Открыть темы') + '">' + layers +
+    '<div class="tr-head">' + medal + '<div class="tx"><div class="t">' + title + '</div><div class="s">' + sub + '</div></div></div><div class="tr-track" aria-hidden="true">' + segs + '</div></button>';
 }
-function facStepOf(s){
-  const S = OCT_CFG.steps; let i = 0;
-  for(let j = 1; j < S.length; j++){ if(S[j].cond.every(c=> s[c.k] >= c.g)) i = j; else break; }
-  return i;
-}
-let facOpen = false;
 function renderFaculty(){
   const el = document.getElementById('facPlaque');
   if(!el) return;
-  if(!FEATURES.faculty){ el.innerHTML = ''; return; }
-  const S = OCT_CFG.steps, s = facStats();
-  let i = facStepOf(s), saved = 0;
-  try{ saved = Number(localStorage.getItem('faculty_step')) || 0; }catch(e){}
-  if(i < saved) i = saved;                         // ступень не откатывается
-  if(i > saved){ try{ localStorage.setItem('faculty_step', String(i)); }catch(e){} if(saved > 0 || i > 0) ua('step_reached', { step:S[i].id }); }
-  const next = S[i + 1];
-  const ps = next ? next.cond.map(c=> Math.min(1, (s[c.k] || 0) / c.g)) : [1];
-  const p = ps.reduce((a, b)=> a + b, 0) / ps.length;
-  const rem = next ? next.cond.filter(c=> (s[c.k] || 0) < c.g).slice(0, 2).map(c=>{
-    const d = c.g - (s[c.k] || 0);
-    return c.k === 'brews' ? d + '\u00a0брю' : c.k === 'beans' ? d + '\u00a0' + pluralRu(d, 'зерно', 'зерна', 'зёрен') : c.k === 'rated' ? d + '\u00a0' + pluralRu(d, 'оценка', 'оценки', 'оценок') : c.k === 'proc' ? d + '\u00a0' + pluralRu(d, 'вид', 'вида', 'видов') + ' обработки' : c.k === 'iced' ? 'Iced V60' : 'брю по «Кастом»';
-  }).join(' и ') : '';
-  const sub = next ? 'До «' + next.gen + '»: ' + rem : 'Диплом получен';
-  el.innerHTML = '<div class="fac"><button class="fac-head" type="button" id="facHead" aria-expanded="' + facOpen + '"><div class="mid"><div class="t">' + S[i].name + '</div><div class="s">' + sub + '</div></div></button>' +
-    '<div class="fac-body" id="facBody"' + (facOpen ? '' : ' hidden') + '><div class="fac-bar" aria-hidden="true"><i style="width:' + Math.round(p * 100) + '%"></i></div>' +
-    (next ? next.cond.map(c=>{ const v = Math.min(s[c.k] || 0, c.g); return '<div class="fac-cond' + (v >= c.g ? ' ok' : '') + '"><span>' + c.l + '</span><em>' + v + ' / ' + c.g + '</em></div>'; }).join('') : '<div class="fac-cond ok"><span>Все ступени пройдены</span></div>') + '</div></div>';
-  document.getElementById('facHead').addEventListener('click', ()=>{
-    facOpen = !facOpen;
-    document.getElementById('facBody').hidden = !facOpen;
-    document.getElementById('facHead').setAttribute('aria-expanded', String(facOpen));
-    if(facOpen) ua('faculty_opened');
-  });
+  if(!FEATURES.faculty || !Themes.ready){ el.innerHTML = ''; return; }
+  el.innerHTML = tierPlaqueHTML('trPlaque');
+  el.querySelector('.tr-plaque').addEventListener('click', ()=>{ haptics('light'); ua('faculty_opened'); openThemesSheet(); });
 }
 function octRefresh(){
   try{ renderBestRow(); renderWeekSum(); renderFaculty(); }catch(e){}
