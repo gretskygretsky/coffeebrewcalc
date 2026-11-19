@@ -2976,7 +2976,7 @@ function closePopMenu(){
   if(beanMenuOn){ beanMenuOn = false; document.getElementById('calcBeanCard').setAttribute('aria-expanded', 'false'); }
   popHide(()=>{ if(popMenu.classList.contains('show')) return; popMenu.classList.remove('ctx-menu'); if(!beanMenuOn){ popMenu.classList.remove('bean-menu'); popMenu.style.width = ''; } });
 }
-popScrim.addEventListener('click', closePopMenu);
+popScrim.addEventListener('click', e=>{ if(performance.now() < ctxReleaseGuard) return; closePopMenu(); });   // клик, досланный после удержания, — не закрывает
 popScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
 // Esc при открытом меню закрывает только меню (меню бывает и поверх шторки)
 document.addEventListener('keydown', e=>{ if(e.key !== 'Escape') return; if(popMenu.classList.contains('show')) e.stopImmediatePropagation(); closePopMenu(); });
@@ -8191,12 +8191,13 @@ function beanMenuPick(k){
     const dd = d; d = null;
     if(!dd || !dd.scrub) return;
     if(e.cancelable) e.preventDefault();   // без досланного клика
+    ctxReleaseGuard = performance.now() + 450;
     const b = hot; setHot(null);
     if(b && dd.moved) setTimeout(()=> b.click(), 80);   // короткая вспышка подсветки
     else if(dd.moved) closePopMenu();
   });
   tile.addEventListener('touchcancel', ()=>{ clearTimeout(holdT); cancelAnimationFrame(edgeRaf); edgeRaf = 0; d = null; setHot(null); });
-  tile.addEventListener('click', e=>{ if(beanMenuOn){ closePopMenu(); return; } if(e.detail) beanMenuTapX = e.clientX; beanMenuOpen(); });
+  tile.addEventListener('click', e=>{ if(performance.now() < ctxReleaseGuard) return; if(beanMenuOn){ closePopMenu(); return; } if(e.detail) beanMenuTapX = e.clientX; beanMenuOpen(); });
   tile.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); beanMenuTapX = null; beanMenuOpen(); } });
 })();
 
@@ -9291,7 +9292,10 @@ async function ctxPick(k){
   if(k === 'delete') return openDeleteAlert(id, 'journal');
   if(k === 'repeat'){ const e = journalEntries.find(x=> x.id === id); if(e) repeatEntryRecipe(JSON.parse(JSON.stringify(e))); }
 }
-ctxScrim.addEventListener('click', ()=> closePopMenu());
+// iOS после долгого нажатия всё равно досылает клик в точку, где отпустили палец, — а там уже фон-размытие.
+// Такой клик закрыл бы меню сразу после открытия: первые мгновения после отпускания фон тапы не принимает.
+let ctxReleaseGuard = 0;
+ctxScrim.addEventListener('click', e=>{ if(performance.now() < ctxReleaseGuard){ e.preventDefault(); e.stopPropagation(); return; } closePopMenu(); });
 ctxScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false });
 (function(){
   const TARGETS = [['#beansList', '.b-row', 'bean', r=> r.querySelector('.b-row-content') || r, r=> Number(r.dataset.id)],
@@ -9324,10 +9328,11 @@ ctxScrim.addEventListener('touchmove', e=> e.preventDefault(), { passive:false }
       if(dd && !dd.open) ctxUnprime(true);
       if(!dd || !dd.open) return;
       if(e.cancelable) e.preventDefault();   // без досланного клика — он открыл бы карточку
+      ctxReleaseGuard = performance.now() + 450;
       const b = hot; setHot(null);
       if(b) setTimeout(()=> b.click(), 60);
     });
-    list.addEventListener('touchcancel', ()=>{ clearTimeout(t); clearTimeout(pt); if(d && !d.open) ctxUnprime(false); d = null; setHot(null); });
+    list.addEventListener('touchcancel', ()=>{ clearTimeout(t); clearTimeout(pt); if(d && !d.open) ctxUnprime(false); if(d && d.open) ctxReleaseGuard = performance.now() + 450; d = null; setHot(null); });
     // мышь / трекпад: правый клик
     list.addEventListener('contextmenu', e=>{ const row = e.target.closest(rowSel); if(!row || ctxOn) return; e.preventDefault(); ctxOpen(kind, idOf(row), liftOf(row)); });
   });
