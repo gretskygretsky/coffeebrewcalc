@@ -1023,8 +1023,26 @@
   .bt-best .t2 .s{ color:var(--orange); }
   .bt-best .tx{ flex:1; min-width:0; }
   .bt-best.empty .t1{ color:var(--label-2); }
-  .pillbtn{ flex-shrink:0; min-height:36px; padding:0 14px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font:600 14px/1 inherit; font-family:inherit; touch-action:manipulation; }
-  .pillbtn:active{ opacity:.6; }
+  .pillbtn{ flex-shrink:0; min-height:36px; padding:0 14px; border:none; border-radius:999px; background:var(--fill); color:var(--label); font:600 14px/1 inherit; font-family:inherit; touch-action:manipulation;
+    transition:transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 240ms ease, color 240ms ease; }
+  .pillbtn:active{ transform:scale(.96); }
+  /* «Повторить» ⇄ «✓ Готово»: обе подписи в одной клетке — ширина кнопки не прыгает */
+  .best-go{ display:inline-grid; place-items:center; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  .best-go > span{ grid-area:1 / 1; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
+    transition:opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 280ms cubic-bezier(0.23, 1, 0.32, 1), filter 200ms ease; }
+  .best-go .l-done{ opacity:0; transform:translateY(9px) scale(.96); filter:blur(2px); }
+  .best-go.done .l-go{ opacity:0; transform:translateY(-9px) scale(.96); filter:blur(2px); }
+  .best-go.done .l-done{ opacity:1; transform:none; filter:none; transition-delay:40ms; }
+  .best-go.done{ background:color-mix(in srgb, var(--accent, var(--blue)) 16%, transparent); color:var(--accent, var(--blue)); }
+  .best-go path{ stroke-dasharray:1; stroke-dashoffset:1; transition:stroke-dashoffset 300ms cubic-bezier(0.23, 1, 0.32, 1) 120ms; }
+  .best-go.done path{ stroke-dashoffset:0; }
+  .bt-best{ position:relative; overflow:hidden; }
+  .bt-glint{ position:absolute; inset:0; pointer-events:none; transform:translateX(-110%);
+    background:linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--accent, var(--blue)) 22%, transparent) 50%, transparent 75%); }
+  @media (prefers-reduced-motion: reduce){
+    .best-go > span, .best-go .l-done, .best-go.done .l-go{ transform:none; filter:none; }
+    .best-go path{ transition:none; }
+  }
   .bc-chip.peak{ color:var(--green, #34C759); background:color-mix(in srgb, var(--green, #34C759) 14%, transparent); }
   #weekSum:empty, #facPlaque:empty{ display:none; }
   .wk-sum{ background:var(--card); border-radius:22px; padding:14px 16px; margin-bottom:16px; }
@@ -3668,6 +3686,7 @@ function compute(){
   document.querySelector('#calcRes .res-nums').classList.toggle('swipe', isBrewMode());
   if(isBrewMode()) syncCupControls(coffee, water);
   else syncClassicPair(coffee, water, r);
+  bestSyncDone();
 }
 
 function syncClassicPair(coffee, water, r){
@@ -6857,11 +6876,13 @@ function renderEditSheet(){
 /* «Повторить рецепт»: режим, пропорция, объём, зерно и график пролива записи —
    в Калькулятор. График кладётся в «Кастом» (доли воды + паузы), граммы
    подстраиваются под текущую порцию сами. */
-function repeatEntryRecipe(e){
+function repeatEntryRecipe(e, o){
   if(Brew.phase !== 'idle' || !e || !(e.pours || []).length) return;
+  o = o || {};
   const mode = e.mode === 'v60ice' ? 'v60ice' : 'v60';
   const hot = jsWater(e);
   const cupTotal = Math.round(Recipe.totalFromHot(mode, hot));
+  const prevSize = cup.size;
   cup.size = matchCupSize(cupTotal);
   if(cup.size === 'custom') cup.custom = Math.max(CUP_MIN, Math.min(CUP_MAX, cupTotal));
   saveCupPrefs();
@@ -6877,10 +6898,19 @@ function repeatEntryRecipe(e){
   const id = normId(e.beanId);
   const bean = id != null ? beans.find(b=> b.id === id && !b.archived && !b.finishedAt) : null;
   closeSheet();
-  setMode(mode);
+  // тот же режим — без setMode: он пересчитывает с пропорцией по умолчанию, и цифры дёрнулись бы
+  // через промежуточное значение
+  const sameMode = !!o.anim && state.mode === mode;
+  if(!sameMode) setMode(mode);
   state.ratio = e.ratio || state.ratio;
   state.inputType = 'water'; state.value = cupWater();
-  renderPills(); renderRecipeSeg(); compute();
+  renderPills(); renderRecipeSeg();
+  // из «Лучшей чашки»: числа добегают, подложка порции переезжает как при тапе по плитке
+  const tiles = sameMode && !moReduce() && prevSize !== cup.size && prevSize !== 'custom' && cup.size !== 'custom';
+  if(o.anim && sameMode && !moReduce()) calcAnim = o.anim;
+  if(tiles) tileAnim.hold = true;
+  compute();
+  if(tiles){ tileAnim.hold = false; animateTiles(prevSize); }
   if(bean && bean.id !== activeBeanId) setActiveBean(bean.id);
   navGoTo(1, true);
   track('journal_recipe_repeated');
@@ -7611,6 +7641,8 @@ let brewFromBest = null;   // { beanId, rating }: следующее брю св
    уезжает обратно под неё или меняет текст на месте с тем же уходом вверх / приходом снизу. */
 let bestHTMLNow = '', bestEntry = null, bestFx = { anims:[], timer:0 };
 const BEST_TUCK = 22;   // сколько язычка спрятано под плиткой (= радиус её углов)
+const BEST_DRAWER = 'cubic-bezier(0.32, 0.72, 0, 1)';   // iOS-кривая шторки
+const BEST_IN_DELAY = 110;
 function bestRowHTML(bean){
   if(!bean) return { html:'', entry:null };
   const r = bestCupFor(bean.id);
@@ -7621,7 +7653,8 @@ function bestRowHTML(bean){
   const e = r.entry, w = jsWater(e) || e.water || 0, c = e.coffee || 0;
   const ratio = c > 0 ? fmtRatio(w / c).replace('.', ',') : fmtRatio(e.ratio || 16).replace('.', ',');
   return { entry:e, html:'<div class="bt-best"><div class="tx"><div class="t1">Лучшая чашка</div><div class="t2"><span class="s">★</span>' + e.rating + ' · 1:' + ratio + ' · ' + fmt(w) + ' мл</div></div>' +
-    '<button class="pillbtn" type="button" id="bestApplyBtn">Повторить</button></div>' };
+    '<button class="pillbtn best-go" type="button" id="bestApplyBtn" aria-label="Повторить лучшую чашку"><span class="l-go">Повторить</span>' +
+    '<span class="l-done" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.2 8.4l3 3 6.6-6.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></svg>Готово</span></button></div>' };
 }
 function bestFxStop(){ clearTimeout(bestFx.timer); bestFx.anims.forEach(a=> a.cancel()); bestFx.anims = []; }
 // o.bean — зерно, для которого рисуем (при посадке activeBeanId ещё старый); o.animate — двигать
@@ -7633,31 +7666,35 @@ function renderBestRow(o){
   const { html, entry } = bestRowHTML(bean);
   bestEntry = entry;
   if(entry && bestShownFor !== bean.id){ bestShownFor = bean.id; ua('best_recipe_shown'); }
-  if(html === bestHTMLNow) return;
+  if(html === bestHTMLNow){ bestSyncDone(); return; }
   const prev = bestHTMLNow; bestHTMLNow = html;
   const tile = document.getElementById('calcBeanCard');
   bestFxStop();
-  const settle = ()=>{ el.innerHTML = html; el.style.height = ''; tile.classList.toggle('has-best', !!html); };
-  if(!o.animate || !canAnimate(el) || moReduce() || !el.offsetParent){ settle(); return; }
+  const settle = ()=>{ el.innerHTML = html; el.style.height = ''; tile.classList.toggle('has-best', !!html); bestSyncDone(); };
+  // Видимость — по плитке: пустой #calcBest скрыт (display:none), и его offsetParent всегда null —
+  // из-за этого вход из «Без зерна» раньше не анимировался вовсе и всё ниже прыгало
+  if(!o.animate || !canAnimate(el) || moReduce() || !tile || !tile.offsetParent){ settle(); return; }
   const A = (n, kf, op)=>{ const a = n.animate(kf, op); bestFx.anims.push(a); return a; };
   const tuckOut = (h, dir)=> [{ height:(dir > 0 ? BEST_TUCK : h) + 'px' }, { height:(dir > 0 ? h : BEST_TUCK) + 'px' }];
   const slide = (h, dir)=> dir > 0 ? [{ transform:'translateY(' + (BEST_TUCK - h) + 'px)' }, { transform:'none' }] : [{ transform:'none' }, { transform:'translateY(' + (BEST_TUCK - h) + 'px)' }];
+  const parts = card=> [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean);
   if(!prev){
-    // выезжает из-под плитки вместе с приходом нового зерна
+    // выезжает из-под плитки, когда приходит имя нового зерна (его текст стартует через ~150 мс):
+    // язычок — следствие зерна, поэтому на полтакта позже, а не раньше него
     settle();
     const card = el.firstElementChild, h = el.offsetHeight;
-    A(el, tuckOut(h, 1), { duration:320, easing:BEAN_EASE });
-    A(card, slide(h, 1), { duration:320, easing:BEAN_EASE });
-    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:260, delay:150 + i * 25, easing:BEAN_EASE, fill:'backwards' }));
+    A(el, tuckOut(h, 1), { duration:380, delay:BEST_IN_DELAY, easing:BEST_DRAWER, fill:'backwards' });
+    A(card, slide(h, 1), { duration:380, delay:BEST_IN_DELAY, easing:BEST_DRAWER, fill:'backwards' });
+    parts(card).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(8px)' }, { opacity:1, transform:'none' }], { duration:280, delay:BEST_IN_DELAY + 120 + i * 40, easing:BEAN_EASE, fill:'backwards' }));
     return;
   }
   if(!html){
-    // уезжает под плитку, пока плитка становится пустой
+    // уезжает обратно под плитку тем же путём: сначала гаснет текст, следом язычок прячется
     const card = el.firstElementChild, h = el.offsetHeight;
     tile.classList.add('has-best');
-    [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach(n=> A(n, [{ opacity:1 }, { opacity:0 }], { duration:150, easing:BEAN_EXIT, fill:'forwards' }));
-    A(card, slide(h, -1), { duration:260, easing:BEAN_INOUT, fill:'forwards' });
-    A(el, tuckOut(h, -1), { duration:260, easing:BEAN_INOUT, fill:'forwards' }).onfinish = ()=>{ if(bestHTMLNow === '') { bestFxStop(); settle(); } };
+    parts(card).forEach(n=> A(n, [{ opacity:1, transform:'none' }, { opacity:0, transform:'translateY(-6px)' }], { duration:140, easing:BEAN_EXIT, fill:'forwards' }));
+    A(card, slide(h, -1), { duration:280, delay:60, easing:BEAN_INOUT, fill:'both' });
+    A(el, tuckOut(h, -1), { duration:280, delay:60, easing:BEAN_INOUT, fill:'both' }).onfinish = ()=>{ if(bestHTMLNow === '') { bestFxStop(); settle(); } };
     return;
   }
   // было и есть: текст уходит вверх и приходит снизу — как на плитке; высота подстраивается
@@ -7672,10 +7709,60 @@ function renderBestRow(o){
     [card.querySelector('.tx'), card.querySelector('.pillbtn')].filter(Boolean).forEach((n, i)=> A(n, [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:260, delay:i * 25, easing:BEAN_EASE, fill:'backwards' }));
   }, 150);
 }
+/* «Повторить» → «✓ Готово»: рецепт лучшей чашки лёг в калькулятор. Кнопка держит «Готово», пока
+   калькулятор совпадает с ним, и сама возвращается к «Повторить», стоит что-то поменять.
+   Ощущение «добавлено» — одна связка: щелчок под пальцем → цифры добегают, плитка порции
+   переезжает, шаги пролива проявляются по очереди, по язычку проходит блик → в момент, когда
+   числа встали, — «успех» (двойной толчок в Telegram). */
+var bestApplied = null;   // { id, sig } — var: compute() зовёт bestSyncDone() ещё до этой строки
+function bestSig(){
+  return [state.mode, state.recipe, Math.round((state.ratio || 0) * 100), cupWater(),
+    state.recipe === 'custom' && state.custom ? JSON.stringify(state.custom.steps) : '', activeBeanId].join('|');
+}
+function bestSyncDone(){
+  const b = document.getElementById('bestApplyBtn');
+  if(!b) return;
+  const on = !!(bestApplied && bestEntry && bestApplied.id === bestEntry.id && bestApplied.sig === bestSig());
+  if(b.classList.contains('done') === on) return;
+  b.classList.toggle('done', on);
+  b.setAttribute('aria-label', on ? 'Лучшая чашка в калькуляторе' : 'Повторить лучшую чашку');
+}
+function bestCelebrate(landMs){
+  const card = document.querySelector('#calcBest .bt-best');
+  const reduce = moReduce();
+  if(card && !reduce && canAnimate(card)){
+    // блик проходит по язычку слева направо — тот же, что на кругах порций
+    const g = document.createElement('i'); g.className = 'bt-glint'; card.appendChild(g);
+    const a = g.animate([{ transform:'translateX(-110%)', opacity:0 }, { opacity:1, offset:.25 }, { transform:'translateX(110%)', opacity:0 }], { duration:700, delay:80, easing:'cubic-bezier(0.23, 1, 0.32, 1)', fill:'backwards' });
+    a.onfinish = a.oncancel = ()=> g.remove();
+  }
+  // шаги пролива проявляются по очереди сверху вниз — график заменён целиком
+  const rows = [...document.querySelectorAll('#customEditorWrap .ce-row, #pourCard .pour-row')].filter(r=> r.offsetParent).slice(0, 8);
+  rows.forEach((r, i)=> moA(r, reduce ? [{ opacity:.4 }, { opacity:1 }] : [{ opacity:.25, transform:'translateY(6px)' }, { opacity:1, transform:'none' }],
+    { duration:260, delay:90 + i * 40, easing:'cubic-bezier(0.23, 1, 0.32, 1)', fill:'backwards' }));
+  clearTimeout(bestCelebrate.t);
+  bestCelebrate.t = setTimeout(()=> haptics('success'), reduce ? 60 : landMs);
+}
 document.getElementById('calcBest').addEventListener('click', e=>{
-  if(!e.target.closest('#bestApplyBtn') || !bestEntry) return;
+  const btn = e.target.closest('#bestApplyBtn');
+  if(!btn || !bestEntry) return;
+  if(btn.classList.contains('done')){
+    // уже стоит — лёгкий кивок, повторно ничего не пересчитываем
+    haptics('light'); moPulse(btn, .94, 260); return;
+  }
+  if(Brew.phase !== 'idle') return;
   const en = bestEntry;
-  ua('best_recipe_applied'); haptics('light'); repeatEntryRecipe(en); brewFromBest = { beanId:normId(en.beanId), rating:en.rating || 0 };
+  haptics('rigid');   // щелчок в момент нажатия
+  const c0 = state.coffee || 0, w0 = state.water || 0;
+  repeatEntryRecipe(en, { anim:{ dur:300, ratio:true, delay:60 } });
+  brewFromBest = { beanId:normId(en.beanId), rating:en.rating || 0 };
+  bestApplied = { id:en.id, sig:bestSig() };
+  bestSyncDone();
+  // успех — когда одометр доехал (та же формула длительности, что в Digits.run)
+  const runMs = (from, to, k)=> Math.abs(to - from) < 1e-9 ? 0 : Math.min(720, 380 + Math.sqrt(Math.abs(to - from) * k) * 28);
+  const land = 60 + Math.max(runMs(c0, state.coffee || 0, 10), runMs(w0, state.water || 0, 1), 320);
+  bestCelebrate(land);
+  ua('best_recipe_applied');
 });
 function weekBounds(offset){
   const n = new Date(), dow = (n.getDay() + 6) % 7;
