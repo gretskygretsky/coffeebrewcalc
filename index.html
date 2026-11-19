@@ -1158,14 +1158,15 @@
   /* Металл текущего уровня под стеклом во всю плашку */
   .tr-plaque.tex{ position:relative; overflow:hidden; isolation:isolate; color:#FFFFFF; background:#6B6B6B; padding:18px 16px 14px; box-shadow:0 14px 30px -18px rgba(0,0,0,.6); }
   .tr-plaque.tex > *{ position:relative; z-index:1; }
-  /* Размытие — фильтром на самом металле: backdrop-filter в WebKit (Telegram iOS) размывал и текст над стеклом */
-  .tr-plaque .tr-bg{ position:absolute; z-index:0; inset:-40%; transform:scale(var(--k, 1.6)); pointer-events:none; filter:blur(calc(2.2px / var(--k, 1.6))) saturate(1.6) brightness(1.05); }
+  /* Без filter и backdrop-filter: в WebKit (Telegram iOS) любой фильтр на слое под стеклом размывал и текст плашки.
+     Металл приглушает тонировка стекла. */
+  .tr-plaque .tr-bg{ position:absolute; z-index:0; inset:-40%; transform:scale(var(--k, 1.6)); pointer-events:none; }
   .tr-plaque .tr-glass{ position:absolute; z-index:0; inset:0; border-radius:inherit; pointer-events:none;
     background:var(--gl-tint); box-shadow:inset 0 1.5px 0 var(--gl-hi), inset 0 0 0 .75px var(--gl-edge), inset 0 -14px 22px -14px var(--gl-lo), inset 14px 0 20px -18px var(--gl-hi); }
   .tr-plaque .tr-glass::before{ content:""; position:absolute; inset:0; border-radius:inherit;
     background:radial-gradient(120% 70% at 18% -10%, var(--gl-sheen), transparent 55%), linear-gradient(115deg, transparent 58%, rgba(255,255,255,.14) 64%, transparent 72%); }
-  .tr-plaque.ink-light{ --gl-tint:rgba(24,12,6,.2); --gl-hi:rgba(255,236,220,.6); --gl-edge:rgba(255,255,255,.28); --gl-lo:rgba(0,0,0,.45); --gl-sheen:rgba(255,240,228,.22); }
-  .tr-plaque.ink-dark{ --gl-tint:rgba(255,255,255,.3); --gl-hi:rgba(255,255,255,.95); --gl-edge:rgba(255,255,255,.7); --gl-lo:rgba(30,26,18,.2); --gl-sheen:rgba(255,255,255,.5); }
+  .tr-plaque.ink-light{ --gl-tint:rgba(24,12,6,.24); --gl-hi:rgba(255,236,220,.6); --gl-edge:rgba(255,255,255,.28); --gl-lo:rgba(0,0,0,.45); --gl-sheen:rgba(255,240,228,.22); }
+  .tr-plaque.ink-dark{ --gl-tint:rgba(255,255,255,.38); --gl-hi:rgba(255,255,255,.95); --gl-edge:rgba(255,255,255,.7); --gl-lo:rgba(30,26,18,.2); --gl-sheen:rgba(255,255,255,.5); }
   .tr-plaque.tex .tr-head .t{ text-shadow:0 1px 2px rgba(0,0,0,.35); }
   .tr-plaque.tex .tr-head .s{ color:rgba(255,255,255,.84); text-shadow:0 1px 2px rgba(0,0,0,.3); }
   .tr-plaque.tex .tr-seg .bar{ background:rgba(255,255,255,.22); box-shadow:inset 0 1px 2px rgba(0,0,0,.28), 0 1px 0 rgba(255,255,255,.22); }
