@@ -7888,7 +7888,7 @@ function bestSyncDone(){
 /* Вибро «пролёта»: пока блик виден на язычке, телефон постукивает в такт — чувствуется рукой.
    Сила и частота следуют яркости блика (читаем её прямо с анимации, а не по таймеру): на входе и
    выходе мягкие редкие тычки, в пике — частые и тяжёлые. Блик убрался из DOM — цикл сам остановился.
-   «Успех» приходит финалом, когда блик ушёл. */
+   Как только блик ушёл — тишина, без финального «успеха». */
 const BEST_GLINT_MS = 1100;
 function bestGlintBuzz(g){
   let last = -1e9;
@@ -7897,7 +7897,7 @@ function bestGlintBuzz(g){
     const now = performance.now();
     const k = parseFloat(getComputedStyle(g).opacity) || 0;
     const gap = 54 - 24 * k;                                  // 54 мс на краях → 30 мс в пике
-    if(k > .06 && now - last >= gap){
+    if(k > .1 && now - last >= gap){
       last = now;
       haptics(k > .8 ? 'heavy' : k > .55 ? 'medium' : k > .28 ? 'light' : 'soft');
     }
@@ -7919,8 +7919,10 @@ function bestCelebrate(landMs){
   const rows = [...document.querySelectorAll('#customEditorWrap .ce-row, #pourCard .pour-row')].filter(r=> r.offsetParent).slice(0, 8);
   rows.forEach((r, i)=> moA(r, reduce ? [{ opacity:.4 }, { opacity:1 }] : [{ opacity:.25, transform:'translateY(6px)' }, { opacity:1, transform:'none' }],
     { duration:260, delay:90 + i * 40, easing:'cubic-bezier(0.23, 1, 0.32, 1)', fill:'backwards' }));
+  // с бликом финального «успеха» нет: вибро-пролёт сам заканчивает жест. Без анимации (reduced motion) блика
+  // и «пролёта» нет — там подтверждением остаётся одиночный «успех»
   clearTimeout(bestCelebrate.t);
-  bestCelebrate.t = setTimeout(()=> haptics('success'), reduce ? 60 : Math.max(landMs, 80 + BEST_GLINT_MS + 30));
+  if(reduce) bestCelebrate.t = setTimeout(()=> haptics('success'), 60);
 }
 document.getElementById('calcBest').addEventListener('click', e=>{
   const btn = e.target.closest('#bestApplyBtn');
