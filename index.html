@@ -7886,24 +7886,42 @@ function bestSyncDone(){
   b.setAttribute('aria-label', on ? 'Лучшая чашка в калькуляторе' : 'Повторить лучшую чашку');
 }
 /* Вибро «пролёта»: пока блик виден на язычке, телефон постукивает в такт — чувствуется рукой.
-   Сила и частота следуют яркости блика (читаем её прямо с анимации, а не по таймеру): на входе и
-   выходе мягкие редкие тычки, в пике — частые и тяжёлые. Блик убрался из DOM — цикл сам остановился.
-   Как только блик ушёл — тишина, без финального «успеха». */
-const BEST_GLINT_MS = 1100;
-function bestGlintBuzz(g){
-  let last = -1e9;
-  const step = ()=>{
-    if(!g.isConnected) return;
-    const now = performance.now();
-    const k = parseFloat(getComputedStyle(g).opacity) || 0;
-    const gap = 54 - 24 * k;                                  // 54 мс на краях → 30 мс в пике
-    if(k > .1 && now - last >= gap){
-      last = now;
-      haptics(k > .8 ? 'heavy' : k > .55 ? 'medium' : k > .28 ? 'light' : 'soft');
-    }
-    requestAnimationFrame(step);
+   Сила и частота следуют яркости блика: на входе и выходе мягкие редкие тычки, в пике — частые и
+   тяжёлые. Расписание считается заранее по кривой блика (ничего не читаем из DOM на каждом кадре,
+   главный поток под цифрами и анимацией не грузим) и отыгрывается таймерами; запоздавший толчок
+   пропускается, а не выстреливает пачкой. Последний толчок — на уходе блика, после него тишина. */
+const BEST_GLINT_MS = 1100, BEST_GLINT_DELAY = 80;
+let bestBuzzPlan = null;
+function bestBuzzPlanBuild(){
+  const bz = (x1, y1, x2, y2)=> x=>{            // cubic-bezier блика → прогресс по времени
+    let lo = 0, hi = 1, t = .5;
+    for(let n = 0; n < 24; n++){ t = (lo + hi) / 2; ((3*(1-t)*(1-t)*t*x1 + 3*(1-t)*t*t*x2 + t*t*t) < x) ? lo = t : hi = t; }
+    return 3*(1-t)*(1-t)*t*y1 + 3*(1-t)*t*t*y2 + t*t*t;
   };
-  requestAnimationFrame(step);
+  const ease = bz(.33, 0, .2, 1), plan = [];
+  let last = -1e9;
+  for(let t = 0; t < BEST_GLINT_MS; t += 4){
+    const p = ease(t / BEST_GLINT_MS), k = p < .3 ? p / .3 : (1 - p) / .7;   // яркость: 0 → 1 на .3 → 0
+    if(k > .1 && t - last >= 60 - 26 * k){      // 60 мс на краях → 34 мс в пике
+      last = t;
+      plan.push([BEST_GLINT_DELAY + t, k > .8 ? 'heavy' : k > .55 ? 'medium' : k > .28 ? 'light' : 'soft']);
+    }
+  }
+  return plan;
+}
+function bestGlintBuzz(g){
+  const plan = bestBuzzPlan || (bestBuzzPlan = bestBuzzPlanBuild()), t0 = performance.now();
+  let i = 0;
+  const next = ()=>{
+    if(i >= plan.length) return;
+    const [t, type] = plan[i++];
+    setTimeout(()=>{
+      if(!g.isConnected) return;                       // блик ушёл — тишина
+      if(performance.now() - (t0 + t) < 70) haptics(type);
+      next();
+    }, Math.max(0, t0 + t - performance.now()));
+  };
+  next();
 }
 function bestCelebrate(landMs){
   const card = document.querySelector('#calcBest .bt-best');
@@ -7911,7 +7929,7 @@ function bestCelebrate(landMs){
   if(card && !reduce && canAnimate(card)){
     // блик проходит по язычку слева направо — тот же, что на кругах порций
     const g = document.createElement('i'); g.className = 'bt-glint'; card.appendChild(g);
-    const a = g.animate([{ transform:'translateX(-110%)', opacity:0 }, { opacity:1, offset:.3 }, { transform:'translateX(110%)', opacity:0 }], { duration:BEST_GLINT_MS, delay:80, easing:'cubic-bezier(0.33, 0, 0.2, 1)', fill:'backwards' });
+    const a = g.animate([{ transform:'translateX(-110%)', opacity:0 }, { opacity:1, offset:.3 }, { transform:'translateX(110%)', opacity:0 }], { duration:BEST_GLINT_MS, delay:BEST_GLINT_DELAY, easing:'cubic-bezier(0.33, 0, 0.2, 1)', fill:'backwards' });
     a.onfinish = a.oncancel = ()=> g.remove();
     bestGlintBuzz(g);
   }
