@@ -7885,6 +7885,27 @@ function bestSyncDone(){
   b.classList.toggle('done', on);
   b.setAttribute('aria-label', on ? 'Лучшая чашка в калькуляторе' : 'Повторить лучшую чашку');
 }
+/* Вибро «пролёта»: пока блик виден на язычке, телефон коротко постукивает в такт.
+   Сила и частота следуют яркости блика (читаем её прямо с анимации, а не по таймеру): на входе и
+   выходе тихие редкие «мягкие» тычки, в пике — частые и плотные. Вокруг момента «успеха» импульсы
+   замолкают, чтобы двойной толчок читался отдельно. Блик убрался из DOM — цикл сам остановился. */
+function bestGlintBuzz(g, landMs){
+  const t0 = performance.now();
+  let last = -1e9;
+  const step = ()=>{
+    if(!g.isConnected) return;
+    const now = performance.now(), t = now - t0;
+    const k = parseFloat(getComputedStyle(g).opacity) || 0;
+    const gap = 74 - 32 * k;                                  // 74 мс на краях → 42 мс в пике
+    const quiet = t > landMs - 60 && t < landMs + 90;         // окно под «успех»
+    if(k > .08 && !quiet && now - last >= gap){
+      last = now;
+      haptics(k > .7 ? 'medium' : k > .35 ? 'light' : 'soft');
+    }
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 function bestCelebrate(landMs){
   const card = document.querySelector('#calcBest .bt-best');
   const reduce = moReduce();
@@ -7893,6 +7914,7 @@ function bestCelebrate(landMs){
     const g = document.createElement('i'); g.className = 'bt-glint'; card.appendChild(g);
     const a = g.animate([{ transform:'translateX(-110%)', opacity:0 }, { opacity:1, offset:.25 }, { transform:'translateX(110%)', opacity:0 }], { duration:700, delay:80, easing:'cubic-bezier(0.23, 1, 0.32, 1)', fill:'backwards' });
     a.onfinish = a.oncancel = ()=> g.remove();
+    bestGlintBuzz(g, landMs);
   }
   // шаги пролива проявляются по очереди сверху вниз — график заменён целиком
   const rows = [...document.querySelectorAll('#customEditorWrap .ce-row, #pourCard .pour-row')].filter(r=> r.offsetParent).slice(0, 8);
