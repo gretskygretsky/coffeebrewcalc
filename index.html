@@ -1158,9 +1158,9 @@
   /* Металл текущего уровня под стеклом во всю плашку */
   .tr-plaque.tex{ position:relative; overflow:hidden; isolation:isolate; color:#FFFFFF; background:#6B6B6B; padding:18px 16px 14px; box-shadow:0 14px 30px -18px rgba(0,0,0,.6); }
   .tr-plaque.tex > *{ position:relative; z-index:1; }
-  .tr-plaque .tr-bg{ position:absolute; z-index:0; inset:-40%; transform:scale(var(--k, 1.6)); pointer-events:none; }
+  /* Размытие — фильтром на самом металле: backdrop-filter в WebKit (Telegram iOS) размывал и текст над стеклом */
+  .tr-plaque .tr-bg{ position:absolute; z-index:0; inset:-40%; transform:scale(var(--k, 1.6)); pointer-events:none; filter:blur(calc(2.2px / var(--k, 1.6))) saturate(1.6) brightness(1.05); }
   .tr-plaque .tr-glass{ position:absolute; z-index:0; inset:0; border-radius:inherit; pointer-events:none;
-    -webkit-backdrop-filter:blur(2.2px) saturate(1.6) brightness(1.05); backdrop-filter:blur(2.2px) saturate(1.6) brightness(1.05);
     background:var(--gl-tint); box-shadow:inset 0 1.5px 0 var(--gl-hi), inset 0 0 0 .75px var(--gl-edge), inset 0 -14px 22px -14px var(--gl-lo), inset 14px 0 20px -18px var(--gl-hi); }
   .tr-plaque .tr-glass::before{ content:""; position:absolute; inset:0; border-radius:inherit;
     background:radial-gradient(120% 70% at 18% -10%, var(--gl-sheen), transparent 55%), linear-gradient(115deg, transparent 58%, rgba(255,255,255,.14) 64%, transparent 72%); }
