@@ -1598,7 +1598,8 @@
      подбирается под самое длинное число режима и внутри него не меняется; высота строки постоянна —
      карточка не прыгает ни от десятых, ни от четырёх знаков, ни от смены режима. */
   .res-nums{ position:relative; display:grid; grid-template-columns:1fr 1fr; font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .rn-col{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; }
+  /* clip-path по краям колонки: хвост лишнего разряда при смене числа знаков (52,0 → 1,2) не вылезает за левый край; сверху и снизу запас под блюр */
+  .rn-col{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; clip-path:inset(-24px 0 -24px 0); }
   .rn-col + .rn-col{ padding-left:14px; border-left:0.5px solid var(--separator); }
   .rn-l{ font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--label-2); }
   .rn-l small{ font-size:inherit; text-transform:none; letter-spacing:0; }
@@ -2246,6 +2247,7 @@ const Gestures = (()=>{
         <p class="section-header">Пропорция по умолчанию</p>
         <div class="card bs-group" id="ratioSettings"></div>
         <p class="ratio-hint">С неё начинается каждая чашка. На Калькуляторе её подстраивают «мягче / крепче».</p>
+        <p class="ratio-hint" id="buildTag" style="text-align:center;opacity:.6">Сборка 19.11 · 17:55 · цифры без шума</p>
       </div>
     </div>
   </div>
