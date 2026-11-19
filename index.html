@@ -7981,7 +7981,8 @@ const canAnimate = el=> !!el && typeof el.animate === 'function';
 const BEAN_EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const BEAN_EXIT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 const BEAN_INOUT = 'cubic-bezier(0.65, 0, 0.35, 1)';
-const BEAN_FILL_MS = 600, BEAN_RING_MS = 920, BEAN_LAP_MS = 820, BEAN_DRAIN_MS = 440;
+const BEAN_FILL_MS = 450, BEAN_RING_MS = 640, BEAN_LAP_MS = 820, BEAN_DRAIN_MS = 440;
+const BEAN_FILL_EASE = 'cubic-bezier(0.3, 0, 0.5, 1)';   // заливка трогается сразу: не ease-in, иначе первые 300 мс кольцо стоит
 const beanLand = { busy:false, pending:false, timers:[], finish:null };
 function beanTempNow(){
   const t = parseInt(document.getElementById('tempValue').textContent, 10);
@@ -8028,7 +8029,7 @@ function beanPickLand(id){
   const fromTemp = beanTempNow();
   const fromBean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
   const toBean = id != null ? beans.find(b=> b.id === id) : null;
-  setTimeout(()=>{ if(sheetMode === 'bean-pick') closeSheet(); }, 120);
+  setTimeout(()=>{ if(sheetMode === 'bean-pick') closeSheet(); }, 80);
   setTimeout(async ()=>{
     const tile = slot.firstElementChild;
     const r = slot.getBoundingClientRect();
@@ -8041,6 +8042,7 @@ function beanPickLand(id){
       countTemp(fromTemp); end(); return;
     }
     // Данные меняем сразу, а плитку рисуем сами; честный рендер — в конце
+    if(beanLand.finish) beanLand.finish();
     beanLand.busy = true; beanLand.pending = false;
     const commit = commitBeanPick(id);
     const dur = runBeanLand(tile, fromBean, toBean);
@@ -8050,14 +8052,24 @@ function beanPickLand(id){
     const finish = ()=>{
       beanLand.timers.forEach(clearTimeout); beanLand.timers = [];
       if(!beanLand.busy) return;
-      beanLand.busy = false; beanLand.finish = null;
+      beanLand.busy = false; beanLand.finish = null; beanLand.rush = null; beanLand.rushed = false;
       slot.getAnimations ? slot.getAnimations({ subtree:true }).forEach(a=> a.cancel()) : 0;
       updateBeanPickRow();
       end();
     };
     beanLand.finish = finish;
+    // Повторный тап по плитке: не обрываем, а доматываем в 6 раз быстрее — дуга едет к финалу с текущего места, без прыжка
+    beanLand.rush = ()=>{
+      if(!beanLand.busy || beanLand.rushed) return;
+      beanLand.rushed = true;
+      beanLand.timers.forEach(clearTimeout); beanLand.timers = [];
+      const anims = slot.getAnimations ? slot.getAnimations({ subtree:true }) : [];
+      let left = 0;
+      anims.forEach(a=>{ try{ const t = a.effect.getComputedTiming(); left = Math.max(left, (t.endTime - (a.currentTime || 0)) / 6); a.updatePlaybackRate(6); }catch(e){} });
+      beanLand.timers.push(setTimeout(finish, Math.min(300, left + 40)));
+    };
     beanLand.timers.push(setTimeout(finish, dur + 80));
-  }, 120);   // меню успевает стечь в каплю (180 мс), плитка оживает раньше
+  }, 80);   // меню успевает стечь в каплю (180 мс), плитка оживает раньше
 }
 // Сама посадка на существующей плитке. Возвращает длительность, мс.
 function runBeanLand(tile, fromBean, toBean){
@@ -8097,7 +8109,7 @@ function runBeanLand(tile, fromBean, toBean){
   const breath = at=> A(ring, [{ transform:'scale(1)' }, { transform:'scale(1.1)', offset:.35 }, { transform:'scale(1)' }], { duration:380, delay:at, easing:BEAN_EASE });
   // Пунктир ↔ сплошная дорожка: «прокладка» за головой дуги (toSolid) или обратно за хвостом
   const pave = (toSolid, ms, easing)=>{
-    const kf = toSolid ? [{ strokeDashoffset:C, easing:'cubic-bezier(0.5, 0, 0.75, 0)' }, { strokeDashoffset:0 }]
+    const kf = toSolid ? [{ strokeDashoffset:C, easing:BEAN_FILL_EASE }, { strokeDashoffset:0 }]
                        : [{ strokeDashoffset:0 }, { strokeDashoffset:C, offset:.92 }, { strokeDashoffset:C }];
     dash.style.opacity = 1; solid.style.opacity = 1;
     solid.style.strokeDashoffset = toSolid ? 0 : C; mk.style.strokeDashoffset = toSolid ? 0 : C;
@@ -8113,13 +8125,12 @@ function runBeanLand(tile, fromBean, toBean){
   };
 
   // 1. Пустая пачка (0 г): заливать нечего — дуга (если была) уходит, пунктир возвращается,
-  //    кольцо мягко «вздрагивает» по горизонтали, вибро soft
+  //    кольцо мягко «выдыхает» (без тряски: тряска в iOS читается как ошибка), вибро soft
   if(toBean && p1 <= 0){
     let at = 120;
     if(p0 > 0){ drain(); at = BEAN_DRAIN_MS + 20; }
     later(()=>{
-      A(ring, [{ transform:'translateX(0)' }, { transform:'translateX(-3px)', offset:.18 }, { transform:'translateX(2.5px)', offset:.42 },
-        { transform:'translateX(-1.5px)', offset:.66 }, { transform:'translateX(0)' }], { duration:420, easing:BEAN_EASE });
+      A(ring, [{ transform:'scale(1)' }, { transform:'scale(.92)', offset:.4 }, { transform:'scale(1)' }], { duration:420, easing:BEAN_EASE });
       haptics('soft');
     }, at);
     textOut(-1);
@@ -8158,10 +8169,10 @@ function runBeanLand(tile, fromBean, toBean){
     later(()=> arc.setAttribute('stroke', colorOf(n1)), t1);
     arc.style.strokeDashoffset = (C * (1 - p1)).toFixed(2); arc.style.opacity = 1;
     if(p0 <= 0) A(arc, [{ opacity:0 }, { opacity:1, offset:.18 }, { opacity:1 }], { duration:t1 || 1 });  // без точки от скруглённого конца
-    const start = { strokeDashoffset:C * (1 - p0), easing:'cubic-bezier(0.5, 0, 0.75, 0)' };
+    const start = { strokeDashoffset:C * (1 - p0), easing:BEAN_FILL_EASE };
     if(full){
       A(arc, [start, { strokeDashoffset:0, offset:k, easing:'cubic-bezier(0.33, 0, 0.2, 1)' },
-        { strokeDashoffset:C * 0.3, offset:k + (1 - k) * 0.42, easing:'cubic-bezier(0.4, 0, 0.6, 1)' }, { strokeDashoffset:0 }], { duration:T, easing:'linear' });
+        { strokeDashoffset:C * 0.1, offset:k + (1 - k) * 0.42, easing:'cubic-bezier(0.4, 0, 0.6, 1)' }, { strokeDashoffset:0 }], { duration:T, easing:'linear' });
     } else {
       A(arc, [start, { strokeDashoffset:0, offset:k, easing:BEAN_EASE }, { strokeDashoffset:C * (1 - p1) }], { duration:T, easing:'linear' });
     }
@@ -8204,7 +8215,7 @@ var beanMenuTapX = null;  // где тронули плитку: оттуда в
 function beanMenuOpen(){
   const pickable = beans.filter(b=> !b.archived && !b.finishedAt);
   if(!pickable.length || Brew.phase !== 'idle'){ openBeanPickSheet(); return false; }
-  if(beanLand.finish) beanLand.finish();
+  if(beanLand.rush) beanLand.rush(); else if(beanLand.finish) beanLand.finish();
   const tile = document.getElementById('calcBeanCard');
   const sorted = sortCurrentBeans(pickable, activeBeanId);
   const shown = sorted.length > BEAN_MENU_MAX ? sorted.slice(0, BEAN_MENU_MAX - 1) : sorted;
