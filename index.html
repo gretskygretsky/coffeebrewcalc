@@ -1008,6 +1008,19 @@
   #calcBeanCard{ margin:16px 0; }
   #calcBeanCard .b-row-content{ border-radius:22px; }
   #calcBeanCard.locked{ opacity:.45; pointer-events:none; }
+  .next-cup{ margin:12px 0 16px; padding:14px 16px; background:var(--card); color:var(--label); border-radius:22px; }
+  .next-cup h2{ margin:0; font-size:16px; line-height:1.25; }
+  .next-cup p, .js-next-cup{ margin:4px 0 0; color:var(--label-2); font-size:13px; line-height:1.4; }
+  .next-cup-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .next-cup .alert-btn{ flex:0 1 auto; min-height:44px; padding:8px 14px; }
+  .next-cup .alert-btn:disabled{ opacity:.5; cursor:default; }
+  .next-cup form{ display:grid; gap:8px; margin-top:10px; }
+  .next-cup label{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 10px; font-size:14px; }
+  .next-cup select, .next-cup input{ min-height:44px; max-width:100%; padding:4px 8px; border:1px solid var(--separator); border-radius:12px; background:var(--fill); color:var(--label); font:inherit; font-size:16px; }
+  .next-cup label > input{ width:86px; }
+  .next-cup .next-cup-grind{ margin-top:8px; }
+  .next-cup :focus-visible{ outline:2px solid var(--accent, var(--blue)); outline-offset:2px; }
+  .js-next-cup{ padding:10px 16px; }
 
   /* ---- Октализ: лучшая чашка, итоги недели, факультет ---- */
   /* «Лучшая чашка» — язычок из-под плитки зерна: верхние 22 px спрятаны под ней */
@@ -2198,6 +2211,7 @@ const Gestures = (()=>{
   <p class="section-header">Зерно</p>
   <div id="calcBeanCard" role="button" tabindex="0" aria-label="Выбрать зерно"></div>
   <div id="calcBest"></div>
+  <section id="nextCupCard" class="next-cup" aria-label="Следующая чашка" hidden></section>
   </div></div>
 
   <div class="fold"><div>
@@ -2606,12 +2620,12 @@ function loadCustom(){
     const raw = localStorage.getItem(CUSTOM_STORE_KEY);
     if(!raw) return null;
     const parsed = JSON.parse(raw);
-    if(!parsed || !Array.isArray(parsed.steps) || parsed.steps.length < 2) return null;
+    if(!parsed || !Array.isArray(parsed.steps) || !parsed.steps.length) return null;
     if(parsed.steps[0].kind !== 'bloom') return null;
     // Санитизация: битые числа из storage не должны попасть в расчёт
     parsed.steps.forEach(s=>{
-      s.wait = Math.max(1, Math.min(600, Number(s.wait) || 45));
-      if(s.kind === 'bloom') s.mult = Math.max(0, Math.min(10, Number(s.mult) || 2));
+      s.wait = Math.max(1, Math.min(s.exactWait ? 900 : 600, Number(s.wait) || 45));
+      if(s.kind === 'bloom') s.mult = Math.max(0, Math.min(s.exactWait ? 1500 : 10, Number(s.mult ?? 2) || 0));
       else s.frac = Math.max(0, Math.min(1, Number(s.frac) || 0));
     });
     return { steps: parsed.steps.slice(0, CUSTOM_MAX_POURS + 1) };
@@ -2682,6 +2696,10 @@ const Recipe = (()=>{
   function totalFromHot(mode, hot){ return isIced(mode) ? hot / (1 - ICE_SHARE) : hot; }
   function amounts(spec){
     const r = spec.ratio;
+    const restored = spec.restoredAmounts;
+    if(restored && spec.mode === restored.mode && spec.inputType === 'water' && spec.value === restored.water && r === restored.ratio){
+      return { coffee:restored.coffee, water:restored.water };
+    }
     if(spec.inputType === 'coffee') return { coffee: spec.value, water: spec.value * r };
     return { coffee: r ? spec.value / r : 0, water: spec.value };
   }
@@ -3790,6 +3808,10 @@ function fmt(n){ return (Math.round(n*10)/10).toLocaleString('ru-RU'); }
 function compute(){
   const r = state.ratio;
   const { coffee, water } = Recipe.amounts(state);
+  const restored = state.restoredAmounts;
+  if(restored && (state.mode !== restored.mode || state.inputType !== 'water' || state.value !== restored.water || r !== restored.ratio)){
+    state.restoredAmounts = null;
+  }
   const brewWater = Recipe.split(state.mode, water).hot;
   // «Кастом»: первый раз наследует текущую классику, паузы приводятся к сетке — запись в данные до расчёта
   if(isBrewMode() && state.recipe === 'custom'){ ensureCustom(coffee, brewWater); normalizeCustom(); }
@@ -3811,6 +3833,7 @@ function compute(){
   if(isBrewMode()) syncCupControls(coffee, water);
   else syncClassicPair(coffee, water, r);
   bestSyncDone();
+  NextCup.render();
 }
 
 function syncClassicPair(coffee, water, r){
@@ -3883,7 +3906,11 @@ const ceWaitNorm = w=> Math.max(CE_WAIT_MIN, Math.min(CE_WAIT_MAX, Math.round((N
 // Это данные, а не отрисовка: расписание считается уже по нормализованным паузам (вызывает compute()).
 function normalizeCustom(){
   let fixed = false;
-  state.custom.steps.forEach(s=>{ const w = ceWaitNorm(s.wait); if(w !== s.wait){ s.wait = w; fixed = true; } });
+  state.custom.steps.forEach(s=>{
+    if(s.exactWait) return;
+    const w = ceWaitNorm(s.wait);
+    if(w !== s.wait){ s.wait = w; fixed = true; }
+  });
   if(fixed) saveCustom();
 }
 function renderCustomEditor(coffee, water, accent){
@@ -3929,7 +3956,11 @@ function renderCustomEditor(coffee, water, accent){
     run += vals[i];
     const sub = document.getElementById('sub-ce' + i); if(sub) sub.textContent = i === n - 1 ? 'остаток' : 'всего ' + fmt(run) + ' мл';
     const t = ceDrums['cw' + i];
-    if(t && !t.pressed && !t.anim && t.cur() !== s.wait) t.set(s.wait);
+    if(t && !t.pressed && !t.anim){
+      t.min = Math.min(CE_WAIT_MIN, s.wait);
+      t.max = Math.max(CE_WAIT_MAX, s.wait);
+      if(t.cur() !== s.wait) t.set(s.wait);
+    }
     const a = ceDrums['ca' + i];
     if(a){ a.max = Math.max(0, Math.floor(water - (other - vals[i]))); if(!a.pressed && !a.anim && a.cur() !== vals[i]) a.set(vals[i]); else a.paint(); }
   });
@@ -3958,6 +3989,7 @@ function renderCustomEditor(coffee, water, accent){
 function ceSetWait(i, v){
   const st = state.custom.steps; if(!st[i]) return;
   st[i].wait = ceWaitNorm(v);
+  delete st[i].exactWait;
   saveCustom(); compute();
 }
 function ceSetMl(i, v){
@@ -3987,7 +4019,8 @@ document.getElementById('ceAddPour').onclick = ()=>{
   const rest = vals[vals.length - 1];
   const lastIdx = steps.length - 1;
   const keep = Math.floor(rest / 2);
-  if(steps[lastIdx].kind === 'pour') steps[lastIdx].frac = water > 0 ? keep / water : 0;
+  if(steps[lastIdx].kind === 'pour') steps[lastIdx].frac = water > 0 ? (keep + 0.001) / water : 0;
+  else if(steps.length === 1) steps[0].mult = coffee > 0 ? (keep + 0.001) / coffee : 0;
   steps.push({ kind:'pour', frac:0, wait: steps[lastIdx].wait });
   haptics('light');
   saveCustom();
@@ -4508,7 +4541,7 @@ let journalOfferedThisBrew = false;   // длительность этого б�
 let brewDurationPromise = null;
 /* Запись журнала создаётся в момент старта брю (после отсчёта) — id и промис
    её создания, чтобы шторка «Оценить» дождалась записи даже на очень коротком брю. */
-let brewEntryId = null;
+let brewEntryDraft = null;
 let brewEntryPromise = null;
 
 function beep(freq, dur){
@@ -4941,6 +4974,7 @@ function lockControls(locked){
   if(locked) ['resWater', 'resCoffee'].forEach(id=> odoRelease(document.getElementById(id)));
   if(locked) closePopMenu();
   navLocked = locked;
+  NextCup.render();
 }
 
 /* ---- Не гасить экран во время заваривания. Лок автоматически снимается
@@ -5352,11 +5386,12 @@ function tickCountdown(){
 }
 
 function launchBrew(){
+  if(Brew.phase !== 'counting') return;
   Brew.launch();
   brewStepLockUntil = 0; brewRingHoldUntil = 0; brewCdShown = '';
   journalOfferedThisBrew = false;
   brewDurationPromise = null;
-  brewEntryPromise = createBrewEntry();
+  brewEntryPromise = createBrewEntry(brewEntryPromise);
   ua('brew_start', {
     mode: state.mode,
     scheme: state.recipe,
@@ -5728,19 +5763,30 @@ function finishBrew(stopped){
 function saveBrewDuration(elapsedSec){
   if(brewDurationPromise) return brewDurationPromise;
   journalOfferedThisBrew = true;
+  const started = brewEntryPromise;
+  const rows = Brew.schedule || [];
+  const last = rows.length ? Math.round(rows[rows.length-1].time) : 0;
+  const el = Math.max(0, Math.round(elapsedSec != null ? elapsedSec : Brew.elapsed()));
+  const draft = brewEntryDraft;
+  const completed = !!last && el >= last - OCT_CFG.doneSlack;
+  const finishTrial = completed && draft?.experimentSourceId != null ? NextCup.reserveFinishedTrial(draft) : null;
   brewDurationPromise = (async ()=>{
-    const id = brewEntryPromise ? await brewEntryPromise : null;
-    const entry = id != null ? journalEntries.find(e=> e.id === id) : null;
-    if(!entry) return null;
-    const rows = Brew.schedule || [];
-    const last = rows.length ? Math.round(rows[rows.length-1].time) : 0;
-    const el = Math.max(0, Math.round(elapsedSec != null ? elapsedSec : Brew.elapsed()));
-    entry.duration = last ? Math.min(el, last) : el;
-    const wasDone = entry.done === true;
-    entry.done = !!last && el >= last - OCT_CFG.doneSlack;
-    await journalUpdateEntry(entry);
-    if(entry.done && !wasDone) ua('brew_completed', { mode: entry.mode, cup: entry.cup || 'custom', bean: entry.beanId != null ? 1 : 0 });
-    return entry;
+    try{
+      const id = started ? await started : null;
+      return await NextCup.enqueue(async ()=>{
+        const entry = id != null ? journalEntries.find(e=> e.id === id) : null;
+        if(!entry) return null;
+        entry.duration = last ? Math.min(el, last) : el;
+        const wasDone = entry.done === true;
+        entry.done = completed;
+        await journalUpdateEntry(entry);
+        if(entry.done && !wasDone) ua('brew_completed', { mode: entry.mode, cup: entry.cup || 'custom', bean: entry.beanId != null ? 1 : 0 });
+        return entry;
+      });
+    } finally {
+      if(finishTrial) finishTrial();
+      NextCup.render();
+    }
   })();
   return brewDurationPromise;
 }
@@ -5773,7 +5819,14 @@ document.getElementById('tfCloseBtn').addEventListener('click', ()=>{ haptics('l
 document.getElementById('tfRateBtn').addEventListener('click', ()=>{
   haptics('light');
   // Сначала дождёмся записи длительности, потом откроем запись журнала
-  Promise.resolve(saveBrewDuration()).then(()=>{ if(brewEntryId != null){ track('journal_rate_opened'); openEditSheet(brewEntryId); } });
+  Promise.resolve(saveBrewDuration()).then(entry=>{
+    if(!entry) return;
+    track('journal_rate_opened');
+    if(NextCup.isTrialToRate(entry)){
+      closeBrew(false);
+      NextCup.openFeedback(entry.id);
+    } else openEditSheet(entry.id);
+  });
 });
 
 /* ---- Еще → Настройки: размеры порций S/M/L ----
@@ -6344,10 +6397,13 @@ async function journalUpdateEntry(entry){
 }
 
 async function journalDeleteEntry(id){
-  await storeRemove('journal_entry_' + id);
-  const ids = (await journalReadIndex()).filter(x=> x !== id);
-  await storeSet(JOURNAL_INDEX_KEY, JSON.stringify(ids));
-  journalEntries = journalEntries.filter(e=> e.id !== id);
+  return NextCup.enqueue(async ()=>{
+    await storeRemove('journal_entry_' + id);
+    const ids = (await journalReadIndex()).filter(x=> x !== id);
+    await storeSet(JOURNAL_INDEX_KEY, JSON.stringify(ids));
+    journalEntries = journalEntries.filter(e=> e.id !== id);
+    NextCup.render();
+  });
 }
 
 /* ---- Дневник: форматирование ---- */
@@ -6465,6 +6521,7 @@ function journalRowHTML(e, prev){
   const beanName = entryBeanName(e);
   const water = (e.pours || []).reduce((a,p)=> a + (typeof p === 'number' ? p : (p.add || 0)), 0) || e.water || 0;
   const rated = (e.rating || 0) > 0;
+  const grind = knownGrind(e);
   const trash = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
   return '<div class="jr-row" data-row="' + e.id + '">' +
     '<button class="jr-act" type="button" data-jdel="' + e.id + '" tabindex="-1" aria-label="Удалить запись ' + journalDayLabel(e.id) + ' ' + journalTimeLabel(e.id) + '"><span class="pill"></span><span class="ai"><span class="c">' + trash + '</span><span class="lb">Удалить</span></span></button>' +
@@ -6472,7 +6529,7 @@ function journalRowHTML(e, prev){
       '<span class="jr-day' + (today ? ' today' : '') + (same ? ' same' : '') + '"><b>' + d.getDate() + '</b><span>' + JR_WD[d.getDay()] + '</span></span>' +
       '<span class="jr-mid"><div class="jr-name' + (beanName ? '' : ' none') + '">' + (beanName ? escapeHTML(beanName) : 'Без зерна') + '</div>' +
         '<div class="jr-sub"><span class="jr-dot" style="background:' + accentVar(e.mode === 'v60ice' ? 'v60ice' : 'v60') + '"></span>' +
-          fmt(e.coffee || 0) + '\u00a0г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + '\u00a0мл · 1:' + fmtRatio(e.ratio || 16).replace('.', ',') + '</div></span>' +
+          fmt(e.coffee || 0) + '\u00a0г · ' + fmt(water) + (e.ice ? '+' + fmt(e.ice) : '') + '\u00a0мл · 1:' + fmtRatio(e.ratio || 16).replace('.', ',') + (grind == null ? '' : ' · ' + grind + ' кл.') + '</div></span>' +
       '<span class="jr-r"><div class="jr-rate' + (rated ? '' : ' none') + '">' + (rated ? '<span class="st">★</span>' + e.rating : 'оценить') + '</div>' +
         '<div class="jr-time">' + journalTimeLabel(e.id) + '</div></span>' +
     '</button></div>';
@@ -6899,16 +6956,19 @@ function closeSheet(){
 
 /* Автосохранение: запись появляется в журнале сразу при старте брю (после
    отсчёта; отменённый отсчёт записи не создаёт). Зерно списывается тогда же. */
-async function createBrewEntry(){
-  brewEntryId = null;
+async function createBrewEntry(previous){
+  const previousId = brewEntryDraft?.id || 0;
+  brewEntryDraft = null;
   if(!state.schedule || !state.schedule.length) return null;
-  const pours = state.schedule
-    .filter(r=> r.add != null)
-    .map(r=> ({ time: Math.round(r.time), add: Math.round(r.add) }));
+  const schedule = Brew.schedule || state.schedule;
+  const pours = brewPours(schedule);
   if(!pours.length) return null;
   const activeBean = activeBeanId != null ? beans.find(b=> b.id === activeBeanId) : null;
+  const trial = NextCup.trialFields(activeBean);
+  let entryId = Math.max(Brew.wallStart || Date.now(), previousId + 1);
+  while(journalEntries.some(e=> e.id === entryId)) entryId++;
   const entry = {
-    id: Brew.wallStart || Date.now(),
+    id: entryId,
     mode: state.mode,
     recipe: state.recipe,
     ratio: Math.round(state.ratio * 10) / 10,
@@ -6918,20 +6978,23 @@ async function createBrewEntry(){
     ice: Math.round(Recipe.split(state.mode, state.water || 0).ice),
     rating: 0,
     taste: 0,
-    grind: 0,
+    grind: null,
+    ...trial,
     beanId: activeBean ? activeBean.id : null,
     bean: activeBean ? (activeBean.name || '') : '',
     note: '',
     duration: 0,
+    scheduledDuration: Math.round(schedule[schedule.length - 1].time),
     cup: cup.size === 'custom' ? null : cup.size,   // размер порции S/M/L (null — своя порция)
     from: brewFromBest && state.recipe === 'custom' && normId(activeBeanId) === brewFromBest.beanId ? 'best' : undefined,
     fromRating: brewFromBest ? brewFromBest.rating : undefined,
     done: false                                      // станет true, когда таймер дойдёт до конца
   };
-  brewEntryId = entry.id;
+  brewEntryDraft = entry;
   if(entry.from !== 'best'){ delete entry.from; delete entry.fromRating; }
   brewFromBest = null;
-  await journalSaveEntry(entry);
+  if(previous) await previous.catch(()=>{});
+  await NextCup.enqueue(()=> journalSaveEntry(entry));
   await applyGramsChange(null, entry);
   renderJournal();
   track('journal_autosaved');
@@ -6945,15 +7008,13 @@ function openEditSheet(id){
   // Записи, сохранённые до появления оценки, не имеют этих полей — подставляем дефолты.
   sheetEntry.rating = sheetEntry.rating || 0;
   sheetEntry.taste = sheetEntry.taste || 0;
-  sheetEntry.grind = sheetEntry.grind || 0;
+  sheetEntry.grind = knownGrind(entry);
   sheetEntry.bean = sheetEntry.bean || '';
   sheetEntry.note = sheetEntry.note || '';
   sheetEntry.beanId = normId(sheetEntry.beanId);
   // Старый формат пролива — просто число (граммы). Новый — {time, add}. Приводим
   // к новому на лету: как только запись пересохранят, она мигрирует сама.
-  sheetEntry.pours = (sheetEntry.pours || []).map((p, i)=> typeof p === 'number'
-    ? { time: legacyPourTime(i), add: p }
-    : { time: p.time || 0, add: p.add || 0 });
+  sheetEntry.pours = entryPours(sheetEntry);
   jsPoursEdit = false;
   renderEditSheet('rate');
 }
@@ -7047,6 +7108,7 @@ function renderEditSheet(){
     '<textarea class="js-note" data-jnote maxlength="' + NOTE_MAX + '" placeholder="Ощущения от чашки…" aria-label="Заметка"></textarea>' +
     '<div class="js-note-count' + (noteLeft <= 10 ? ' warn' : '') + '" id="jsNoteCount">' + noteLeft + '</div>' +
 
+    NextCup.historyHTML(e.id) +
     '<button class="bs-act" type="button" data-jrepeat' + (Brew.phase !== 'idle' ? ' disabled' : '') + '>' + repeatIcon + 'Повторить рецепт</button>' +
     '<button class="bs-act danger" type="button" data-jdelete>' + trash + 'Удалить запись</button>';
   document.querySelector('#sheetJournal [data-jnote]').value = e.note || '';
@@ -7055,8 +7117,9 @@ function renderEditSheet(){
   const ti = Math.max(0, TASTE_OPTS.findIndex(t=> Number(t.id) === (e.taste || 0)));
   jsDrums.taste = new Drum(C('taste'), { fast:true, value:ti, min:0, max:TASTE_OPTS.length - 1, fmt:i=> TASTE_OPTS[i].label,
     onChange:i=> jsPickTaste(Number(TASTE_OPTS[i].id), true), onTap:()=> capToggle(body, jsXp, 'taste', sheetEl) });
-  jsDrums.grind = new Drum(C('grind'), { value:Math.max(0, e.grind || 0), min:0, max:80,
-    onChange:v=>{ e.grind = v; }, onTap:()=> capEdit(C('grind'), String(jsDrums.grind.cur()), 'numeric', capParseInt) });
+  jsDrums.grind = new Drum(C('grind'), { value:e.grind ?? -1, min:-1, max:GRIND_MAX, fmt:v=> v < 0 ? '—' : String(v),
+    onChange:v=>{ e.grind = v < 0 ? null : v; e.grindKnown = v >= 0; },
+    onTap:()=> capEdit(C('grind'), e.grind ?? '', 'numeric', capParseInt) });
   jsDrums.coffee = new Drum(C('coffee'), { value:Math.round((e.coffee || 0) * 10), step:1, min:10, max:1200, fmt:capFmtTenths,
     onChange:v=>{ e.coffee = v / 10; jsBrewSync(); }, onTap:()=> capEdit(C('coffee'), capFmtTenths(jsDrums.coffee.cur()), 'decimal', capParseTenths) });
   const P = e.pours || [];
@@ -7074,40 +7137,64 @@ function renderEditSheet(){
   jsBrewSync(true);
   showSheet();
 }
-/* «Повторить рецепт»: режим, пропорция, объём, зерно и график пролива записи —
-   в Калькулятор. График кладётся в «Кастом» (доли воды + паузы), граммы
-   подстраиваются под текущую порцию сами. */
-function repeatEntryRecipe(e, o){
-  if(Brew.phase !== 'idle' || !e || !(e.pours || []).length) return;
-  o = o || {};
+/* Повтор рецепта из журнала, «Лучшей чашки» и «Следующей чашки». */
+function brewPours(rows){
+  return rows.filter(r=> r.add != null).map(r=> ({ time:Math.round(r.time), add:Math.round(r.add) }));
+}
+function entryPours(entry){
+  return (entry.pours || []).map((p, i)=> typeof p === 'number'
+    ? { time:legacyPourTime(i), add:p }
+    : { time:p.time || 0, add:p.add || 0 });
+}
+function repeatedRecipe(e, forceCustom){
+  const pours = entryPours(e);
+  if(!pours.length || pours.length > CUSTOM_MAX_POURS + 1) return null;
   const mode = e.mode === 'v60ice' ? 'v60ice' : 'v60';
-  const hot = jsWater(e);
-  const cupTotal = Math.round(Recipe.totalFromHot(mode, hot));
-  const prevSize = cup.size;
-  cup.size = matchCupSize(cupTotal);
-  if(cup.size === 'custom') cup.custom = Math.max(CUP_MIN, Math.min(CUP_MAX, cupTotal));
-  saveCupPrefs();
-  const p = e.pours, coffee = e.coffee || (hot / (e.ratio || 16));
-  const steps = [{ kind:'bloom', mult: coffee > 0 ? p[0].add / coffee : 2, wait: p[1] ? Math.max(1, p[1].time - p[0].time) : 40 }];
-  for(let i = 1; i < p.length; i++){
-    steps.push({ kind:'pour', frac: hot > 0 ? p[i].add / hot : 0, wait: p[i+1] ? Math.max(1, p[i+1].time - p[i].time) : Math.max(15, jsDuration(e) - p[i].time) });
+  const hot = pours.reduce((sum, p)=> sum + p.add, 0);
+  if(!(hot > 0)) return null;
+  const water = mode === 'v60ice' ? Math.round(Recipe.totalFromHot(mode, hot)) : hot;
+  const ratio = e.ratio > 0 ? e.ratio : DEFAULT_RATIO[mode];
+  const coffee = e.coffee > 0 ? e.coffee : water / ratio;
+  const end = e.scheduledDuration || e.duration || pours[pours.length - 1].time + POUR_INTERVAL;
+  const preset = RECIPES.find(r=> r.id === e.recipe && r.id !== 'custom');
+  if(!forceCustom && preset){
+    const rows = preset.schedule(coffee, Recipe.split(mode, water).hot);
+    if(JSON.stringify(brewPours(rows)) === JSON.stringify(pours) &&
+       ((!e.scheduledDuration && !e.duration) || Math.abs(Math.round(rows[rows.length - 1].time) - end) <= OCT_CFG.doneSlack)){
+      return { mode, water, ratio, coffee, recipe:preset.id };
+    }
   }
-  if(steps.length < 2) steps.push({ kind:'pour', frac:0, wait:45 });
-  state.custom = { steps: steps.slice(0, CUSTOM_MAX_POURS + 1) };
-  saveCustom();
-  state.recipe = 'custom';
+  const steps = pours.map((p, i)=>{
+    const wait = Math.max(1, (pours[i + 1]?.time ?? end) - p.time);
+    return i === 0
+      ? { kind:'bloom', mult:(p.add + 0.001) / coffee, wait, exactWait:true }
+      : { kind:'pour', frac:(p.add + 0.001) / hot, wait, exactWait:true };
+  });
+  return { mode, water, ratio, coffee, recipe:'custom', custom:{ steps } };
+}
+function repeatEntryRecipe(e, o = {}){
+  if(Brew.phase !== 'idle' || !e) return false;
+  const restored = repeatedRecipe(e, o.forceCustom);
+  if(!restored) return false;
+  const { mode, water, ratio, recipe, custom } = restored;
+  const prevSize = cup.size;
+  cup.size = e.cup === null ? 'custom' : matchCupSize(water);
+  if(cup.size === 'custom') cup.custom = water;
+  saveCupPrefs();
+
   const id = normId(e.beanId);
   const bean = id != null ? beans.find(b=> b.id === id && !b.archived && !b.finishedAt) : null;
   closeSheet();
-  // тот же режим — без setMode: он пересчитывает с пропорцией по умолчанию, и цифры дёрнулись бы
-  // через промежуточное значение
-  const sameMode = !!o.anim && state.mode === mode;
+  const sameMode = state.mode === mode;
   if(!sameMode) setMode(mode);
-  state.ratio = e.ratio || state.ratio;
-  state.inputType = 'water'; state.value = cupWater();
+  state.restoredAmounts = restored;
+  state.ratio = ratio;
+  state.inputType = 'water';
+  state.value = water;
+  state.recipe = recipe;
+  if(custom){ state.custom = custom; saveCustom(); }
   renderPills(); renderRecipeSeg();
-  // из «Лучшей чашки»: числа добегают, подложка порции переезжает как при тапе по плитке
-  const tiles = sameMode && !moReduce() && prevSize !== cup.size && prevSize !== 'custom' && cup.size !== 'custom';
+  const tiles = !!o.anim && sameMode && !moReduce() && prevSize !== cup.size && prevSize !== 'custom' && cup.size !== 'custom';
   if(o.anim && sameMode && !moReduce()) calcAnim = o.anim;
   if(tiles) tileAnim.hold = true;
   compute();
@@ -7115,6 +7202,7 @@ function repeatEntryRecipe(e, o){
   if(bean && bean.id !== activeBeanId) setActiveBean(bean.id);
   navGoTo(1, true);
   track('journal_recipe_repeated');
+  return true;
 }
 
 const TASTE_OPTS = [
@@ -7124,6 +7212,397 @@ const TASTE_OPTS = [
   { id:'1',  label:'Горько',       d:'Чуть крупнее помол или на 1–2 °C прохладнее' },
   { id:'2',  label:'Очень горько', d:'Переэкстракция: помол заметно крупнее или вода прохладнее' }
 ];
+/* ---- Следующая чашка: план в исходной записи, проба в обычном журнале ---- */
+const GRIND_MAX = 80;
+function knownGrind(entry){
+  const grind = entry.grind;
+  return Number.isInteger(grind) && grind <= GRIND_MAX && (grind > 0 || (grind === 0 && entry.grindKnown)) ? grind : null;
+}
+
+const NextCup = (()=>{
+  const card = document.getElementById('nextCupCard');
+  const tips = {
+    grind_coarser: { title:'Попробуй помол немного крупнее', detail:'Более крупный помол может замедлить экстракцию. Это может помочь.' },
+    grind_finer: { title:'Попробуй помол немного мельче', detail:'Более мелкий помол может усилить экстракцию. Это может помочь.' }
+  };
+  let ready = false, panel = null, notice = null, busy = false, markup = '';
+  let pending = Promise.resolve(), lastBeanId = null;
+  const finishing = new Map();
+  const entryById = id=> journalEntries.find(e=> e.id === id);
+  const beanById = id=> beans.find(b=> b.id === id && !b.archived);
+  const isPlanned = entry=> entry.nextCup?.status === 'planned';
+  const latestDone = id=> journalEntries.find(e=> normId(e.beanId) === id && isCounted(e));
+  const focusCard = selector=> card.querySelector(selector)?.focus();
+  function enqueue(write){
+    const next = pending.then(write);
+    pending = next.catch(err=> console.error(err));
+    return next;
+  }
+
+  function recommendation(entry){
+    if(entry.mode !== 'v60' || ![1, 2, 3].includes(entry.rating)) return null;
+    if([1, 2].includes(entry.taste)) return 'grind_coarser';
+    if([-1, -2].includes(entry.taste)) return 'grind_finer';
+    return null;
+  }
+
+  function trialFor(source){
+    const plan = source.nextCup;
+    return journalEntries.find(e=> e.experimentSourceId === source.id &&
+      normId(e.beanId) === plan.beanId && e.mode === 'v60' && e.done === true);
+  }
+
+  function activeFor(beanId){
+    const plans = journalEntries.filter(e=> isPlanned(e) && e.nextCup.beanId === beanId && normId(e.beanId) === beanId);
+    for(const source of plans){
+      const trial = trialFor(source);
+      if(trial) return { source, trial, status:'awaiting_feedback' };
+    }
+    return plans.length ? { source:plans[0], trial:null, status:'planned' } : null;
+  }
+
+  function canOffer(entry){
+    if(!entry || entry.nextCup || !isCounted(entry) || !recommendation(entry)) return false;
+    const id = normId(entry.beanId);
+    const bean = beanById(id);
+    return !!bean && !bean.finishedAt && latestDone(id)?.id === entry.id &&
+      !activeFor(id) && !!repeatedRecipe(entry);
+  }
+
+  function isTrialToRate(entry){
+    return !!entry && activeFor(activeBeanId)?.trial?.id === entry.id;
+  }
+
+  function sufficient(bean){
+    const remaining = bean.remaining ?? bean.startWeight ?? 0;
+    return !bean.finishedAt && remaining >= Math.round(state.coffee * 10) / 10;
+  }
+
+  function trialFields(bean){
+    if(!ready || !bean || bean.archived || state.mode !== 'v60' || !sufficient(bean)) return {};
+    const active = activeFor(bean.id);
+    if(!active || active.status !== 'planned' || finishing.has(active.source.id)) return {};
+    const grind = active.source.nextCup.targetGrind;
+    return { experimentSourceId:active.source.id, grind, ...(grind === 0 ? { grindKnown:true } : {}) };
+  }
+
+  function reserveFinishedTrial(trial){
+    finishing.set(trial.experimentSourceId, trial.id);
+    return ()=>{
+      if(finishing.get(trial.experimentSourceId) === trial.id) finishing.delete(trial.experimentSourceId);
+    };
+  }
+
+  function actualRecipeDiffers(source, trial){
+    return source.mode !== trial.mode || (source.coffee > 0 && source.coffee !== trial.coffee) ||
+      (source.water > 0 && source.water !== trial.water) || (source.ratio > 0 && source.ratio !== trial.ratio) ||
+      (source.ice || 0) !== (trial.ice || 0) ||
+      (source.scheduledDuration > 0 && trial.scheduledDuration > 0 && source.scheduledDuration !== trial.scheduledDuration) ||
+      JSON.stringify(entryPours(source)) !== JSON.stringify(entryPours(trial));
+  }
+
+  function assess(source, trial, confirmed, changed){
+    const before = source.nextCup.sourceRating;
+    const after = trial.rating;
+    const delta = after - before;
+    const oldGrind = knownGrind(source), newGrind = knownGrind(trial);
+    const changeConfirmed = confirmed && !(oldGrind != null && oldGrind === newGrind);
+    const otherParametersChanged = changed || actualRecipeDiffers(source, trial);
+    return { before, after, delta, changeConfirmed, otherParametersChanged };
+  }
+
+  function conclusion(result){
+    if(!result.changeConfirmed) return 'Гипотеза не проверена.';
+    const summary = result.delta > 0 ? 'Оценка выросла.' : result.delta < 0 ? 'Оценка снизилась.' : 'Оценка не изменилась.';
+    if(result.otherParametersChanged) return summary + ' Менялось несколько параметров. Вклад помола неизвестен.';
+    return result.delta > 0 ? summary + ' Изменение помола могло помочь.' : summary;
+  }
+
+  function scores(result){
+    const change = result.delta > 0 ? '+' + result.delta : String(result.delta).replace('-', '−');
+    return 'Было ' + result.before + '/5 · стало ' + result.after + '/5 · ' + change;
+  }
+
+  function historyHTML(id){
+    const entry = entryById(id);
+    if(!entry) return '';
+    const source = entry.nextCup ? entry : entryById(entry.experimentSourceId);
+    const plan = source?.nextCup;
+    if(plan?.status === 'completed' && (source.id === id || plan.trialEntryId === id)){
+      return '<p class="js-next-cup"><b>Следующая чашка</b><br>' + scores(plan.result) + '<br>' + conclusion(plan.result) + '</p>';
+    }
+    if(canOffer(entry) || (plan && trialFor(source)?.id === id && isPlanned(source) && beanById(plan.beanId))){
+      const label = canOffer(entry) ? 'Открыть рекомендацию' : 'Оценить результат эксперимента';
+      return '<button class="bs-act" type="button" data-jnext-cup>' + label + '</button>';
+    }
+    return '';
+  }
+
+  function button(action, label, primary){
+    return '<button type="button" class="alert-btn' + (primary ? ' primary' : '') + '" data-next="' + action + '">' + label + '</button>';
+  }
+  const actions = (...buttons)=> '<div class="next-cup-actions">' + buttons.join('') + '</div>';
+  const title = text=> '<h2 tabindex="-1">' + text + '</h2>';
+  const option = (value, label, selected)=> '<option value="' + value + '"' + (selected ? ' selected' : '') + '>' + label + '</option>';
+  const yesNo = (name, label)=> '<label>' + label + '<select name="' + name + '" required>' +
+    option('', 'Выбрать', true) + option('yes', 'Да') + option('no', 'Нет') + '</select></label>';
+
+  function feedbackHTML(entry, trial){
+    const heading = trial ? 'Как получилась новая чашка?' : 'Как прошлая чашка?';
+    return title(heading) + '<p>' + formatEntryDate(entry.id) + ' · ' + fmt(entry.water || 0) + ' мл</p>' +
+      '<form data-id="' + entry.id + '">' +
+        '<label>Оценка<select name="rating" required>' + option('', 'Выбрать', !entry.rating) +
+          [1, 2, 3, 4, 5].map(n=> option(n, n + '/5', entry.rating === n)).join('') + '</select></label>' +
+        '<label>Вкус<select name="taste"' + (trial ? ' required' : '') + '>' +
+          option('', trial ? 'Выбрать' : 'Не указан', entry.taste == null || (!entry.taste && !entry.nextCupTasteRated)) +
+          TASTE_OPTS.map(t=> option(t.id, t.label, String(entry.taste) === t.id && (entry.taste !== 0 || entry.nextCupTasteRated))).join('') +
+        '</select></label>' +
+        (trial ? yesNo('confirmed', 'Помол изменён по рекомендации?') + yesNo('changed', 'Менялись другие параметры?') : '') +
+        actions('<button type="submit" class="alert-btn primary">Сохранить оценку</button>', button('later', 'Не сейчас')) +
+      '</form>';
+  }
+
+  function render(){
+    if(ready && lastBeanId !== activeBeanId){
+      lastBeanId = activeBeanId;
+      panel = null;
+      notice = null;
+    }
+    const bean = ready && beanById(activeBeanId);
+    const active = bean && activeFor(bean.id);
+    let html = '';
+    if(bean && Brew.phase === 'idle'){
+      const opened = panel?.beanId === bean.id ? entryById(panel.id) : null;
+      const latest = latestDone(bean.id);
+      const unrated = journalEntries.find(e=> normId(e.beanId) === bean.id && e.mode === 'v60' && isCounted(e) && !e.rating);
+      const offered = state.mode === 'v60' && canOffer(latest) && (latest.nextCupOffer === 'offered' || (panel?.kind === 'offer' && opened === latest));
+      const result = journalEntries.find(e=> e.nextCup?.status === 'completed' && e.nextCup.beanId === bean.id && !e.nextCup.seenAt);
+      if(active?.status === 'awaiting_feedback'){
+        html = panel?.kind === 'feedback' && opened === active.trial ? feedbackHTML(active.trial, true) :
+          title('Как получилась новая чашка?') + '<p>' + formatEntryDate(active.trial.id) + ' · ' + fmt(active.trial.water) + ' мл</p>' +
+          actions(button('trial', 'Оценить', true));
+      } else if(active?.status === 'planned' && state.mode === 'v60'){
+        const plan = active.source.nextCup, previousGrind = knownGrind(active.source);
+        const restored = notice?.id === active.source.id ? '<p role="status">Рецепт прошлой чашки восстановлен</p>' : '';
+        html = title(tips[plan.kind].title) + restored +
+          (previousGrind == null ? '' : '<p>Прошлая настройка — ' + previousGrind + ' кл.</p>') +
+          '<label class="next-cup-grind">Помол, клики <input name="grind" type="number" inputmode="numeric" min="0" max="' + GRIND_MAX +
+            '" step="1" placeholder="—" aria-describedby="nextCupGrindError" value="' + (plan.targetGrind ?? '') + '"></label>' +
+          '<p id="nextCupGrindError" role="status" hidden>Укажи целое число от 0 до ' + GRIND_MAX + '.</p>' +
+          (!sufficient(bean) ? '<p>Для эксперимента не хватает зерна. Заваривание будет обычным.</p>' : '') +
+          actions(button('restore', 'Восстановить рецепт'), button('cancel', 'Отменить эксперимент'));
+      } else if(result){
+        html = title('Результат эксперимента') + '<p>' + scores(result.nextCup.result) + '</p><p>' +
+          conclusion(result.nextCup.result) + '</p>' + actions(button('done', 'Готово', true));
+      } else if(offered){
+        const tip = tips[recommendation(latest)];
+        html = title(tip.title) + '<p>Прошлая чашка — ' + TASTE_OPTS.find(t=> Number(t.id) === latest.taste).label.toLowerCase() +
+          '.</p><p>' + tip.detail + '</p>' + actions(button('try', 'Попробовать', true), button('defer', 'Не сейчас'));
+      } else if(state.mode === 'v60' && unrated && !active){
+        html = panel?.kind === 'feedback' && opened === unrated ? feedbackHTML(unrated, false) :
+          title('Как прошлая чашка?') + '<p>' + formatEntryDate(unrated.id) + ' · ' + fmt(unrated.water || 0) + ' мл</p>' +
+          actions(button('rate', 'Оценить', true));
+      }
+    }
+    if(html !== markup){
+      markup = html;
+      card.innerHTML = html;
+    }
+    card.hidden = !html;
+  }
+
+  function openFeedback(id){
+    panel = { beanId:activeBeanId, id, kind:'feedback' };
+    render();
+    focusCard('select[name="rating"]');
+  }
+
+  async function openFromHistory(id){
+    if(busy || Brew.phase !== 'idle') return;
+    const entry = entryById(id);
+    if(!entry) return;
+    const beanId = normId(entry.beanId);
+    const active = activeFor(beanId);
+    const trial = active?.trial?.id === id && !!beanById(beanId);
+    if(!trial && !canOffer(entry)) return;
+    busy = true;
+    try{
+      closeSheet();
+      if(activeBeanId !== beanId) await setActiveBean(beanId);
+      if(state.mode !== 'v60') setMode('v60');
+      navGoTo(1, true);
+      if(trial) openFeedback(id);
+      else{
+        panel = { beanId, id, kind:'offer' };
+        render();
+        focusCard('h2');
+      }
+    } finally {
+      busy = false;
+    }
+  }
+
+  function rateAnalytics(entry, priorRating){
+    if(entry.rating > 0 && !priorRating){
+      ua('entry_rate');
+      ua('brew_rated', { rating:entry.rating });
+    }
+  }
+
+  function saveJournalEdit(entry){
+    return enqueue(async ()=>{
+      const current = entryById(entry.id);
+      if(!current) return;
+      entry.nextCup = current.nextCup;
+      entry.nextCupOffer = current.nextCupOffer;
+    entry.nextCupFeedback = current.nextCupFeedback;
+    entry.done = current.done;
+      if(isPlanned(current) && normId(entry.beanId) !== current.nextCup.beanId){
+        entry.nextCup = { ...current.nextCup, status:'cancelled' };
+      }
+      if(!current.rating && canOffer(entry)) entry.nextCupOffer = 'offered';
+      rateAnalytics(entry, current.rating);
+      await journalUpdateEntry(entry);
+    });
+  }
+
+  async function cancelForBean(beanId){
+    await enqueue(async ()=>{
+      for(const entry of journalEntries.filter(e=> isPlanned(e) && e.nextCup.beanId === beanId)){
+        const nextCup = { ...entry.nextCup, status:'cancelled' };
+        await journalUpdateEntry({ ...entry, nextCup });
+      }
+    });
+    render();
+  }
+
+  function updateGrind(input){
+    const active = activeFor(activeBeanId);
+    if(active?.status !== 'planned' || Brew.phase !== 'idle') return;
+    const source = active.source;
+    const valid = input.validity.valid;
+    input.setAttribute('aria-invalid', String(!valid));
+    card.querySelector('#nextCupGrindError').hidden = valid;
+    const grind = valid && input.value !== '' ? input.valueAsNumber : null;
+    if(source.nextCup.targetGrind === grind) return;
+    source.nextCup.targetGrind = grind;
+    enqueue(()=>{
+      const current = entryById(source.id);
+      if(current && isPlanned(current)) return journalUpdateEntry(current);
+    });
+  }
+
+  function restore(source){
+    if(!repeatEntryRecipe(source)) return false;
+    notice = { id:source.id };
+    return true;
+  }
+
+  async function handleAction(action){
+    const beanId = activeBeanId;
+    const active = activeFor(beanId);
+    const latest = latestDone(beanId);
+    if(action === 'later'){ panel = null; return; }
+    if(action === 'rate'){
+      const unrated = journalEntries.find(e=> normId(e.beanId) === beanId && e.mode === 'v60' && isCounted(e) && !e.rating);
+      if(unrated) openFeedback(unrated.id);
+    } else if(action === 'trial' && active?.trial){
+      openFeedback(active.trial.id);
+    } else if(action === 'defer' && canOffer(latest)){
+      await journalUpdateEntry({ ...latest, nextCupOffer:'deferred' });
+      panel = null;
+    } else if(action === 'try' && canOffer(latest) && restore(latest)){
+      latest.nextCup = {
+        version:1, kind:recommendation(latest), status:'planned', beanId,
+        sourceRating:latest.rating, targetGrind:null, createdAt:Date.now()
+      };
+      latest.nextCupOffer = 'deferred';
+      await journalUpdateEntry(latest);
+      panel = null;
+    } else if(action === 'restore' && active?.status === 'planned'){
+      restore(active.source);
+    } else if(action === 'cancel' && active?.status === 'planned'){
+      const source = active.source;
+      await journalUpdateEntry({ ...source, nextCup:{ ...source.nextCup, status:'cancelled' } });
+      notice = null;
+    } else if(action === 'done'){
+      const source = journalEntries.find(e=> e.nextCup?.status === 'completed' && e.nextCup.beanId === beanId && !e.nextCup.seenAt);
+      if(source) await journalUpdateEntry({ ...source, nextCup:{ ...source.nextCup, seenAt:Date.now() } });
+    }
+  }
+
+  async function saveFeedback(id, values){
+    const entry = entryById(id);
+    if(!entry || normId(entry.beanId) !== activeBeanId || (state.mode !== 'v60' && !isTrialToRate(entry))) return;
+    const active = activeFor(activeBeanId);
+    const trial = active?.trial?.id === id;
+    const rating = Number(values.get('rating'));
+    const rawTaste = values.get('taste');
+    const confirmed = values.get('confirmed'), changed = values.get('changed');
+    if(![1, 2, 3, 4, 5].includes(rating) || (!trial && (entry.rating || active))) return;
+    const tasteChosen = TASTE_OPTS.some(t=> t.id === rawTaste);
+    if(trial && (!tasteChosen || !['yes', 'no'].includes(confirmed) || !['yes', 'no'].includes(changed))) return;
+    const assessed = { ...entry, rating, taste:tasteChosen ? Number(rawTaste) : null, nextCupTasteRated:tasteChosen };
+    if(trial) assessed.nextCupFeedback = assess(active.source, assessed, confirmed === 'yes', changed === 'yes');
+    else if(canOffer(assessed)) assessed.nextCupOffer = 'offered';
+    await journalUpdateEntry(assessed);
+    if(trial) await complete(active.source, assessed);
+    rateAnalytics(assessed, entry.rating);
+    panel = null;
+    renderJournal();
+  }
+
+  function complete(source, trial){
+    const nextCup = { ...source.nextCup, status:'completed', trialEntryId:trial.id, result:trial.nextCupFeedback };
+    return journalUpdateEntry({ ...source, nextCup });
+  }
+
+  async function start(){
+    // Если приложение закрыли между двумя записями, результат уже есть в оценке пробы.
+    for(const source of journalEntries.filter(isPlanned)){
+      const trial = trialFor(source);
+      if(trial?.nextCupFeedback) await complete(source, trial);
+    }
+    ready = true;
+    render();
+  }
+
+  function interact(work){
+    if(busy || Brew.phase !== 'idle') return;
+    const beanId = activeBeanId;
+    const activeElement = document.activeElement;
+    busy = true;
+    card.setAttribute('aria-busy', 'true');
+    enqueue(()=>{
+      if(Brew.phase === 'idle' && beanId === activeBeanId) return work();
+    }).catch(()=>{
+      Themes.toast({ title:'Не удалось сохранить', sub:'Попробуй ещё раз' });
+    }).finally(()=>{
+      busy = false;
+      card.removeAttribute('aria-busy');
+      render();
+      if(!card.hidden && !activeElement?.isConnected && !card.contains(document.activeElement)) focusCard('h2');
+    });
+  }
+
+  card.addEventListener('click', event=>{
+    const action = event.target.closest('[data-next]')?.dataset.next;
+    if(action) interact(()=> handleAction(action));
+  });
+  card.addEventListener('input', event=>{ if(event.target.name === 'grind') updateGrind(event.target); });
+  card.addEventListener('submit', event=>{
+    event.preventDefault();
+    const form = event.target;
+    const values = new FormData(form);
+    interact(()=> saveFeedback(Number(form.dataset.id), values));
+  });
+
+  return {
+    start, render, trialFields, reserveFinishedTrial, isTrialToRate, openFeedback, historyHTML, openFromHistory,
+    saveJournalEdit, cancelForBean, enqueue
+  };
+})();
+
 const jsXp = { open:null };
 let jsDrums = {};
 function jsSubHTML(e){
@@ -7214,6 +7693,7 @@ function jsPickTaste(v, fromDrum){
       setTimeout(()=>{ if(jsXp.open === 'taste') capToggle(body, jsXp, 'taste'); }, 220);
       return;
     }
+    if(ev.target.closest('[data-jnext-cup]')){ NextCup.openFromHistory(e.id); return; }
     if(ev.target.closest('[data-jrepeat]')){ haptics('medium'); const src = JSON.parse(JSON.stringify(e)); repeatEntryRecipe(src); return; }
     if(ev.target.closest('[data-jdelete]')){ const id = e.id; closeSheet(); openDeleteAlert(id, 'journal'); }
   });
@@ -7430,6 +7910,8 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
     return;
   }
   if(mode === 'edit'){
+    if(sheetPrimaryBtn.disabled) return;
+    sheetPrimaryBtn.disabled = true;
     entry.water = entry.pours.reduce((a,b)=> a+b.add, 0);
     // Смена зерна переносит граммы: вернуть прежнему, списать с нового.
     const before = journalEntries.find(e=> e.id === entry.id);
@@ -7437,8 +7919,8 @@ sheetPrimaryBtn.addEventListener('click', async ()=>{
       if(normId(before.beanId) !== normId(entry.beanId)) track('journal_bean_changed');
       await applyGramsChange(before, entry);
     }
-    if((entry.rating || 0) > 0 && !(before && (before.rating || 0) > 0)){ ua('entry_rate'); ua('brew_rated', { rating: entry.rating }); }
-    await journalUpdateEntry(entry);
+    await NextCup.saveJournalEdit(entry);
+    sheetPrimaryBtn.disabled = false;
   } else if(mode === 'bean-add'){
     entry.remaining = entry.startWeight;
     await beanSaveEntry(entry);
@@ -7636,6 +8118,7 @@ async function beanDeleteEntry(id){
   const ids = (await beansReadIndex()).filter(x=> x !== id);
   await storeSet(BEANS_INDEX_KEY, JSON.stringify(ids));
   beans = beans.filter(b=> b.id !== id);
+  await NextCup.cancelForBean(id);
   openTempNoteIds.delete(id);
   if(activeBeanId === id){
     activeBeanId = null;
@@ -7732,6 +8215,7 @@ async function archiveBean(id){
   if(!bean) return;
   bean.archived = true;
   await beanUpdateEntry(bean);
+  await NextCup.cancelForBean(id);
   await deactivateBean(id);
   track('bean_archived');
   renderBeans();
@@ -7996,7 +8480,7 @@ document.getElementById('calcBest').addEventListener('click', e=>{
   const en = bestEntry;
   haptics('rigid');   // щелчок в момент нажатия
   const c0 = state.coffee || 0, w0 = state.water || 0;
-  repeatEntryRecipe(en, { anim:{ dur:300, ratio:true, delay:60 } });
+  repeatEntryRecipe(en, { forceCustom:true, anim:{ dur:300, ratio:true, delay:60 } });
   brewFromBest = { beanId:normId(en.beanId), rating:en.rating || 0 };
   bestApplied = { id:en.id, sig:bestSig() };
   bestSyncDone();
@@ -8264,6 +8748,7 @@ function renderFaculty(){
   el.querySelector('.tr-plaque').addEventListener('click', ()=>{ haptics('light'); ua('faculty_opened'); openThemesSheet(); });
 }
 function octRefresh(){
+  NextCup.render();
   try{ renderBestRow(); renderWeekSum(); renderFaculty(); }catch(e){}
 }
 (function(){
@@ -9140,7 +9625,7 @@ buildCupSizes();
 renderSizeSettings();
 renderRatioSettings();
 setMode('v60');
-Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries).then(()=> Themes.start());
+Promise.all([journalLoad(), beansLoad()]).then(linkLegacyEntries).then(NextCup.start).then(()=> Themes.start());
 
 /* ---- Навигация: стеклянный таб-бар внизу + свайп между разделами ----
    Зерна / Кофе / Журнал / Еще. Линза таб-бара едет за пальцем непрерывно,
